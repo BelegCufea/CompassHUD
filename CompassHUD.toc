@@ -1,0 +1,13 @@
+## Interface: 100100
+## Title: CompassHUD
+## Notes: Simple compass HUD
+## Version: alpha-0.0.1
+## Author: Cufea
+## SavedVariables: CompassHUDDB
+## DefaultState: enabled
+
+Libs\libs.xml
+
+const.lua
+debug.lua
+CompassHUD.lua
