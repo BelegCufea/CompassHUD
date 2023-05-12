@@ -32,6 +32,17 @@ local tomTom = -200
 local tomTomActive
 local questPointsTable = {}
 local HBDmaps = {}
+local directions = {
+    [0] = {letter = "N" , main = true },
+    [45] = {letter = "NE" , main = false },
+    [90] = {letter = "E" , main = true },
+    [135] = {letter = "SE" , main = false},
+    [180] = {letter = "S" , main = true },
+    [225] = {letter = "SW" , main = false },
+    [270] = {letter = "W" , main = true },
+    [315] = {letter = "NW" , main = false },
+    [360] = {letter = "N" , main = true },
+}
 
 local questTextures = {
 	[tomTom] = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
@@ -66,6 +77,19 @@ Addon.Defaults = {
         BorderColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         Background      = 'Blizzard Tooltip',
         BackgroundColor = {r = 1, g = 1, b = 1, a = 1},
+        UseTexture = true,
+        DirectionsFontMain = 'Arial Narrow',
+        DirectionsFontSecondary = 'Arial Narrow',
+        DirectionsFontDegrees = 'Arial Narrow',
+        DirectionsFontMainSize = 14,
+        DirectionsFontSecondarySize = 12,
+        DirectionsFontDegreesSize = 9,
+        DirectionsFontMainColor = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        DirectionsFontSecondaryColor = {r = 0, g = 1, b = 1, a = 1},
+        DirectionsFontDegreesColor = {r = 1, g = 1, b = 1}, a = 1,
+        DirectionsFontMainFlags = 'OUTLINE',
+        DirectionsFontSecondaryFlags = 'OUTLINE',
+        DirectionsFontDegreesFlags = '',
     },
 }
 
@@ -227,7 +251,14 @@ Addon.Options = {
                         Addon:UpdateHUDSettings()
                     end,
                 },
-                Blank1 = { type = "description", order = 500, fontSize = "small",name = "",width = "full", },
+                Blank1 = { type = "description", order = 200, fontSize = "small",name = "",width = "full", },
+                UseTexture = {
+                    type = "toggle",
+                    name = "UseTexture",
+                    width = "full",
+                    order = 210,
+                },
+                Blank2 = { type = "description", order = 500, fontSize = "small",name = "",width = "full", },
                 Center = {
                     type = "execute",
                     order = 510,
@@ -301,6 +332,61 @@ local function createHUD()
     HUD.pointer:SetTexture(pointerTexture)
     HUD.pointer:SetSize(textureHeight * 1.5, textureHeight * 1.5)
 	HUD.pointer:SetPoint('TOP', HUD, 'TOP', 0, 6)
+
+    -- static frame to display compass leters and numbers with clipchildren
+    HUD.directions = CreateFrame('Frame', ADDON_NAME .. '_directions', HUD)
+    HUD.directions:SetSize(textureWidth / 2, textureHeight)
+    HUD.directions:SetPoint('TOP', HUD, 'TOP', 0, 0)
+    HUD.directions:SetClipsChildren(true)
+
+    -- movable frame to reflect player facing
+    HUD.directions.mask = CreateFrame('Frame', ADDON_NAME .. '_directions', HUD.directions)
+    HUD.directions.mask:SetSize(textureWidth, textureHeight)
+    HUD.directions.mask:SetPoint('TOP', HUD.directions, 'TOP', 0, 0)
+
+    HUD.directions.letters = {}
+    local letters = HUD.directions.letters
+    for k, v in pairs(directions) do
+        letters[k] = HUD.directions.mask:CreateFontString(ADDON_NAME .. '_directions_' .. k, "OVERLAY", "GameFontNormal")
+        letters[k]:SetText(v.letter)
+        letters[k]:SetJustifyV("TOP")
+        letters[k]:SetSize(0, 16)
+        letters[k]:SetPoint("TOP", HUD.directions.mask, "TOP", k / 720 * textureWidth + 1, -4)
+        letters[k]:SetParent(HUD.directions.mask)
+        letters[k].data = v
+    end
+    for k, v in pairs(directions) do
+        letters[-k] = HUD.directions.mask:CreateFontString(ADDON_NAME .. '_directions_-' .. k, "OVERLAY", "GameFontNormal")
+        letters[-k]:SetText(v.letter)
+        letters[-k]:SetJustifyV("TOP")
+        letters[-k]:SetSize(0, 16)
+        letters[-k]:SetPoint("TOP", HUD.directions.mask, "TOP", (k - 360) / 720 * textureWidth + 1, -4)
+        letters[-k]:SetParent(HUD.directions.mask)
+        letters[-k].data = v
+    end
+
+    HUD.directions.degrees = {}
+    local degrees = HUD.directions.degrees
+    for i = -360, 360, 15 do
+        if i % 45 ~= 0 then
+            degrees[i] = HUD.directions.mask:CreateFontString(ADDON_NAME .. '_degrees_' .. i, "OVERLAY", "GameFontNormal")
+            degrees[i]:SetText(((i > 0) and i) or (360 + i))
+            degrees[i]:SetJustifyV("TOP")
+            degrees[i]:SetSize(0, 16)
+            degrees[i]:SetPoint("TOP", HUD.directions.mask, "TOP", i / 720 * textureWidth + 1, -6)
+            degrees[i]:SetParent(HUD.directions.mask)
+        end
+    end
+
+    HUD.directions.ticks = {}
+    local ticks = HUD.directions.ticks
+    for i = -360, 360, 15 do
+        ticks[i] = HUD.directions.mask:CreateTexture(ADDON_NAME .. "_ticks_" .. i, "OVERLAY")
+        ticks[i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
+        ticks[i]:SetSize(2, ((i % 45 == 0) and 2) or 4)
+        ticks[i]:SetPoint("TOP", HUD.directions.mask, "TOP", i / 720 * textureWidth, -2)
+        ticks[i]:SetParent(HUD.directions.mask)
+    end
 end
 
 local function setTime(frame, distance, speed)
@@ -422,7 +508,11 @@ local function updateHUD(force)
     local facing = GetPlayerFacing() or 0
     if force or facing ~= currentFacing then
         local coord = (facing < PI and 0.5 or 1) - (facing * ADJ_FACTOR)
+        --rotate texture
         HUD.compass:SetTexCoord(coord - adjCoord, coord + adjCoord, 0, 1)
+        -- rotate letters
+        HUD.directions.mask:ClearAllPoints()
+        HUD.directions.mask:SetPoint('TOP', HUD.directions, 'TOP', (1/2 - coord) * textureWidth, 0)
         currentFacing = facing
     end
     updatePlayerCoords()
@@ -578,6 +668,8 @@ function Addon:UpdateHUDSettings()
 	HUD:SetFrameLevel(Options.Level)
     HUD:SetAlpha(Options.Transparency)
 
+    HUD.directions:SetSize(width, height)
+
 	local backdrop = {
 		bgFile = LSM:Fetch("background", Options.Background),
 		edgeFile = LSM:Fetch("border", Options.Border),
@@ -588,6 +680,22 @@ function Addon:UpdateHUDSettings()
     HUD:SetBackdropColor(Options.BackgroundColor.r,Options.BackgroundColor.g, Options.BackgroundColor.b, Options.BackgroundColor.a)
 	HUD:SetBackdropBorderColor(Options.BorderColor.r,Options.BorderColor.g, Options.BorderColor.b, Options.BorderColor.a)
 
+    local lettersMainFont = LSM:Fetch("font", Options.DirectionsFontMain)
+    local lettersSecondaryFont = LSM:Fetch("font", Options.DirectionsFontMain)
+    local degreesFont = LSM:Fetch("font", Options.DirectionsFontMain)
+    for _, v in pairs(HUD.directions.letters) do
+        if v.data.main then
+            v:SetFont(lettersMainFont, Options.DirectionsFontMainSize, Options.DirectionsFontMainFlags)
+            v:SetTextColor(Options.DirectionsFontMainColor.r, Options.DirectionsFontMainColor.g, Options.DirectionsFontMainColor.b, Options.DirectionsFontMainColor.a)
+        else
+            v:SetFont(lettersSecondaryFont, Options.DirectionsFontSecondarySize, Options.DirectionsFontSecondaryFlags)
+            v:SetTextColor(Options.DirectionsFontSecondaryColor.r, Options.DirectionsFontSecondaryColor.g, Options.DirectionsFontSecondaryColor.b, Options.DirectionsFontSecondaryColor.a)
+        end
+    end
+    for _, v in pairs(HUD.directions.degrees) do
+            v:SetFont(degreesFont, Options.DirectionsFontDegreesSize, Options.DirectionsFontDegreesFlags)
+            v:SetTextColor(Options.DirectionsFontDegreesColor.r, Options.DirectionsFontDegreesColor.g, Options.DirectionsFontDegreesColor.b, Options.DirectionsFontDegreesColor.a)
+    end
     HUD.compass:ClearAllPoints()
     HUD.compass:SetPoint('TOPLEFT', HUD, 'TOPLEFT', Options.BorderThickness + 1, -Options.BorderThickness - 1)
     HUD.compass:SetPoint('BOTTOMLEFT', HUD, 'BOTTOMLEFT', Options.BorderThickness + 1, Options.BorderThickness + 1)
@@ -596,6 +704,9 @@ function Addon:UpdateHUDSettings()
 
     Options.PositionX = HUD:GetLeft()
     Options.PositionY = HUD:GetBottom()
+
+    HUD.compass:SetShown(Options.UseTexture)
+    HUD.directions:SetShown(not Options.UseTexture)
 
     updateHUD(true)
 end
