@@ -88,6 +88,9 @@ Addon.Defaults = {
         CompassCustomMainSize = 14,
         CompassCustomSecondarySize = 12,
         CompassCustomDegreesSize = 9,
+        CompassCustomMainPosition = -3,
+        CompassCustomSecondaryPosition = -3,
+        CompassCustomDegreesPosition = -5,
         CompassCustomMainColor = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         CompassCustomSecondaryColor = {r = 0, g = 1, b = 1, a = 1},
         CompassCustomDegreesColor = {r = 1, g = 1, b = 1, a = 1},
@@ -95,6 +98,7 @@ Addon.Defaults = {
         CompassCustomSecondaryFlags = 'OUTLINE',
         CompassCustomDegreesFlags = '',
         CompassCustomTicksPosition = 'TOP',
+        CompassCustomTicksForce = false,
     },
 }
 
@@ -224,7 +228,7 @@ Addon.Options = {
                         Options[info[#info]].a = a
                         Addon:UpdateHUDSettings()
                     end,
-},
+                },
                 BorderThickness = {
                     type = "range",
                     order = 110,
@@ -312,8 +316,16 @@ Addon.Options = {
                                     type = "toggle",
                                     order = 10,
                                     name = "Enabled",
-                                    width = "full",
                                 },
+                                CompassCustomMainPosition = {
+                                    type = "range",
+                                    order = 15,
+                                    name = "Vertical adjustment",
+                                    min = -64,
+                                    max = 64,
+                                    step = 1,
+                                },
+                                Blank1 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
                                 CompassCustomMainFont = {
                                     type = "select",
                                     order = 20,
@@ -371,8 +383,16 @@ Addon.Options = {
                                     type = "toggle",
                                     order = 10,
                                     name = "Enabled",
-                                    width = "full",
                                 },
+                                CompassCustomSecondaryPosition = {
+                                    type = "range",
+                                    order = 15,
+                                    name = "Vertical adjustment",
+                                    min = -64,
+                                    max = 64,
+                                    step = 1,
+                                },
+                                Blank1 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
                                 CompassCustomSecondaryFont = {
                                     type = "select",
                                     order = 20,
@@ -430,11 +450,18 @@ Addon.Options = {
                                     type = "toggle",
                                     order = 10,
                                     name = "Enabled",
-                                    width = 1,
+                                },
+                                CompassCustomDegreesPosition = {
+                                    type = "range",
+                                    order = 15,
+                                    name = "Vertical adjustment",
+                                    min = -64,
+                                    max = 64,
+                                    step = 1,
                                 },
                                 CompassCustomDegreesSpan = {
                                     type = "range",
-                                    order = 15,
+                                    order = 18,
                                     name = "Interval between degrees",
                                     min = 5,
                                     max = 90,
@@ -495,13 +522,18 @@ Addon.Options = {
                             type = "select",
                             order = 90,
                             name = "Ticks position",
-                            width = "full",
                             values = {
                                 [""] = "hide ticks",
                                 ["TOP"] = "on top",
                                 ["BOTTOM"] = "on bottom",
                                 ["BOTH"] = "both on top and bottom",
                             },
+                        },
+                        CompassCustomTicksForce = {
+                            type = "toggle",
+                            order = 100,
+                            name = "Force ticks",
+                            desc = "Display ticks even if letters or degrees are not visible."
                         },
                     },
                 },
@@ -574,43 +606,32 @@ local function updateCompassHUD()
         HUD.compassCustom.letters = {}
     end
     local letters = HUD.compassCustom.letters
+
     for _, v in pairs(letters) do
         v:Hide()
     end
-    for k, v in pairs(directions) do
-        letters[k] = letters[k] or HUD.compassCustom.mask:CreateFontString(ADDON_NAME .. '_directions_' .. k, "OVERLAY", "GameFontNormal")
-        letters[k]:SetText(v.letter)
-        letters[k]:SetJustifyV("TOP")
-        letters[k]:SetSize(0, 16)
-        letters[k]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", k / 720 * textureWidth + 1, -3)
-        letters[k]:SetParent(HUD.compassCustom.mask)
-        letters[k].data = v
-        if v.main then
-            letters[k]:SetFont(lettersMainFont, Options.CompassCustomMainSize, Options.CompassCustomMainFlags)
-            letters[k]:SetTextColor(Options.CompassCustomMainColor.r, Options.CompassCustomMainColor.g, Options.CompassCustomMainColor.b, Options.CompassCustomMainColor.a)
-            letters[k]:SetShown(Options.CompassCustomMainVisible)
-        else
-            letters[k]:SetFont(lettersSecondaryFont, Options.CompassCustomSecondarySize, Options.CompassCustomSecondaryFlags)
-            letters[k]:SetTextColor(Options.CompassCustomSecondaryColor.r, Options.CompassCustomSecondaryColor.g, Options.CompassCustomSecondaryColor.b, Options.CompassCustomSecondaryColor.a)
-            letters[k]:SetShown(Options.CompassCustomSecondaryVisible)
-        end
-    end
-    for k, v in pairs(directions) do
-        letters[-k] = letters[-k] or HUD.compassCustom.mask:CreateFontString(ADDON_NAME .. '_directions_-' .. k, "OVERLAY", "GameFontNormal")
-        letters[-k]:SetText(v.letter)
-        letters[-k]:SetJustifyV("TOP")
-        letters[-k]:SetSize(0, 16)
-        letters[-k]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", (k - 360) / 720 * textureWidth + 1, -3)
-        letters[-k]:SetParent(HUD.compassCustom.mask)
-        letters[-k].data = v
-        if v.main then
-            letters[-k]:SetFont(lettersMainFont, Options.CompassCustomMainSize, Options.CompassCustomMainFlags)
-            letters[-k]:SetTextColor(Options.CompassCustomMainColor.r, Options.CompassCustomMainColor.g, Options.CompassCustomMainColor.b, Options.CompassCustomMainColor.a)
-            letters[-k]:SetShown(Options.CompassCustomMainVisible)
-        else
-            letters[-k]:SetFont(lettersSecondaryFont, Options.CompassCustomSecondarySize, Options.CompassCustomSecondaryFlags)
-            letters[-k]:SetTextColor(Options.CompassCustomSecondaryColor.r, Options.CompassCustomSecondaryColor.g, Options.CompassCustomSecondaryColor.b, Options.CompassCustomSecondaryColor.a)
-            letters[-k]:SetShown(Options.CompassCustomSecondaryVisible)
+
+    for _, side in ipairs({ 1, -1}) do
+        for k, v in pairs(directions) do
+            letters[k*side] = letters[k*side] or HUD.compassCustom.mask:CreateFontString(ADDON_NAME .. '_directions_' .. k*side, "OVERLAY", "GameFontNormal")
+            letters[k*side]:SetText(v.letter)
+            letters[k*side]:SetJustifyV("TOP")
+            letters[k*side]:SetSize(0, 16)
+            letters[k*side]:SetParent(HUD.compassCustom.mask)
+            letters[k*side]:ClearAllPoints()
+            letters[k*side].data = v
+
+            if v.main then
+                letters[k*side]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", ((side == 1 and k) or (k - 360)) / 720 * textureWidth + 1, Options.CompassCustomMainPosition)
+                letters[k*side]:SetFont(lettersMainFont, Options.CompassCustomMainSize, Options.CompassCustomMainFlags)
+                letters[k*side]:SetTextColor(Options.CompassCustomMainColor.r, Options.CompassCustomMainColor.g, Options.CompassCustomMainColor.b, Options.CompassCustomMainColor.a)
+                letters[k*side]:SetShown(Options.CompassCustomMainVisible)
+            else
+                letters[k*side]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", ((side == 1 and k) or (k - 360)) / 720 * textureWidth + 1, Options.CompassCustomSecondaryPosition)
+                letters[k*side]:SetFont(lettersSecondaryFont, Options.CompassCustomSecondarySize, Options.CompassCustomSecondaryFlags)
+                letters[k*side]:SetTextColor(Options.CompassCustomSecondaryColor.r, Options.CompassCustomSecondaryColor.g, Options.CompassCustomSecondaryColor.b, Options.CompassCustomSecondaryColor.a)
+                letters[k*side]:SetShown(Options.CompassCustomSecondaryVisible)
+            end
         end
     end
 
@@ -621,6 +642,7 @@ local function updateCompassHUD()
 
     for _, v in pairs(degrees) do
         v:Hide()
+        v.span = false
     end
 
     for i = -360, 360, Options.CompassCustomDegreesSpan do
@@ -629,11 +651,13 @@ local function updateCompassHUD()
             degrees[i]:SetText(((i > 0) and i) or (360 + i))
             degrees[i]:SetJustifyV("TOP")
             degrees[i]:SetSize(0, 16)
-            degrees[i]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", i / 720 * textureWidth + 1, -5)
+            degrees[i]:ClearAllPoints()
+            degrees[i]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", i / 720 * textureWidth + 1, Options.CompassCustomDegreesPosition)
             degrees[i]:SetParent(HUD.compassCustom.mask)
             degrees[i]:SetFont(degreesFont, Options.CompassCustomDegreesSize, Options.CompassCustomDegreesFlags)
             degrees[i]:SetTextColor(Options.CompassCustomDegreesColor.r, Options.CompassCustomDegreesColor.g, Options.CompassCustomDegreesColor.b, Options.CompassCustomDegreesColor.a)
             degrees[i]:SetShown(Options.CompassCustomDegreesVisible)
+            degrees[i].span = true
             if letters[i] and letters[i]:IsShown() then
                 degrees[i]:Hide()
             end
@@ -649,62 +673,40 @@ local function updateCompassHUD()
         v:Hide()
     end
 
-    -- top ticks
-    for i, v in pairs(letters) do
-        ticks["TOP" .. i] = ticks["TOP" .. i] or HUD.compassCustom.mask:CreateTexture(ADDON_NAME .. "_ticks_" .. i, "OVERLAY")
-        ticks["TOP" .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
-        if v:IsShown() then
-            if v.data.main then
-                ticks["TOP" .. i]:SetVertexColor(Options.CompassCustomMainColor.r, Options.CompassCustomMainColor.g, Options.CompassCustomMainColor.b, Options.CompassCustomMainColor.a)
-            else
-                ticks["TOP" .. i]:SetVertexColor(Options.CompassCustomSecondaryColor.r, Options.CompassCustomSecondaryColor.g, Options.CompassCustomSecondaryColor.b, Options.CompassCustomSecondaryColor.a)
+    for _, tickPosition in ipairs({"TOP", "BOTTOM"}) do
+        for i, v in pairs(letters) do
+            ticks[tickPosition .. i] = ticks[tickPosition .. i] or HUD.compassCustom.mask:CreateTexture(ADDON_NAME .. "_ticks_" ..  tickPosition .. "_" .. i, "OVERLAY")
+            ticks[tickPosition .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
+            if v:IsShown() then
+                if v.data.main then
+                    ticks[tickPosition .. i]:SetVertexColor(Options.CompassCustomMainColor.r, Options.CompassCustomMainColor.g, Options.CompassCustomMainColor.b, Options.CompassCustomMainColor.a)
+                else
+                    ticks[tickPosition .. i]:SetVertexColor(Options.CompassCustomSecondaryColor.r, Options.CompassCustomSecondaryColor.g, Options.CompassCustomSecondaryColor.b, Options.CompassCustomSecondaryColor.a)
+                end
+                ticks[tickPosition .. i]:SetShown((Options.CompassCustomTicksPosition == tickPosition) or (Options.CompassCustomTicksPosition == "BOTH"))
+            end
+            ticks[tickPosition .. i]:SetSize(2, 2)
+            ticks[tickPosition .. i]:SetPoint(tickPosition, HUD.compassCustom.mask, tickPosition, i / 720 * textureWidth, -2)
+            ticks[tickPosition .. i]:SetParent(HUD.compassCustom.mask)
+            if Options.CompassCustomTicksForce then
+                ticks[tickPosition .. i]:SetShown((Options.CompassCustomTicksPosition == tickPosition) or (Options.CompassCustomTicksPosition == "BOTH"))
             end
         end
-        ticks["TOP" .. i]:SetSize(2, 2)
-        ticks["TOP" .. i]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", i / 720 * textureWidth, -2)
-        ticks["TOP" .. i]:SetParent(HUD.compassCustom.mask)
-        ticks["TOP" .. i]:SetShown((Options.CompassCustomTicksPosition == "TOP") or (Options.CompassCustomTicksPosition == "BOTH"))
-    end
 
-    for i, v in pairs(degrees) do
-        ticks["TOP" .. i] = ticks["TOP" .. i] or HUD.compassCustom.mask:CreateTexture(ADDON_NAME .. "_ticks_" .. i, "OVERLAY")
-        ticks["TOP" .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
-        if v:IsShown() then
-            ticks["TOP" .. i]:SetVertexColor(Options.CompassCustomDegreesColor.r, Options.CompassCustomDegreesColor.g, Options.CompassCustomDegreesColor.b, Options.CompassCustomDegreesColor.a)
-        end
-        ticks["TOP" .. i]:SetSize(2, 4)
-        ticks["TOP" .. i]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", i / 720 * textureWidth, -2)
-        ticks["TOP" .. i]:SetParent(HUD.compassCustom.mask)
-        ticks["TOP" .. i]:SetShown((Options.CompassCustomTicksPosition == "TOP") or (Options.CompassCustomTicksPosition == "BOTH"))
-    end
-
-    -- bottom ticks
-    for i, v in pairs(letters) do
-        ticks["BOTTOM" .. i] = ticks["BOTTOM" .. i] or HUD.compassCustom.mask:CreateTexture(ADDON_NAME .. "_ticks_" .. i, "OVERLAY")
-        ticks["BOTTOM" .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
-        if v:IsShown() then
-            if v.data.main then
-                ticks["BOTTOM" .. i]:SetVertexColor(Options.CompassCustomMainColor.r, Options.CompassCustomMainColor.g, Options.CompassCustomMainColor.b, Options.CompassCustomMainColor.a)
-            else
-                ticks["BOTTOM" .. i]:SetVertexColor(Options.CompassCustomSecondaryColor.r, Options.CompassCustomSecondaryColor.g, Options.CompassCustomSecondaryColor.b, Options.CompassCustomSecondaryColor.a)
+        for i, v in pairs(degrees) do
+            ticks[tickPosition .. i] = ticks[tickPosition .. i] or HUD.compassCustom.mask:CreateTexture(ADDON_NAME .. "_ticks_" ..  tickPosition .. "_" .. i, "OVERLAY")
+            ticks[tickPosition .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
+            if not letters[i] or not letters[i]:IsShown() then
+                ticks[tickPosition .. i]:SetVertexColor(Options.CompassCustomDegreesColor.r, Options.CompassCustomDegreesColor.g, Options.CompassCustomDegreesColor.b, Options.CompassCustomDegreesColor.a)
+                ticks[tickPosition .. i]:SetShown(v:IsShown() and ((Options.CompassCustomTicksPosition == tickPosition) or (Options.CompassCustomTicksPosition == "BOTH")))
+                ticks[tickPosition .. i]:SetSize(2, 4)
+            end
+            ticks[tickPosition .. i]:SetPoint(tickPosition, HUD.compassCustom.mask, tickPosition, i / 720 * textureWidth, -2)
+            ticks[tickPosition .. i]:SetParent(HUD.compassCustom.mask)
+            if Options.CompassCustomTicksForce and v.span then
+                ticks[tickPosition .. i]:SetShown((Options.CompassCustomTicksPosition == tickPosition) or (Options.CompassCustomTicksPosition == "BOTH"))
             end
         end
-        ticks["BOTTOM" .. i]:SetSize(2, 2)
-        ticks["BOTTOM" .. i]:SetPoint("BOTTOM", HUD.compassCustom.mask, "BOTTOM", i / 720 * textureWidth, -2)
-        ticks["BOTTOM" .. i]:SetParent(HUD.compassCustom.mask)
-        ticks["BOTTOM" .. i]:SetShown((Options.CompassCustomTicksPosition == "BOTTOM") or (Options.CompassCustomTicksPosition == "BOTH"))
-    end
-
-    for i, v in pairs(degrees) do
-        ticks["BOTTOM" .. i] = ticks["BOTTOM" .. i] or HUD.compassCustom.mask:CreateTexture(ADDON_NAME .. "_ticks_" .. i, "OVERLAY")
-        ticks["BOTTOM" .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
-        if v:IsShown() then
-            ticks["BOTTOM" .. i]:SetVertexColor(Options.CompassCustomDegreesColor.r, Options.CompassCustomDegreesColor.g, Options.CompassCustomDegreesColor.b, Options.CompassCustomDegreesColor.a)
-        end
-        ticks["BOTTOM" .. i]:SetSize(2, 4)
-        ticks["BOTTOM" .. i]:SetPoint("BOTTOM", HUD.compassCustom.mask, "BOTTOM", i / 720 * textureWidth, -2)
-        ticks["BOTTOM" .. i]:SetParent(HUD.compassCustom.mask)
-        ticks["BOTTOM" .. i]:SetShown((Options.CompassCustomTicksPosition == "BOTTOM") or (Options.CompassCustomTicksPosition == "BOTH"))
     end
 
     HUD.compassTexture:SetShown(not Options.UseCustomCompass)

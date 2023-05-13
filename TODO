@@ -1,3 +1,4 @@
 - add icon on side if pionter is not visible
+- fix strata
  ? icon size according to distance
- ? more compass faces, icons (create in lua???)
+ ? more compass faces, icons
