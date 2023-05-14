@@ -833,9 +833,6 @@ local function setQuestsIcons()
 	for questID, quest in pairs(questPointsTable) do
 		if (questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track) then
 			local angle = getPlayerFacingAngle(questID)
-            Debug:Info("A")
-            Debug:Info(nil)
-            Debug:Info(nil, "B")
 			if quest.frame and angle then
                 local visible = math.rad(Options.Degrees)/2
 				if angle < visible and angle > -visible then
