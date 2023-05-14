@@ -25,6 +25,9 @@ function DEBUG:Info(name, ...)
         name = nil
     end
     if next({...}) == nil then
+        if name then
+            table.insert(values, 1, name)
+        end
         name = nil
     end
     self:Table("values", values)
