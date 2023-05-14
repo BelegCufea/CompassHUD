@@ -50,6 +50,8 @@ local questTextures = {
 	[worldQuest] = "Interface\\MINIMAP\\SuperTrackerArrow",
 	[0] = "Interface\\MINIMAP\\MiniMap-QuestArrow",
 	[1] = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
+	[2] = "Interface\\MINIMAP\\MiniMapArrow",
+	[3] = "Interface\\MINIMAP\\ROTATING-MINIMAPARROW",
 }
 
 local ADJ_FACTOR = 1 / math.rad(720)
@@ -76,6 +78,7 @@ Addon.Defaults = {
         Background      = 'Blizzard Tooltip',
         BackgroundColor = {r = 1, g = 1, b = 1, a = 1},
         PointerTexture = [[Interface\MainMenuBar\UI-ExhaustionTickNormal]],
+        PointerStay = true,
         UseCustomCompass = true,
         CompassTextureTexture = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\CompassHUD]],
         CompassCustomMainVisible = true,
@@ -131,6 +134,13 @@ Addon.Options = {
                     name = "Lock compass",
                     width = "full",
                     order = 20,
+                },
+                PointerStay = {
+                    type = "toggle",
+                    name = "Pointers stays on HUD",
+                    desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows and remain positioned at the edge of the HUD.",
+                    width = "full",
+                    order = 25,
                 },
                 Interval = {
                     type = "range",
@@ -776,7 +786,7 @@ local function createQuestIcon(questID, questType)
 	questPointer:SetPoint("CENTER");
 	questPointer.texture = questPointer:CreateTexture(ADDON_NAME..questID.."Texture")
 	questPointer.texture:SetAllPoints(questPointer)
-    local texture = questTextures[questType] or questTextures[1]
+    local texture = questTextures[questType] or questTextures[3]
 	questPointer.texture:SetTexture(texture)
 	questPointer:Hide()
     if questID > 0 then
@@ -794,6 +804,7 @@ local function createQuestIcon(questID, questType)
     local distanceTextPosition = 4
     local timeTextPosition = -10
     if questPointer.position + (textureHeight / 2) > 0 then
+        questPointer.flipped = true
         questPointer.texture:SetTexCoord(0, 1, 1, 0)
         relativePoint = "TOP"
         distanceTextPosition = 4 + textureHeight
@@ -825,12 +836,17 @@ local function setQuestsIcons()
 			if quest.frame and angle then
                 local visible = math.rad(Options.Degrees)/2
 				if angle < visible and angle > -visible then
-                    local position = texturePosition * angle
-					quest.frame:SetPoint("CENTER", HUD, "CENTER", position, quest.frame.position);
-					quest.frame:Show()
-				else
-					quest.frame:Hide()
-				end
+                    quest.frame.texture:SetRotation(0)
+                    quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * angle, quest.frame.position)
+                    quest.frame:Show()
+                elseif Options.PointerStay then
+                    local side = math.abs(angle)/angle
+                    quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
+                    quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * side * visible, quest.frame.position)
+                    quest.frame:Show()
+                else
+                    quest.frame:Hide()
+                end
 			end
 		else
             if quest.frame then

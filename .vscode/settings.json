@@ -58,6 +58,7 @@
         "CompactUnitFrame_UpdateHealthBorder",
         "CompactUnitFrame_UpdateHealPrediction",
         "CompactUnitFrame_UpdateSelectionHighlight",
-        "YOU"
+        "YOU",
+        "TRACKING"
     ]
 }
