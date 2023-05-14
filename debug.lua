@@ -16,30 +16,32 @@ function DEBUG:Print(...)
     end
 end
 
-function DEBUG:Info(...)
+function DEBUG:Info(name, ...)
     if not Addon.db.profile.Debug then return end
 
-    local numParams = select("#", ...)
-    if numParams == 0 then return end
-    local name
-    if numParams > 1 then name = select(numParams, ...) end
-
     local values = {...}
-    local str = ""
-    local lastParam = numParams - 1 + (((numParams == 1) and 1) or 0)
+    if type(name) ~= "string" then
+        table.insert(values, 1, name)
+        name = nil
+    end
+    if next({...}) == nil then
+        name = nil
+    end
+    self:Table("values", values)
 
-    for i = 1, lastParam do
+    local str = ""
+    for i = 1, #values do
         local value = values[i]
         if type(value) == "table" then
             str = str .. "[table_" .. i .."]"
-            self:Table(value, Const.METADATA.NAME .. "_" .. i)
+            self:Table(Const.METADATA.NAME .. "_" .. i, value)
         elseif type(value) == "function" then
             str = str .. "[function_" .. i .."]"
-            self:Table(value, Const.METADATA.NAME .. "_" .. i)
+            self:Table(Const.METADATA.NAME .. "_" .. i, value)
         else
             str = str .. tostring(value)
         end
-        if i < lastParam then
+        if i < #values then
             str = str .. ", "
         end
     end
@@ -51,7 +53,7 @@ function DEBUG:Info(...)
     end
 end
 
-function DEBUG:Table(value, name)
+function DEBUG:Table(name, value)
     if not Addon.db.profile.Debug then return end
     if not name then name = Const.METADATA.NAME end
 
