@@ -5,6 +5,7 @@
 ## Author: Cufea
 ## SavedVariables: CompassHUDDB
 ## DefaultState: enabled
+## X-Curse-Project-ID: 861865
 
 Libs\libs.xml
 
