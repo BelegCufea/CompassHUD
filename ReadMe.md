@@ -49,7 +49,6 @@ Locate the `CompassHUD` section within the `Options -> Addon` section.
 ## Known bugs (will hammer them eventually)
 
 - strata doesn't work
-- switching profiles generates lots of LUA errors, /reload needed
 
 ### TODO (maybe, if there is a demand)
 

@@ -1039,6 +1039,11 @@ function Addon:UpdateHUDSettings()
     updateHUD(true)
 end
 
+function Addon:RefreshConfig()
+    Options = self.db.profile
+    self:UpdateHUDSettings()
+end
+
 function Addon:OnEnable()
     self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
     self.Options.args.Profiles.order = 80
@@ -1064,6 +1069,10 @@ function Addon:OnEnable()
         self:SecureHook(TomTom, "SetCrazyArrow", tomtomSetCrazyArrow)
         self:SecureHook(TomTom, "RemoveWaypoint", tomtomRemoveWaypoint)
     end
+
+    self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
+    self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
+    self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
 end
 
 function Addon:OnDisable()
