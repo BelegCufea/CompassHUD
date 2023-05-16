@@ -1,7 +1,7 @@
 ## Interface: 100100
 ## Title: CompassHUD
 ## Notes: Simple compass HUD
-## Version: 1.0.0a
+## Version: 1.1.0-beta1
 ## Author: Cufea
 ## SavedVariables: CompassHUDDB
 ## DefaultState: enabled

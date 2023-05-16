@@ -18,7 +18,7 @@ I was inspired by [Compass](https://www.wowinterface.com/downloads/info14051-Com
 - Autamatically detects TomTom crazy arrow and adds a marker (on top)
 - Available configurable options are (T indicates it is also avaliable for texture HUD option):
 
-    *- setting backdound and border (T)*
+    *- setting backgound and border (T)*
 
     ![BackgroundBorder](https://i.imgur.com/fKY6J1S.png)
 
@@ -35,7 +35,7 @@ I was inspired by [Compass](https://www.wowinterface.com/downloads/info14051-Com
 
 ## Configuration
 
-Locate the `CompassHUD` section within the `Options -> Addon` section.
+Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 
 - On the `Settings` panel you can change options available for any kind of compass.
 

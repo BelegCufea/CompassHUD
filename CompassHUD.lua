@@ -12,7 +12,8 @@ local HBD             = LibStub("HereBeDragons-2.0")
 
 local GetPlayerFacing = GetPlayerFacing
 local GetQuestsOnMap = C_QuestLog.GetQuestsOnMap
-local GetQuestType = C_QuestLog.GetQuestType
+local GetLogIndexForQuestID = C_QuestLog.GetLogIndexForQuestID
+local GetQuestInfo = C_QuestLog.GetInfo
 local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
 local IsWorldQuest = C_QuestLog.IsWorldQuest
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
@@ -26,9 +27,6 @@ local Options
 local HUD
 local timer = 0
 local player = {x = 0, y = 0, angle = 0, instance = ""}
-local worldQuest = -50
-local mapPin = -100
-local tomTom = -200
 local tomTomActive
 local questPointsTable = {}
 local HBDmaps = {}
@@ -44,20 +42,52 @@ local directions = {
     [360] = {letter = "N" , main = true },
 }
 
-local questTextures = {
-	[tomTom] = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
-	[mapPin] = "Interface\\MINIMAP\\Minimap-Waypoint-MapPin-Tracked",
-	[worldQuest] = "Interface\\MINIMAP\\SuperTrackerArrow",
-	[0] = "Interface\\MINIMAP\\MiniMap-QuestArrow",
-	[1] = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
-	[2] = "Interface\\MINIMAP\\MiniMapArrow",
-	[3] = "Interface\\MINIMAP\\ROTATING-MINIMAPARROW",
-}
-
 local ADJ_FACTOR = 1 / math.rad(720)
 local textureWidth, textureHeight = 2048, 16
 local texturePosition = textureWidth * ADJ_FACTOR
 local adjCoord, currentFacing
+
+local questUnknown = -999
+local tomTom = -200
+local mapPin = -100
+local worldQuest = -50
+local questNormal = 0
+local questDaily = 1
+local questWeekly = 2
+
+local questPointerIdent = "pointer_"
+local questPointers = {
+	[tomTom] = {
+        name = "TomTom crazy arrow",
+        texture = "Interface\\addons\\TomTom\\Images\\MinimapArrow-Green",
+        textureScale = 1.35,
+        pointerOffset = -1.1,
+    },
+	[mapPin] = {
+        name = "User map pin",
+        texture = "Interface\\MINIMAP\\Minimap-Waypoint-MapPin-Tracked",
+    },
+	[worldQuest] = {
+        name = "World quest",
+        texture = "Interface\\MINIMAP\\SuperTrackerArrow",
+    },
+	[questNormal] = {
+        name = "Quest",
+        texture = "Interface\\MINIMAP\\MiniMap-QuestArrow",
+    },
+	[questDaily] = {
+        name = "Daily quest",
+        texture = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
+    },
+	[questWeekly] = {
+        name = "Weekly quest",
+        texture = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
+    },
+	[questUnknown] = {
+        name = "Unknown pointer",
+        texture = "Interface\\MINIMAP\\ROTATING-MINIMAPCORPSEARROW",
+    },
+}
 
 Addon.Defaults = {
     profile = {
@@ -549,6 +579,19 @@ Addon.Options = {
                 },
             },
         },
+        Pointers = {
+            type = "group",
+            order = 30,
+            name = "Pointers",
+            get = function(info)
+                return Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]]
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]] = value
+                Addon:UpdateHUDSettings()
+            end,
+            args = {},
+        },
     },
 }
 
@@ -778,16 +821,75 @@ local function questPointerSetTexts(frame, dt)
     end
 end
 
+local function getPointerType(questID, questType)
+    local index = questType or questUnknown
+    if questType < 0 then
+        return questPointerIdent .. index
+    end
+
+    local questIndex = GetLogIndexForQuestID(questID)
+    if not questIndex then return questPointerIdent .. questUnknown end
+
+    local questInfo = GetQuestInfo(questIndex)
+    if not questInfo then return questPointerIdent .. questUnknown end
+
+    return (questInfo.frequency and (questPointerIdent .. questInfo.frequency)) or questPointerIdent .. questUnknown
+end
+
+local function updateQuestIcon(questPointer)
+    local options = Options.Pointers[questPointer.pointerType]
+    questPointer.position = options.pointerOffset * textureHeight * -1
+    local size = textureHeight * 1.5 * options.textureScale
+    local scaleAdj = textureHeight * (options.textureScale - 1)
+    questPointer:SetSize(size, size)
+
+    local point = "TOP"
+    local relativePoint = "BOTTOM"
+    local distanceTextPosition = -options.distanceOffset + 4 + scaleAdj
+    local timeTextPosition = - ((options.showDistance and (options.fontSize * 1.2)) or 0) - options.ttaOffset + 4 + scaleAdj
+    questPointer.texture:SetTexCoord(0, 1, 0, 1)
+    questPointer.flipped = false
+    if questPointer.position > 0 then
+        questPointer.flipped = true
+        questPointer.texture:SetTexCoord(0, 1, 1, 0)
+        point = "BOTTOM"
+        relativePoint = "TOP"
+        distanceTextPosition = ((options.showTTA and (options.fontSize * 1.2)) or 0) + options.distanceOffset - 8 - scaleAdj
+        timeTextPosition = options.ttaOffset - 8 - scaleAdj
+    end
+
+    local font = LSM:Fetch("font", options.font)
+
+    questPointer.DistanceText:ClearAllPoints()
+    questPointer.DistanceText:SetPoint(point, questPointer, relativePoint, 0, distanceTextPosition)
+    if options.customFont then
+        questPointer.DistanceText:SetFont(font, options.fontSize, options.fontFlags)
+        questPointer.DistanceText:SetTextColor(options.fontColor.r, options.fontColor.g, options.fontColor.b, options.fontColor.a)
+    end
+    questPointer.DistanceText:SetShown(options.showDistance)
+
+    questPointer.TimeText:ClearAllPoints()
+    questPointer.TimeText:SetPoint(point, questPointer, relativePoint, 0, timeTextPosition)
+    if options.customFont then
+        questPointer.TimeText:SetFont(font, options.fontSize, options.fontFlags)
+        questPointer.TimeText:SetTextColor(options.fontColor.r, options.fontColor.g, options.fontColor.b, options.fontColor.a)
+    end
+    questPointer.TimeText:SetShown(options.showDistance)
+    questPointer.TimeText:SetShown(options.showTTA)
+end
+
 local function createQuestIcon(questID, questType)
+    local pointerType = getPointerType(questID, questType)
+    if not Options.Pointers[pointerType].enabled then return end
+
     local questPointer = CreateFrame("FRAME", ADDON_NAME..questID, HUD)
 	questPointer.questID = questID
-    questPointer.position = ((questID == tomTom) and textureHeight) or -textureHeight
-	questPointer:SetSize(textureHeight * 1.5, textureHeight * 1.5)
+    questPointer.pointerType = pointerType
+	questPointer:SetSize(textureHeight, textureHeight)
 	questPointer:SetPoint("CENTER");
 	questPointer.texture = questPointer:CreateTexture(ADDON_NAME..questID.."Texture")
 	questPointer.texture:SetAllPoints(questPointer)
-    local texture = questTextures[questType] or questTextures[3]
-	questPointer.texture:SetTexture(texture)
+	questPointer.texture:SetTexture(Options.Pointers[pointerType].texture)
 	questPointer:Hide()
     if questID > 0 then
         questPointer:SetScript("OnEvent", function(self, event)
@@ -800,27 +902,16 @@ local function createQuestIcon(questID, questType)
         questPointer:RegisterEvent("QUEST_LOG_UPDATE")
     end
 
-    local relativePoint = "BOTTOM"
-    local distanceTextPosition = 4
-    local timeTextPosition = -10
-    if questPointer.position + (textureHeight / 2) > 0 then
-        questPointer.flipped = true
-        questPointer.texture:SetTexCoord(0, 1, 1, 0)
-        relativePoint = "TOP"
-        distanceTextPosition = 4 + textureHeight
-        timeTextPosition = -10 + textureHeight
-    end
-
     questPointer.DistanceText = questPointer:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
     questPointer.DistanceText:SetJustifyV("TOP")
     questPointer.DistanceText:SetSize(0, 16)
-    questPointer.DistanceText:SetPoint("TOP", questPointer, relativePoint, 0, distanceTextPosition)
     questPointer.DistanceText:SetParent(questPointer)
     questPointer.TimeText = questPointer:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
     questPointer.TimeText:SetJustifyV("TOP")
     questPointer.TimeText:SetSize(0, 16)
-    questPointer.TimeText:SetPoint("TOP", questPointer, relativePoint, 0, timeTextPosition)
     questPointer.TimeText:SetParent(questPointer)
+
+    updateQuestIcon(questPointer)
 
     questPointer.elapsed = 0
     questPointer:SetScript("OnUpdate", questPointerSetTexts)
@@ -834,21 +925,25 @@ local function setQuestsIcons()
 		if (questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track) then
 			local angle = getPlayerFacingAngle(questID)
 			if quest.frame and angle then
-                local visible = math.rad(Options.Degrees)/2
-				if angle < visible and angle > -visible then
-                    quest.frame.texture:SetRotation(0)
-                    quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * angle, quest.frame.position)
-                    quest.frame:Show()
-                elseif Options.PointerStay then
-                    local side = math.abs(angle)/angle
-                    quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
-                    quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * side * visible, quest.frame.position)
-                    quest.frame:Show()
+                if Options.Pointers[quest.frame.pointerType].enabled then
+                    local visible = math.rad(Options.Degrees)/2
+                    if angle < visible and angle > -visible then
+                        quest.frame.texture:SetRotation(0)
+                        quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * angle, quest.frame.position)
+                        quest.frame:Show()
+                    elseif Options.PointerStay then
+                        local side = math.abs(angle)/angle
+                        quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
+                        quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * side * visible, quest.frame.position)
+                        quest.frame:Show()
+                    else
+                        quest.frame:Hide()
+                    end
                 else
                     quest.frame:Hide()
                 end
-			end
-		else
+            end
+        else
             if quest.frame then
 			    quest.frame:Hide()
             end
@@ -895,6 +990,7 @@ local function updateQuest(questID, x, y, uiMapID, questType)
 end
 
 local function tomtomSetCrazyArrow(self, uid, dist, title)
+    if not Options.Pointers[questPointerIdent .. tomTom].enabled then return end
     local questID = tomTom
     local questType = tomTom
     updateQuest(questID, uid[2], uid[3], uid[1], questType)
@@ -939,7 +1035,7 @@ local function OnEvent(event)
             end
         else
             _, x, y = QuestPOIGetIconInfo(questID)
-            questType = GetQuestType(questID)
+            questType = questNormal
             uiMapID = getMapId(questID)
         end
         if x and y and uiMapID then
@@ -1035,8 +1131,180 @@ function Addon:UpdateHUDSettings()
 
     updateCompassHUD()
     HUD.compassCustom:SetSize(width, height)
-
+    for _, quest in pairs(questPointsTable) do
+        if quest.frame then
+            updateQuestIcon(quest.frame)
+        end
+    end
     updateHUD(true)
+end
+
+function Addon:ConstructDefaultsAndOptions()
+    local pointersDefaults = {}
+    local pointersOptionsArgs = {}
+
+    for k, v in pairs(questPointers) do
+        -- defaults
+        pointersDefaults[questPointerIdent .. k] = {value = k}
+        pointersDefaults[questPointerIdent .. k].name = v.name
+        pointersDefaults[questPointerIdent .. k].texture = v.texture
+        pointersDefaults[questPointerIdent .. k].textureScale = v.textureScale or 1
+        pointersDefaults[questPointerIdent .. k].pointerOffset = v.pointerOffset or 1
+        pointersDefaults[questPointerIdent .. k].enabled = v.enabled or true
+        pointersDefaults[questPointerIdent .. k].showDistance = v.showDistance or true
+        pointersDefaults[questPointerIdent .. k].showTTA = v.showTTA or true
+        pointersDefaults[questPointerIdent .. k].distanceOffset = v.distanceOffset or 0
+        pointersDefaults[questPointerIdent .. k].ttaOffset = v.ttaOffset or 0
+        pointersDefaults[questPointerIdent .. k].customFont = v.customFont or false
+        pointersDefaults[questPointerIdent .. k].font = v.font or "Friz Quadrata TT"
+        pointersDefaults[questPointerIdent .. k].fontSize = v.fontSize or 12
+        pointersDefaults[questPointerIdent .. k].fontColor = v.fontColor or {r = 255/255, g = 215/255, b = 0/255, a = 1}
+        pointersDefaults[questPointerIdent .. k].fontFlags = v.fontFlags or ""
+
+        -- options
+        pointersOptionsArgs[questPointerIdent .. k] = {
+            type = "group",
+            order = k,
+            name = "|T" .. v.texture .. ":24|t " .. v.name,
+            args = {}
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.enabled = {
+            type = "toggle",
+            order = 0,
+            name = "Enabled",
+            width = "full",
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.header1 = {
+            type = "header",
+            order = 9,
+            name = "Pointer adujstments"
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.pointerOffset = {
+            type = "range",
+            order = 10,
+            name = "Pointer vertical adjustment",
+            min = -5,
+            max = 5,
+            step = 0.01,
+            isPercent = true,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.textureScale = {
+            type = "range",
+            order = 15,
+            name = "Pointer arrow scale",
+            min = 0,
+            max = 3,
+            step = 0.01,
+            isPercent = true,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.header2 = {
+            type = "header",
+            order = 19,
+            name = "Distance text"
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.showDistance = {
+            type = "toggle",
+            order = 20,
+            name = "Show",
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.distanceOffset = {
+            type = "range",
+            order = 30,
+            name = "Vertical adjustment",
+            min = -20,
+            max = 20,
+            step = 0.5,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.header3 = {
+            type = "header",
+            order = 39,
+            name = "Time to arrive"
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.showTTA = {
+            type = "toggle",
+            order = 40,
+            name = "Show",
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.ttaOffset = {
+            type = "range",
+            order = 50,
+            name = "Vertical adjustment",
+            min = -20,
+            max = 20,
+            step = 0.5,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.header4 = {
+            type = "header",
+            order = 54,
+            name = "Font"
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.customFont = {
+            type = "toggle",
+            order = 55,
+            name = "Use custom font",
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.font = {
+            type = "select",
+            order = 60,
+            name = "Font",
+            width = 1,
+            dialogControl = "LSM30_Font",
+            values = AceGUIWidgetLSMlists['font'],
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].customFont end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.fontSize = {
+            type = "range",
+            order = 70,
+            name = "Size",
+            width = 3/4,
+            min = 2,
+            max = 36,
+            step = 0.5,
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].customFont end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.fontFlags = {
+            type = "select",
+            order = 80,
+            name = "Outline",
+            width = 3/4,
+            values = {
+                [""] = "None",
+                ["OUTLINE"] = "Normal",
+                ["THICKOUTLINE"] = "Thick",
+            },
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].customFont end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.fontColor = {
+            type = "color",
+            order = 90,
+            name = "Color",
+            width = 1/2,
+            hasAlpha = true,
+            get = function(info)
+                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                return color.r, color.g, color.b, color.a
+            end,
+            set = function (info, r, g, b, a)
+                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                color.r = r
+                color.g = g
+                color.b = b
+                color.a = a
+                Addon:UpdateHUDSettings()
+            end,
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].customFont end,
+        }
+    end
+
+    self.Defaults.profile.Pointers = pointersDefaults
+
+    self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
+
+    self.Options.args.Pointers.args = pointersOptionsArgs
+    self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
+    self.Options.args.Profiles.order = 80
+    AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
+    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME)
 end
 
 function Addon:RefreshConfig()
@@ -1045,11 +1313,6 @@ function Addon:RefreshConfig()
 end
 
 function Addon:OnEnable()
-    self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
-    self.Options.args.Profiles.order = 80
-    AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
-    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME)
-
     HBDmaps = HBD:GetAllMapIDs()
     table.sort(HBDmaps, function(a, b) return a > b end)
     self:UpdateHUDSettings()
@@ -1080,7 +1343,7 @@ function Addon:OnDisable()
 end
 
 function Addon:OnInitialize()
-    self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
+    Addon:ConstructDefaultsAndOptions()
     Options = self.db.profile
     createHUD()
 end
