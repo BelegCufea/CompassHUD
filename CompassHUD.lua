@@ -222,6 +222,7 @@ Addon.Options = {
                         ["TOOLTIP"] = "9 - TOOLTIP",
                     },
                     style = "dropdown",
+                    hidden = true,
                 },
                 Level  = {
                     type = "range",
@@ -233,6 +234,7 @@ Addon.Options = {
                     softMax = 1000,
                     step = 1,
                     bigStep = 10,
+                    hidden = true,
                 },
                 Transparency = {
                     type = "range",
@@ -246,6 +248,7 @@ Addon.Options = {
                     bigStep = 0.05,
                     isPercent = true,
                 },
+                Blank0 = { type = "description", order = 89, fontSize = "small",name = "",width = "full", },
                 Border = {
                     type = "select",
                     order = 90,

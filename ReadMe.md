@@ -15,20 +15,22 @@ I was inspired by [Compass](https://www.wowinterface.com/downloads/info14051-Com
 - Compass strip can be moved, resized and centered on screen.
 - You can define update rate.
 - You can choose either predefined texture for main HUD or define your own.
-- Autamatically detects TomTom crazy arrow and adds a marker (on top)
-- Available configurable options are (T indicates it is also avaliable for texture HUD option):
+- Autamatically detects TomTom crazy arrow and allows to set pointer on the HUD.
+- Available configurable options are:
 
-    *- setting backgound and border (T)*
+    *- setting background and border*
 
     ![BackgroundBorder](https://i.imgur.com/fKY6J1S.png)
 
-    *- setting compass HUD FOV up to 360 (T)*
+    *- setting compass HUD FOV up to 360*
 
     ![FOV](https://i.imgur.com/Q9HEzRG.png)
 
-    *- allowing quest markers to stay on the edge of compass HUD even when they go beyond the boundaries (T)*
+    *- allowing quest markers to stay on the edge of compass HUD even when they go beyond the boundaries*
 
     ![QuestOutOfBoundery](https://i.imgur.com/jzSYOS6.png)
+
+    *- setting visibility and several other options for different types of pointers*
 
     *- setting font, visibilty and colors for cardinal and ordinal directions and degrees for custom HUD*
 
@@ -37,13 +39,17 @@ I was inspired by [Compass](https://www.wowinterface.com/downloads/info14051-Com
 
 Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 
-- On the `Settings` panel you can change options available for any kind of compass.
+- On the `Settings` panel you can change some general options.
 
 ![Settings](https://i.imgur.com/3c6xno9.png)
 
 - On the `Compass HUD settings` panel you can choose if you want to construct your own custom HUD or use standard texture.
 
 ![Custom](https://i.imgur.com/GSMDwDR.png)
+
+- On the `Pointers` panel you can set visiblity and several other settings for different types of pointers.
+
+![Pointers](https://i.imgur.com/3dMQpyR.png)
 
 
 ## Known bugs (will hammer them eventually)
@@ -53,7 +59,6 @@ Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 ### TODO (maybe, if there is a demand)
 
 - More textures (*You can use your own. It has to be 2048x16, has 720 degrees staring from N and be in BLP or TGA fromat. Just put it in CompassHUD\Media and in SavedVariables put* CompassTextureTexture = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\]] .. {your texture name}, )
-- Customize pointers (hide some types, distance, TTA ...)
 
 
 ## Issues and suggestions

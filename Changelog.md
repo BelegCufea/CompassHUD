@@ -1,7 +1,7 @@
-# v1.1.0-beta1 ()
+# v1.1.0-beta1 (16.5.2023)
 
 ## New
-- Options for modifying the behavior of quest pointers.
+- Options for modifying visibility and behavior of quest pointers.
 
 # v1.0.0a (15.5.2023)
 
