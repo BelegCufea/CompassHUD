@@ -1,7 +1,9 @@
-# v1.1.0
+# v1.1.0 (17.5.2023)
 
 ## New
-- Options for modifying visibility and behavior of quest pointers.
+- On the `Pointers` panel you can set visiblity and several other settings for different types of pointers.
+
+![Pointers](https://i.imgur.com/Xh1lwo5.png)
 
 # *v1.1.0-beta1 (16.5.2023)*
 

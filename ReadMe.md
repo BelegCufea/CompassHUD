@@ -49,7 +49,7 @@ Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 
 - On the `Pointers` panel you can set visiblity and several other settings for different types of pointers.
 
-![Pointers](https://i.imgur.com/3dMQpyR.png)
+![Pointers](https://i.imgur.com/Xh1lwo5.png)
 
 
 ## Known bugs (will hammer them eventually)
