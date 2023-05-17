@@ -59,6 +59,8 @@
         "CompactUnitFrame_UpdateHealPrediction",
         "CompactUnitFrame_UpdateSelectionHighlight",
         "YOU",
-        "TRACKING"
+        "TRACKING",
+        "StaticPopupDialogs",
+        "StaticPopup_Show"
     ]
 }

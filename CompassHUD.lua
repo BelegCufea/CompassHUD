@@ -10,6 +10,16 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local LSM             = LibStub("LibSharedMedia-3.0")
 local HBD             = LibStub("HereBeDragons-2.0")
 
+local copyPointersDialogName = ADDON_NAME .. "_copyPointers"
+StaticPopupDialogs[copyPointersDialogName] = {
+    text = "Do you want to proceed?",
+    button1 = "Yes",
+    button2 = "No",
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+}
+
 local GetPlayerFacing = GetPlayerFacing
 local GetQuestsOnMap = C_QuestLog.GetQuestsOnMap
 local GetLogIndexForQuestID = C_QuestLog.GetLogIndexForQuestID
@@ -846,10 +856,31 @@ local function updateQuestIcon(questPointer)
     local scaleAdj = textureHeight * (options.textureScale - 1)
     questPointer:SetSize(size, size)
 
+    local gameFontNormal = { fontColor = {}}
+    gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
+    gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
+
+    if options.distanceCustomFont then
+        local font = LSM:Fetch("font", options.distanceFont)
+        questPointer.DistanceText:SetFont(font, options.distanceFontSize, options.distanceFontFlags)
+        questPointer.DistanceText:SetTextColor(options.distanceFontColor.r, options.distanceFontColor.g, options.distanceFontColor.b, options.distanceFontColor.a)
+    else
+        questPointer.DistanceText:SetFont(gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags)
+        questPointer.DistanceText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
+    end
+    if options.ttaCustomFont then
+        local font = LSM:Fetch("font", options.ttaFont)
+        questPointer.TimeText:SetFont(font, options.ttaFontSize, options.ttaFontFlags)
+        questPointer.TimeText:SetTextColor(options.ttaFontColor.r, options.ttaFontColor.g, options.ttaFontColor.b, options.ttaFontColor.a)
+    else
+        questPointer.TimeText:SetFont(gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags)
+        questPointer.TimeText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
+    end
+
     local point = "TOP"
     local relativePoint = "BOTTOM"
     local distanceTextPosition = -options.distanceOffset + 4 + scaleAdj
-    local timeTextPosition = - ((options.showDistance and (options.fontSize * 1.2)) or 0) - options.ttaOffset + 4 + scaleAdj
+    local timeTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2)) or 0) - options.ttaOffset + 4 + scaleAdj
     questPointer.texture:SetTexCoord(0, 1, 0, 1)
     questPointer.flipped = false
     if questPointer.position > 0 then
@@ -857,27 +888,16 @@ local function updateQuestIcon(questPointer)
         questPointer.texture:SetTexCoord(0, 1, 1, 0)
         point = "BOTTOM"
         relativePoint = "TOP"
-        distanceTextPosition = ((options.showTTA and (options.fontSize * 1.2)) or 0) + options.distanceOffset - 8 - scaleAdj
+        distanceTextPosition = ((options.showTTA and (options.ttaFontSize * 1.2)) or 0) + options.distanceOffset - 8 - scaleAdj
         timeTextPosition = options.ttaOffset - 8 - scaleAdj
     end
 
-    local font = LSM:Fetch("font", options.font)
-
     questPointer.DistanceText:ClearAllPoints()
     questPointer.DistanceText:SetPoint(point, questPointer, relativePoint, 0, distanceTextPosition)
-    if options.customFont then
-        questPointer.DistanceText:SetFont(font, options.fontSize, options.fontFlags)
-        questPointer.DistanceText:SetTextColor(options.fontColor.r, options.fontColor.g, options.fontColor.b, options.fontColor.a)
-    end
-    questPointer.DistanceText:SetShown(options.showDistance)
-
     questPointer.TimeText:ClearAllPoints()
     questPointer.TimeText:SetPoint(point, questPointer, relativePoint, 0, timeTextPosition)
-    if options.customFont then
-        questPointer.TimeText:SetFont(font, options.fontSize, options.fontFlags)
-        questPointer.TimeText:SetTextColor(options.fontColor.r, options.fontColor.g, options.fontColor.b, options.fontColor.a)
-    end
-    questPointer.TimeText:SetShown(options.showDistance)
+
+    questPointer.DistanceText:SetShown(options.showDistance)
     questPointer.TimeText:SetShown(options.showTTA)
 end
 
@@ -1057,6 +1077,28 @@ local function OnEvent(event)
     setQuestsIcons()
 end
 
+function Addon:GetPointerTypes()
+    local pointerTypes = {}
+    for k, v in pairs(Options.Pointers) do
+        pointerTypes[k] = v.name
+    end
+
+    return pointerTypes
+end
+
+function Addon:CopyPointerSettings(from, to)
+    local dialog = StaticPopupDialogs[copyPointersDialogName]
+    dialog.OnAccept =  function ()
+        for k, v in pairs(Options.Pointers[from]) do
+            if k ~= "name" and k ~= "value" and k ~= "texture" then
+                Options.Pointers[to][k] = v
+            end
+        end
+        Addon:UpdateHUDSettings()
+    end
+    StaticPopup_Show(copyPointersDialogName)
+end
+
 function Addon:ResetPosition(resetX, resetY)
     if resetX then
         Options.PositionX = (UIParent:GetWidth() / Options.Scale - HUD:GetWidth()) / 2
@@ -1158,11 +1200,16 @@ function Addon:ConstructDefaultsAndOptions()
         pointersDefaults[questPointerIdent .. k].showTTA = v.showTTA or true
         pointersDefaults[questPointerIdent .. k].distanceOffset = v.distanceOffset or 0
         pointersDefaults[questPointerIdent .. k].ttaOffset = v.ttaOffset or 0
-        pointersDefaults[questPointerIdent .. k].customFont = v.customFont or false
-        pointersDefaults[questPointerIdent .. k].font = v.font or "Friz Quadrata TT"
-        pointersDefaults[questPointerIdent .. k].fontSize = v.fontSize or 12
-        pointersDefaults[questPointerIdent .. k].fontColor = v.fontColor or {r = 255/255, g = 215/255, b = 0/255, a = 1}
-        pointersDefaults[questPointerIdent .. k].fontFlags = v.fontFlags or ""
+        pointersDefaults[questPointerIdent .. k].distanceCustomFont = v.distanceCustomFont or false
+        pointersDefaults[questPointerIdent .. k].distanceFont = v.distanceFont or "Friz Quadrata TT"
+        pointersDefaults[questPointerIdent .. k].distanceFontSize = v.distanceFontSize or 12
+        pointersDefaults[questPointerIdent .. k].distanceFontColor = v.distanceFontColor or {r = 255/255, g = 215/255, b = 0/255, a = 1}
+        pointersDefaults[questPointerIdent .. k].distanceFontFlags = v.distanceFontFlags or ""
+        pointersDefaults[questPointerIdent .. k].ttaCustomFont = v.ttaCustomFont or false
+        pointersDefaults[questPointerIdent .. k].ttaFont = v.ttaFont or "Friz Quadrata TT"
+        pointersDefaults[questPointerIdent .. k].ttaFontSize = v.ttaFontSize or 12
+        pointersDefaults[questPointerIdent .. k].ttaFontColor = v.ttaFontColor or {r = 255/255, g = 215/255, b = 0/255, a = 1}
+        pointersDefaults[questPointerIdent .. k].ttaFontFlags = v.ttaFontFlags or ""
 
         -- options
         pointersOptionsArgs[questPointerIdent .. k] = {
@@ -1175,7 +1222,18 @@ function Addon:ConstructDefaultsAndOptions()
             type = "toggle",
             order = 0,
             name = "Enabled",
-            width = "full",
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.copyFrom = {
+            type = "select",
+            order = 5,
+            name = "Copy setting from",
+            values = function() return Addon:GetPointerTypes() end,
+            get = function(info)
+                return ""
+            end,
+            set = function(info, value)
+                Addon:CopyPointerSettings(value, info[#info-1])
+            end
         }
         pointersOptionsArgs[questPointerIdent .. k].args.header1 = {
             type = "header",
@@ -1218,56 +1276,33 @@ function Addon:ConstructDefaultsAndOptions()
             max = 20,
             step = 0.5,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.header3 = {
-            type = "header",
-            order = 39,
-            name = "Time to arrive"
-        }
-        pointersOptionsArgs[questPointerIdent .. k].args.showTTA = {
+        pointersOptionsArgs[questPointerIdent .. k].args.distanceCustomFont = {
             type = "toggle",
             order = 40,
-            name = "Show",
-        }
-        pointersOptionsArgs[questPointerIdent .. k].args.ttaOffset = {
-            type = "range",
-            order = 50,
-            name = "Vertical adjustment",
-            min = -20,
-            max = 20,
-            step = 0.5,
-        }
-        pointersOptionsArgs[questPointerIdent .. k].args.header4 = {
-            type = "header",
-            order = 54,
-            name = "Font"
-        }
-        pointersOptionsArgs[questPointerIdent .. k].args.customFont = {
-            type = "toggle",
-            order = 55,
             name = "Use custom font",
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.font = {
+        pointersOptionsArgs[questPointerIdent .. k].args.distanceFont = {
             type = "select",
-            order = 60,
+            order = 50,
             name = "Font",
             width = 1,
             dialogControl = "LSM30_Font",
             values = AceGUIWidgetLSMlists['font'],
-            disabled = function() return not Options.Pointers[questPointerIdent .. k].customFont end,
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].distanceCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.fontSize = {
+        pointersOptionsArgs[questPointerIdent .. k].args.distanceFontSize = {
             type = "range",
-            order = 70,
+            order = 60,
             name = "Size",
             width = 3/4,
             min = 2,
             max = 36,
             step = 0.5,
-            disabled = function() return not Options.Pointers[questPointerIdent .. k].customFont end,
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].distanceCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.fontFlags = {
+        pointersOptionsArgs[questPointerIdent .. k].args.distanceFontFlags = {
             type = "select",
-            order = 80,
+            order = 70,
             name = "Outline",
             width = 3/4,
             values = {
@@ -1275,11 +1310,11 @@ function Addon:ConstructDefaultsAndOptions()
                 ["OUTLINE"] = "Normal",
                 ["THICKOUTLINE"] = "Thick",
             },
-            disabled = function() return not Options.Pointers[questPointerIdent .. k].customFont end,
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].distanceCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.fontColor = {
+        pointersOptionsArgs[questPointerIdent .. k].args.distanceFontColor = {
             type = "color",
-            order = 90,
+            order = 80,
             name = "Color",
             width = 1/2,
             hasAlpha = true,
@@ -1295,7 +1330,81 @@ function Addon:ConstructDefaultsAndOptions()
                 color.a = a
                 Addon:UpdateHUDSettings()
             end,
-            disabled = function() return not Options.Pointers[questPointerIdent .. k].customFont end,
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].distanceCustomFont end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.header3 = {
+            type = "header",
+            order = 89,
+            name = "Time to arrive"
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.showTTA = {
+            type = "toggle",
+            order = 90,
+            name = "Show",
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.ttaOffset = {
+            type = "range",
+            order = 100,
+            name = "Vertical adjustment",
+            min = -20,
+            max = 20,
+            step = 0.5,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.ttaCustomFont = {
+            type = "toggle",
+            order = 110,
+            name = "Use custom font",
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.ttaFont = {
+            type = "select",
+            order = 120,
+            name = "Font",
+            width = 1,
+            dialogControl = "LSM30_Font",
+            values = AceGUIWidgetLSMlists['font'],
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].ttaCustomFont end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.ttaFontSize = {
+            type = "range",
+            order = 130,
+            name = "Size",
+            width = 3/4,
+            min = 2,
+            max = 36,
+            step = 0.5,
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].ttaCustomFont end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.ttaFontFlags = {
+            type = "select",
+            order = 140,
+            name = "Outline",
+            width = 3/4,
+            values = {
+                [""] = "None",
+                ["OUTLINE"] = "Normal",
+                ["THICKOUTLINE"] = "Thick",
+            },
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].ttaCustomFont end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.ttaFontColor = {
+            type = "color",
+            order = 150,
+            name = "Color",
+            width = 1/2,
+            hasAlpha = true,
+            get = function(info)
+                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                return color.r, color.g, color.b, color.a
+            end,
+            set = function (info, r, g, b, a)
+                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                color.r = r
+                color.g = g
+                color.b = b
+                color.a = a
+                Addon:UpdateHUDSettings()
+            end,
+            disabled = function() return not Options.Pointers[questPointerIdent .. k].ttaCustomFont end,
         }
     end
 
