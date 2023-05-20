@@ -61,6 +61,16 @@
         "YOU",
         "TRACKING",
         "StaticPopupDialogs",
-        "StaticPopup_Show"
+        "StaticPopup_Show",
+        "SettingsPanel",
+        "ReloadUI",
+        "EditModeManagerFrame",
+        "TRACKER_HEADER_DUNGEON",
+        "ZONE",
+        "DUNGEONS_BUTTON",
+        "CHALLENGE_MODE",
+        "TRACKER_HEADER_SCENARIO",
+        "UNLOCK",
+        "TRACKER_HEADER_PROVINGGROUNDS"
     ]
 }

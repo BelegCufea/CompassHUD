@@ -145,6 +145,26 @@ Addon.Defaults = {
     },
 }
 
+local strataLevels = {
+    "BACKGROUND",
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+    "DIALOG",
+    "FULLSCREEN",
+    "FULLSCREEN_DIALOG",
+    "TOOLTIP",
+}
+
+local function getStrateLevels()
+    local values = {}
+    for i, v in ipairs(strataLevels) do
+        values[v] = i .. " - " .. v
+    end
+    Debug:Info("strataOptions", values)
+    return values
+end
+
 Addon.Options = {
     type = "group",
     name = Const.METADATA.NAME,
@@ -220,19 +240,11 @@ Addon.Options = {
                     type = "select",
                     order = 60,
                     name = "Strata",
-                    values = {
-                        ["WORLD"] = "1 - WORLD",
-                        ["BACKGROUND"] = "2 - BACKGROUND",
-                        ["LOW"] = "3 - LOW",
-                        ["MEDIUM"] = "4 - MEDIUM",
-                        ["HIGH"] = "5 - HIGH",
-                        ["DIALOG"] = "6 - DIALOG",
-                        ["FULLSCREEN"] = "7 - FULLSCREEN",
-                        ["FULLSCREEN_DIALOG"] = "8 - FULLSCREEN_DIALOG",
-                        ["TOOLTIP"] = "9 - TOOLTIP",
-                    },
+                    values = function()
+                        return getStrateLevels()
+                    end,
+                    sorting = strataLevels,
                     style = "dropdown",
-                    hidden = true,
                 },
                 Level  = {
                     type = "range",
@@ -244,7 +256,6 @@ Addon.Options = {
                     softMax = 1000,
                     step = 1,
                     bigStep = 10,
-                    hidden = true,
                 },
                 Transparency = {
                     type = "range",
@@ -989,7 +1000,7 @@ local function updateHUD(force)
     setQuestsIcons()
 end
 
-local function OnUpdate(_, elapsed)
+local function onUpdate(_, elapsed)
     if player.instance ~= "none" then return end
 
     timer = timer + elapsed
@@ -1035,7 +1046,7 @@ local function OnEvent(event)
         player.instance = instanceType
         if player.instance == "none" then
             HUD:Show()
-            HUD:SetScript('OnUpdate', OnUpdate)
+            HUD:SetScript('OnUpdate', onUpdate)
         else
             HUD:Hide()
             HUD:SetScript('OnUpdate',nil)
@@ -1428,7 +1439,7 @@ function Addon:OnEnable()
     HBDmaps = HBD:GetAllMapIDs()
     table.sort(HBDmaps, function(a, b) return a > b end)
     self:UpdateHUDSettings()
-    HUD:SetScript('OnUpdate', OnUpdate)
+    HUD:SetScript('OnUpdate', onUpdate)
 
     self:RegisterEvent("PLAYER_ENTERING_WORLD", OnEvent)
     self:RegisterEvent("ZONE_CHANGED", OnEvent)
