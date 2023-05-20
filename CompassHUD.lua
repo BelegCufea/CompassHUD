@@ -119,6 +119,10 @@ Addon.Defaults = {
         BackgroundColor = {r = 1, g = 1, b = 1, a = 1},
         PointerTexture = [[Interface\MainMenuBar\UI-ExhaustionTickNormal]],
         PointerStay = true,
+        Line = '',
+        LineThickness = 1,
+        LinePosition = 0,
+        LineColor = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         UseCustomCompass = true,
         CompassTextureTexture = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\CompassHUD]],
         CompassCustomMainVisible = true,
@@ -161,7 +165,6 @@ local function getStrateLevels()
     for i, v in ipairs(strataLevels) do
         values[v] = i .. " - " .. v
     end
-    Debug:Info("strataOptions", values)
     return values
 end
 
@@ -324,17 +327,69 @@ Addon.Options = {
                         Addon:UpdateHUDSettings()
                     end,
                 },
-                Blank1 = { type = "description", order = 500, fontSize = "small",name = "",width = "full", },
+                LineGroup = {
+                    type = "group",
+                    order = 200,
+                    name = "Edge line",
+                    inline = true,
+                    args = {
+                        Line = {
+                            type = "select",
+                            order = 210,
+                            name = "Position",
+                            values = {
+                                [""] = "none",
+                                ["BOTTOM"] = "on the bottom",
+                                ["TOP"] = "on the top",
+                                ["BOTH"] = "both",
+                            },
+                        },
+                        LineThickness = {
+                            type = "range",
+                            order = 220,
+                            name = "Thickness",
+                            min = 1,
+                            max = 24,
+                            step = 0.5,
+                        },
+                        LinePosition = {
+                            type = "range",
+                            order = 230,
+                            name = "Vertical adujustment",
+                            min = -16,
+                            max = 16,
+                            step = 0.5,
+                        },
+                        LineColor = {
+                            type = "color",
+                            order = 240,
+                            name = "Color",
+                            width = 1/2,
+                            hasAlpha = true,
+                            get = function(info)
+                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Options[info[#info]].r = r
+                                Options[info[#info]].g = g
+                                Options[info[#info]].b = b
+                                Options[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                    },
+                },
+                --Blank2 = { type = "description", order = 500, fontSize = "small",name = "",width = "full", },
                 Center = {
                     type = "execute",
                     order = 510,
-                    name = "Center horizontaly",
+                    name = "Center HUD horizontaly",
                     func = function() Addon:ResetPosition(true, false) end
                 },
                 Reset = {
                     type = "execute",
                     order = 520,
-                    name = "Reset position",
+                    name = "Reset HUD position",
                     func = function() Addon:ResetPosition(true, true) end
                 },
                 Debug = {
@@ -674,6 +729,24 @@ local function updateCompassHUD()
     HUD.compassCustom.mask = HUD.compassCustom.mask or CreateFrame('Frame', ADDON_NAME .. '_directions', HUD.compassCustom)
     HUD.compassCustom.mask:SetSize(textureWidth, textureHeight)
     HUD.compassCustom.mask:SetPoint('TOP', HUD.compassCustom, 'TOP', 0, 0)
+
+    -- top edge line
+    HUD.edgeTOP = HUD.edgeTOP or HUD:CreateTexture(nil, "OVERLAY")
+    HUD.edgeTOP:SetColorTexture(Options.LineColor.r, Options.LineColor.g, Options.LineColor.b, Options.LineColor.a)
+    HUD.edgeTOP:SetHeight(Options.LineThickness)
+    HUD.edgeTOP:ClearAllPoints()
+    HUD.edgeTOP:SetPoint("BOTTOM", HUD, "TOP", 0, Options.LinePosition)
+    HUD.edgeTOP:SetWidth(HUD:GetWidth())
+    HUD.edgeTOP:SetShown(Options.Line == "TOP" or Options.Line == "BOTH")
+
+    -- bottom edge lines
+    HUD.edgeBOTTOM = HUD.edgeBOTTOM or HUD:CreateTexture(nil, "OVERLAY")
+    HUD.edgeBOTTOM:SetColorTexture(Options.LineColor.r, Options.LineColor.g, Options.LineColor.b, Options.LineColor.a)
+    HUD.edgeBOTTOM:SetHeight(Options.LineThickness)
+    HUD.edgeBOTTOM:ClearAllPoints()
+    HUD.edgeBOTTOM:SetPoint("TOP", HUD, "BOTTOM", 0, Options.LinePosition)
+    HUD.edgeBOTTOM:SetWidth(HUD:GetWidth())
+    HUD.edgeBOTTOM:SetShown(Options.Line == "BOTTOM" or Options.Line == "BOTH")
 
     local lettersMainFont = LSM:Fetch("font", Options.CompassCustomMainFont)
     local lettersSecondaryFont = LSM:Fetch("font", Options.CompassCustomSecondaryFont)

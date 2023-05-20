@@ -52,9 +52,9 @@ Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 ![Pointers](https://i.imgur.com/Xh1lwo5.png)
 
 
-## Known bugs (will hammer them eventually)
+## Known bugs
 
-- strata doesn't work
+*none at the moment (AFAIK)*
 
 ### TODO (maybe, if there is a demand)
 
