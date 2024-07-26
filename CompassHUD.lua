@@ -25,6 +25,7 @@ local GetQuestsOnMap = C_QuestLog.GetQuestsOnMap
 local GetLogIndexForQuestID = C_QuestLog.GetLogIndexForQuestID
 local GetQuestInfo = C_QuestLog.GetInfo
 local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
+local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
 local IsWorldQuest = C_QuestLog.IsWorldQuest
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
@@ -674,6 +675,12 @@ Addon.Options = {
     },
 }
 
+local function QuestPOIGetIconInfo(questID)
+    local mapID = GetMapForQuestPOIs()
+    local x, y = GetNextWaypointForMap(questID, mapID)
+    return mapID, x, y
+end
+
 local function getMapId(questID)
     local uiMapID = GetMapForQuestPOIs()
     if uiMapID and uiMapID > 0 then return uiMapID end
@@ -744,7 +751,7 @@ local function updateCompassHUD()
     HUD.edgeBOTTOM:SetColorTexture(Options.LineColor.r, Options.LineColor.g, Options.LineColor.b, Options.LineColor.a)
     HUD.edgeBOTTOM:SetHeight(Options.LineThickness)
     HUD.edgeBOTTOM:ClearAllPoints()
-    HUD.edgeBOTTOM:SetPoint("TOP", HUD, "BOTTOM", 0, Options.LinePosition)
+    HUD.edgeBOTTOM:SetPoint("TOP", HUD, "BOTTOM", 0, -Options.LinePosition)
     HUD.edgeBOTTOM:SetWidth(HUD:GetWidth())
     HUD.edgeBOTTOM:SetShown(Options.Line == "BOTTOM" or Options.Line == "BOTH")
 
@@ -1129,6 +1136,7 @@ local function OnEvent(event)
         questPointsTable[tomTom].track = false
     end
     local questID = GetSuperTrackedQuestID()
+    Debug:Info("questID", questID)
     if questID and questID > 0 then
         local x, y, questType, uiMapID
     	if IsWorldQuest(questID) then
@@ -1141,9 +1149,8 @@ local function OnEvent(event)
                 x, y = GetQuestLocation(questID, uiMapID)
             end
         else
-            _, x, y = QuestPOIGetIconInfo(questID)
+            uiMapID, x, y = QuestPOIGetIconInfo(questID)
             questType = questNormal
-            uiMapID = getMapId(questID)
         end
         if x and y and uiMapID then
             Debug:Info(((questType == worldQuest) and "WorldQuest") or "Quest")

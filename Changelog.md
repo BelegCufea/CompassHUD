@@ -1,3 +1,9 @@
+# v1.1.2 (23.5.2024)
+
+## Fix
+
+- Bottom edge line vertical positioning is moving the line other way
+
 # v1.1.1 (20.5.2023)
 
 ## New
