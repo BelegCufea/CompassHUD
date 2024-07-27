@@ -25,7 +25,6 @@ local GetQuestsOnMap = C_QuestLog.GetQuestsOnMap
 local GetLogIndexForQuestID = C_QuestLog.GetLogIndexForQuestID
 local GetQuestInfo = C_QuestLog.GetInfo
 local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
-local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
 local IsWorldQuest = C_QuestLog.IsWorldQuest
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
@@ -675,10 +674,18 @@ Addon.Options = {
     },
 }
 
-local function QuestPOIGetIconInfo(questID)
-    local mapID = GetMapForQuestPOIs()
-    local x, y = GetNextWaypointForMap(questID, mapID)
-    return mapID, x, y
+local function GetQuestPOIInfo(questID)
+    for _, mapId in ipairs(HBDmaps) do
+        local mapInfo = GetMapInfo(mapId)
+        if mapInfo.mapType == 3 then
+            local quests = GetQuestsOnMap(mapId)
+            for _, quest in pairs(quests) do
+            if quest.questID == questID then
+                    return mapId, quest.x, quest.y
+              end
+           end
+        end
+    end
 end
 
 local function getMapId(questID)
@@ -1008,7 +1015,7 @@ local function createQuestIcon(questID, questType)
     if questID > 0 then
         questPointer:SetScript("OnEvent", function(self, event)
             if event == "QUEST_LOG_UPDATE" then
-                if not select(2,QuestPOIGetIconInfo(self.questID)) then
+                if not select(2,GetQuestPOIInfo(self.questID)) then
                     questPointer:Hide()
                 end
             end
@@ -1149,8 +1156,11 @@ local function OnEvent(event)
                 x, y = GetQuestLocation(questID, uiMapID)
             end
         else
-            uiMapID, x, y = QuestPOIGetIconInfo(questID)
+            uiMapID, x, y = GetQuestPOIInfo(questID)
             questType = questNormal
+            Debug:Info("uiMapID", uiMapID)
+            Debug:Info("X", x)
+            Debug:Info("Y", y)
         end
         if x and y and uiMapID then
             Debug:Info(((questType == worldQuest) and "WorldQuest") or "Quest")

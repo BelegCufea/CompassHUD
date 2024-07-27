@@ -54,7 +54,7 @@ Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 
 ## Known bugs
 
-*none at the moment (AFAIK)*
+Beta testing for The War Within Expansion
 
 ### TODO (maybe, if there is a demand)
 
