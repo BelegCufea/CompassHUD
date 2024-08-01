@@ -71,6 +71,7 @@
         "CHALLENGE_MODE",
         "TRACKER_HEADER_SCENARIO",
         "UNLOCK",
-        "TRACKER_HEADER_PROVINGGROUNDS"
+        "TRACKER_HEADER_PROVINGGROUNDS",
+        "ObjectiveTrackerBlocksFrame"
     ]
 }

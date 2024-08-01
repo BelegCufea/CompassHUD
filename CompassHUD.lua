@@ -25,6 +25,8 @@ local GetQuestsOnMap = C_QuestLog.GetQuestsOnMap
 local GetLogIndexForQuestID = C_QuestLog.GetLogIndexForQuestID
 local GetQuestInfo = C_QuestLog.GetInfo
 local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
+local GetNextWaypoint = C_QuestLog.GetNextWaypoint
+local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
 local IsWorldQuest = C_QuestLog.IsWorldQuest
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
@@ -675,14 +677,36 @@ Addon.Options = {
 }
 
 local function GetQuestPOIInfo(questID)
+    -- try to get waypoint
+    local uiMapID, x, y = GetNextWaypoint(questID)
+    if x and y then
+        return uiMapID, x, y
+    end
+
+    uiMapID = GetMapForQuestPOIs()
+    if uiMapID and uiMapID > 0 then
+        -- try to get waypoint when clicked on mapPin
+        x, y = GetNextWaypointForMap(questID, uiMapID)
+        if x and y then
+            return uiMapID, x, y
+        end
+        -- try to parse all quests on current Map
+        local quests = GetQuestsOnMap(uiMapID)
+        for _, quest in pairs(quests) do
+            if quest.questID == questID then
+                return uiMapID, quest.x, quest.y
+            end
+       end
+    end
+    -- fallback when quest coordinates were not found earlier (parse all quests on all maps until found)
     for _, mapId in ipairs(HBDmaps) do
         local mapInfo = GetMapInfo(mapId)
         if mapInfo.mapType == 3 then
             local quests = GetQuestsOnMap(mapId)
             for _, quest in pairs(quests) do
-            if quest.questID == questID then
+                if quest.questID == questID then
                     return mapId, quest.x, quest.y
-              end
+                end
            end
         end
     end
@@ -1126,8 +1150,14 @@ local function tomtomRemoveWaypoint(self, uid)
     end
 end
 
-local function OnEvent(event)
-    Debug:Info(event)
+local function OnEvent(event,...)
+    if Options.Debug then
+        Debug:Info(event)
+        local args = {...}
+        for i, v in ipairs(args) do
+            Debug:Info("Argument"..i, v)
+        end
+    end
     if event == "PLAYER_ENTERING_WORLD" then
         local _, instanceType = IsInInstance()
         player.instance = instanceType
@@ -1144,6 +1174,10 @@ local function OnEvent(event)
     end
     local questID = GetSuperTrackedQuestID()
     Debug:Info("questID", questID)
+    -- figure how to track Quest offers
+    local STtype, STtypeID = C_SuperTrack.GetSuperTrackedMapPin()
+    if STtype then Debug:Info("ST type", STtype) end
+    if STtypeID then Debug:Info("ST type ID", STtypeID) end
     if questID and questID > 0 then
         local x, y, questType, uiMapID
     	if IsWorldQuest(questID) then

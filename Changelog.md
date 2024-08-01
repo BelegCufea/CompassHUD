@@ -1,4 +1,12 @@
-# v1.1.2 (27.7.2024)
+# v1.1.2 (1.8.2024)
+
+## Fix
+
+- The War Within (11.0) Expansion workaround (possible fix by [sampconrad](https://github.com/sampconrad))
+- Fix for not finding "portals"
+- Bottom edge line vertical positioning is moving the line other way
+
+# v1.1.2-beta (27.7.2024)
 
 ## Fix
 
