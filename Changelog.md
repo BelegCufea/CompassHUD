@@ -1,3 +1,9 @@
+# v1.1.3 ()
+
+## Fix
+
+- Missing new type of quest (ResetByScheduler)
+
 # v1.1.2 (1.8.2024)
 
 ## Fix

@@ -67,9 +67,7 @@ function DEBUG:Table(name, value)
         ViragDevTool_AddData(value, Const.METADATA.NAME .. "_" .. name)
     end
 
-    --[[
     if DevTool and DevTool.AddData then
         DevTool:AddData(value, Const.METADATA.NAME .. "_" .. name)
     end
-    ]]
 end

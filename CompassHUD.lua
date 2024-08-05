@@ -66,6 +66,7 @@ local worldQuest = -50
 local questNormal = 0
 local questDaily = 1
 local questWeekly = 2
+local questScheduler = 3
 
 local questPointerIdent = "pointer_"
 local questPointers = {
@@ -93,6 +94,10 @@ local questPointers = {
     },
 	[questWeekly] = {
         name = "Weekly quest",
+        texture = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
+    },
+    [questScheduler] = {
+        name = "Scheduled quest",
         texture = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
     },
 	[questUnknown] = {
@@ -961,14 +966,10 @@ local function getPointerType(questID, questType)
     if questType < 0 then
         return questPointerIdent .. index
     end
-
     local questIndex = GetLogIndexForQuestID(questID)
     if not questIndex then return questPointerIdent .. questUnknown end
-
     local questInfo = GetQuestInfo(questIndex)
-    if not questInfo then return questPointerIdent .. questUnknown end
-
-    return (questInfo.frequency and (questPointerIdent .. questInfo.frequency)) or questPointerIdent .. questUnknown
+    return questPointerIdent .. ((not questInfo or not questInfo.frequency or not questPointers[questInfo.frequency]) and questUnknown or questInfo.frequency)
 end
 
 local function updateQuestIcon(questPointer)
@@ -1025,6 +1026,10 @@ end
 
 local function createQuestIcon(questID, questType)
     local pointerType = getPointerType(questID, questType)
+    if not Options.Pointers[pointerType] then
+        Debug:Info("Quest type not found", pointerType)
+        return
+    end
     if not Options.Pointers[pointerType].enabled then return end
 
     local questPointer = CreateFrame("FRAME", ADDON_NAME..questID, HUD)
