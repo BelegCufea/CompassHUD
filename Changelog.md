@@ -1,3 +1,9 @@
+# v1.1.4 ()
+
+## New
+
+- Added option to include text
+
 # v1.1.3 (6.8.2024)
 
 ## Fix
