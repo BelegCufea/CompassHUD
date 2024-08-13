@@ -70,6 +70,18 @@ local questWeekly = 2
 local questScheduler = 3
 
 local questPointerIdent = "pointer_"
+local pointerTextures = {
+    ["Interface\\MINIMAP\\Minimap-Waypoint-MapPin-Tracked"] = "User pin",
+    ["Interface\\MINIMAP\\SuperTrackerArrow"] = "Super tracker",
+    ["Interface\\MINIMAP\\MiniMap-QuestArrow"] = "Arrow Gold",
+    ["Interface\\MINIMAP\\MiniMap-VignetteArrow"] = "Arrow Blue",
+    ["Interface\\MINIMAP\\MiniMap-DeadArrow"] = "Arrow Red",
+    ["Interface\\MINIMAP\\ROTATING-MINIMAPCORPSEARROW"] = "Other",
+    ["Interface\\MINIMAP\\MinimapArrow"] = "Arrow Silver",
+    ["Interface\\MINIMAP\\Minimap_skull_normal"] = "Skull",
+    ["Interface\\AddOns\\"..ADDON_NAME.."\\textures\\RepeatableBlue"] = "Repeatable Blue",
+    ["Interface\\AddOns\\"..ADDON_NAME.."\\textures\\RepeatableGold"] = "Repeatable Gold",
+}
 local questPointers = {
 	[tomTom] = {
         name = "TomTom crazy arrow",
@@ -167,6 +179,19 @@ local strataLevels = {
     "FULLSCREEN_DIALOG",
     "TOOLTIP",
 }
+
+local function getSortedPointerTextureKeys()
+    local sorting = {}
+    local sortedKeys = {}
+    for key, value in pairs(pointerTextures) do
+        table.insert(sortedKeys, {key = key, value = value})
+    end
+    table.sort(sortedKeys, function(a, b) return a.value < b.value end)
+    for _, entry in ipairs(sortedKeys) do
+        table.insert(sorting, entry.key)
+    end
+    return sorting
+end
 
 local function getStrateLevels()
     local values = {}
@@ -1058,6 +1083,7 @@ local function createQuestIcon(questID, questType)
 	questPointer.texture = questPointer:CreateTexture(ADDON_NAME..questID.."Texture")
 	questPointer.texture:SetAllPoints(questPointer)
 	questPointer.texture:SetTexture(Options.Pointers[pointerType].texture)
+    questPointer.textureName = Options.Pointers[pointerType].texture
 	questPointer:Hide()
     if questID > 0 then
         questPointer:SetScript("OnEvent", function(self, event)
@@ -1138,6 +1164,15 @@ local function updateHUD(force)
     setQuestsIcons()
 end
 
+local function updatePointerTextures()
+    for _, v in pairs(questPointsTable) do
+        if v.frame.textureName ~= Options.Pointers[v.frame.pointerType].texture then
+            v.frame.texture:SetTexture(Options.Pointers[v.frame.pointerType].texture)
+            v.frame.textureName = Options.Pointers[v.frame.pointerType].texture
+        end
+    end
+end
+
 local function onUpdate(_, elapsed)
     if player.instance ~= "none" then return end
 
@@ -1181,13 +1216,7 @@ local function tomtomRemoveWaypoint(self, uid)
 end
 
 local function OnEvent(event,...)
-    if Options.Debug then
         Debug:Info(event)
-        local args = {...}
-        for i, v in ipairs(args) do
-            Debug:Info("Argument"..i, v)
-        end
-    end
     if event == "PLAYER_ENTERING_WORLD" then
         local _, instanceType = IsInInstance()
         player.instance = instanceType
@@ -1205,9 +1234,11 @@ local function OnEvent(event,...)
     local questID = GetSuperTrackedQuestID()
     Debug:Info("questID", questID)
     -- figure how to track Quest offers
+    --[[
     local STtype, STtypeID = C_SuperTrack.GetSuperTrackedMapPin()
     if STtype then Debug:Info("ST type", STtype) end
     if STtypeID then Debug:Info("ST type ID", STtypeID) end
+    ]]
     if questID and questID > 0 then
         local x, y, questType, uiMapID
     	if IsWorldQuest(questID) then
@@ -1222,9 +1253,6 @@ local function OnEvent(event,...)
         else
             uiMapID, x, y = GetQuestPOIInfo(questID)
             questType = questNormal
-            Debug:Info("uiMapID", uiMapID)
-            Debug:Info("X", x)
-            Debug:Info("Y", y)
         end
         if x and y and uiMapID then
             Debug:Info(((questType == worldQuest) and "WorldQuest") or "Quest")
@@ -1347,6 +1375,7 @@ function Addon:UpdateHUDSettings()
         end
     end
     updateHUD(true)
+    updatePointerTextures()
 end
 
 function Addon:ConstructDefaultsAndOptions()
@@ -1387,7 +1416,7 @@ function Addon:ConstructDefaultsAndOptions()
         pointersOptionsArgs[questPointerIdent .. k] = {
             type = "group",
             order = k,
-            name = "|T" .. v.texture .. ":24|t " .. v.name,
+            name = v.name,
             args = {}
         }
         pointersOptionsArgs[questPointerIdent .. k].args.enabled = {
@@ -1406,6 +1435,33 @@ function Addon:ConstructDefaultsAndOptions()
             set = function(info, value)
                 Addon:CopyPointerSettings(value, info[#info-1])
             end
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.header0 = {
+            type = "header",
+            order = 6,
+            name = "Pointer texture"
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.texturePreview = {
+            type = "description",
+            order = 7,
+            name = "",
+            width = 1/4,
+            image = function(info)
+                return Addon.db.profile[info[#info-2]][info[#info-1]].texture
+            end,
+            imageWidth = 24,
+            imageHeight = 24,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.texture = {
+            type = "select",
+            order = 8,
+            name = "",
+            values = pointerTextures,
+            sorting = function() return getSortedPointerTextureKeys() end,
+            set = function(info, value)
+                Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]] = value
+                Addon:UpdateHUDSettings()
+            end,
         }
         pointersOptionsArgs[questPointerIdent .. k].args.header1 = {
             type = "header",
@@ -1689,6 +1745,7 @@ function Addon:OnEnable()
     if TomTom then
         self:SecureHook(TomTom, "SetCrazyArrow", tomtomSetCrazyArrow)
         self:SecureHook(TomTom, "RemoveWaypoint", tomtomRemoveWaypoint)
+        pointerTextures["Interface\\addons\\TomTom\\Images\\MinimapArrow-Green"] = "TomTom crazy arrrow"
     end
 
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
