@@ -1083,7 +1083,6 @@ local function createQuestIcon(questID, questType)
 	questPointer.texture = questPointer:CreateTexture(ADDON_NAME..questID.."Texture")
 	questPointer.texture:SetAllPoints(questPointer)
 	questPointer.texture:SetTexture(Options.Pointers[pointerType].texture)
-    questPointer.textureName = Options.Pointers[pointerType].texture
 	questPointer:Hide()
     if questID > 0 then
         questPointer:SetScript("OnEvent", function(self, event)
@@ -1166,10 +1165,7 @@ end
 
 local function updatePointerTextures()
     for _, v in pairs(questPointsTable) do
-        if v.frame.textureName ~= Options.Pointers[v.frame.pointerType].texture then
-            v.frame.texture:SetTexture(Options.Pointers[v.frame.pointerType].texture)
-            v.frame.textureName = Options.Pointers[v.frame.pointerType].texture
-        end
+        v.frame.texture:SetTexture(Options.Pointers[v.frame.pointerType].texture)
     end
 end
 

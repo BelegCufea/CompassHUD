@@ -4,6 +4,6 @@ local CONST = {}
 Addon.CONST = CONST
 
 CONST.METADATA = {
-    NAME = GetAddOnMetadata(..., "Title"),
-    VERSION = GetAddOnMetadata(..., "Version")
+    NAME = C_AddOns.GetAddOnMetadata(..., "Title"),
+    VERSION = C_AddOns.GetAddOnMetadata(..., "Version")
 }

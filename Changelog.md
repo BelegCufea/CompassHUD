@@ -1,8 +1,13 @@
-# v1.1.4 ()
+# v1.1.4 (14.8.2024)
 
 ## New
 
-- Added option to include text
+- Added an option to include quest text
+- Added an option to change the pointers' texture
+
+## Fix
+
+- Fix for 11.0.2
 
 # v1.1.3 (6.8.2024)
 
