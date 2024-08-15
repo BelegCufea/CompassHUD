@@ -1,3 +1,9 @@
+# v1.1.5 ()
+
+## New
+
+- Added `Visibility State` option on Settings tab to set conditions for displaying compass, they use [macro conditionals](https://wowpedia.fandom.com/wiki/Macro_conditionals)
+
 # v1.1.4 (14.8.2024)
 
 ## New

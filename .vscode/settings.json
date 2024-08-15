@@ -80,7 +80,11 @@
         "tostring",
         "CreateUnsecuredRegionPoolInstance",
         "Repeatable",
-        "AddonCompartmentFrame"
+        "AddonCompartmentFrame",
+        "RegisterStateDriver",
+        "UnregisterStateDriver",
+        "RegisterAttributeDriver",
+        "UnregisterAttributeDriver"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {

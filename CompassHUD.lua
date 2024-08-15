@@ -166,6 +166,7 @@ Addon.Defaults = {
         CompassCustomDegreesFlags = '',
         CompassCustomTicksPosition = 'TOP',
         CompassCustomTicksForce = false,
+        Visibility = "[petbattle] hide; show",
     },
 }
 
@@ -411,6 +412,13 @@ Addon.Options = {
                             end,
                         },
                     },
+                },
+                Visibility = {
+                    type = "input",
+                    order = 490,
+                    name = "Visibility State",
+                    desc = "This works like a macro, you can run different situations to get the compass to show/hide differently.\nExample: '[petbattle][combat] hide;show' to hide in combat and during pet battles.",
+                    width = "full",
                 },
                 --Blank2 = { type = "description", order = 500, fontSize = "small",name = "",width = "full", },
                 Center = {
@@ -932,18 +940,6 @@ local function updateCompassHUD()
     HUD.compassCustom:SetShown(Options.UseCustomCompass)
 end
 
-local function createHUD()
-    HUD = CreateFrame('Frame', ADDON_NAME, UIParent, "BackdropTemplate")
-    HUD:SetPoint("CENTER")
-    HUD:SetClampedToScreen(true)
-    HUD:RegisterForDrag("LeftButton")
-
-    HUD.pointer = HUD:CreateTexture(nil, "ARTWORK")
-    HUD.pointer:SetTexture(Options.PointerTexture)
-    HUD.pointer:SetSize(textureHeight * 1.5, textureHeight * 1.5)
-	HUD.pointer:SetPoint('TOP', HUD, 'TOP', 0, 6)
-end
-
 local function setTime(frame, distance, speed)
     if speed and speed > 0 then
         local eta = math.abs(distance / speed)
@@ -1178,6 +1174,27 @@ local function onUpdate(_, elapsed)
     updateHUD(false)
 end
 
+local function createHUD()
+    HUD = CreateFrame('Frame', ADDON_NAME, UIParent, "BackdropTemplate")
+    HUD:SetPoint("CENTER")
+    HUD:SetClampedToScreen(true)
+    HUD:RegisterForDrag("LeftButton")
+
+    HUD.pointer = HUD:CreateTexture(nil, "ARTWORK")
+    HUD.pointer:SetTexture(Options.PointerTexture)
+    HUD.pointer:SetSize(textureHeight * 1.5, textureHeight * 1.5)
+	HUD.pointer:SetPoint('TOP', HUD, 'TOP', 0, 6)
+    HUD:SetScript("OnAttributeChanged", function(self, name, value)
+        if name == "state-visibility" then
+            if value == "show" then
+                HUD:SetScript('OnUpdate', onUpdate)
+            elseif value == "hide" then
+                HUD:SetScript('OnUpdate', nil)
+            end
+        end
+    end)
+end
+
 local function updateQuest(questID, x, y, uiMapID, questType, title)
     if type(questPointsTable[questID]) ~= "table" then
         questPointsTable[questID] = {}
@@ -1372,6 +1389,8 @@ function Addon:UpdateHUDSettings()
     end
     updateHUD(true)
     updatePointerTextures()
+    UnregisterAttributeDriver(HUD, 'state-visibility')
+    RegisterAttributeDriver(HUD, "state-visibility", Options.Visibility)
 end
 
 function Addon:ConstructDefaultsAndOptions()
