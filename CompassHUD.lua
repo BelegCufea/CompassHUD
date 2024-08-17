@@ -1148,7 +1148,7 @@ local function getPointerType(questID, questType)
     if not questIndex then return questPointerIdent .. questUnknown end
     local questInfo = GetQuestInfo(questIndex)
     if not questInfo then return questPointerIdent .. questUnknown end
-    if questInfo.questClassification == Enum.QuestClassification.Recurring then return questPointerIdent .. (questPointers[questInfo.frequency] and (questInfo.frequency + 10) or questUnknown) end
+    if questInfo.questClassification == Enum.QuestClassification.Recurring then return questPointerIdent .. (questPointers[questInfo.frequency] and (questInfo.frequency + 100) or questUnknown) end
     return questPointerIdent .. (questPointers[questInfo.questClassification] and questInfo.questClassification or questUnknown)
 end
 
