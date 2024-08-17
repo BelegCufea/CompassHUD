@@ -65,18 +65,14 @@ local adjCoord, currentFacing
 local questUnknown = -999
 local tomTom = -200
 local mapPin = -100
-local worldQuest = -50
-local questNormal = 0
-local questDaily = 1
-local questWeekly = 2
-local questScheduler = 3
 
+local texturePreset = "classic"
 local questPointerIdent = "pointer_"
 local pointerTextures = {
     ["User pin"] = {
         atlasID = "Waypoint-MapPin-Minimap-Tracked",
     },
-    ["Super tracker"] = {
+    ["Arrow Gold small"] = {
         atlasID = "Rotating-MinimapGuideArrow",
         textureScale = 1.35,
     },
@@ -103,10 +99,13 @@ local pointerTextures = {
     ["Repeatable Gold"] = {
         atlasID = "UI-QuestPoiRecurring-QuestNumber-SuperTracked",
     },
-    ["TomTom "] = {
+    ["Arrow Green small"] = {
         atlasID = "Rotating-MinimapGroupArrow",
         textureScale = 1.35,
-        pointerOffset = -1.1,
+    },
+    ["Arrow Blue small"] = {
+        atlasID = "Rotating-MinimapArrow",
+        textureScale = 1.35,
     },
 }
 
@@ -115,33 +114,79 @@ local questPointers = {
         name = "TomTom",
         atlasID = "Rotating-MinimapGroupArrow",
     },
-	[mapPin] = {
-        name = "User map pin",
-        atlasID = "Waypoint-MapPin-Minimap-Tracked",
-    },
-	[worldQuest] = {
-        name = "World quest",
-        atlasID = "Rotating-MinimapGuideArrow",
-    },
-	[questNormal] = {
-        name = "Quest",
-        atlasID = "MiniMap-QuestArrow",
-    },
-	[questDaily] = {
-        name = "Daily quest",
-        atlasID = "MiniMap-VignetteArrow",
-    },
-	[questWeekly] = {
-        name = "Weekly quest",
-        atlasID = "MiniMap-VignetteArrow",
-    },
-    [questScheduler] = {
-        name = "Scheduled quest",
-        atlasID = "MiniMap-VignetteArrow",
-    },
 	[questUnknown] = {
         name = "Unknown pointer",
         atlasID = "128-Store-Main",
+    },
+    [mapPin] = {
+        name = "User map pin",
+        atlasID = "Waypoint-MapPin-Minimap-Tracked",
+    },
+	[Enum.QuestClassification.Important] = {
+        name = "Important",
+        atlasID = "MiniMap-QuestArrow",
+        atlasIDavailable = "quest-important-available",
+        atlasIDturnin = "quest-important-turnin",
+    },
+	[Enum.QuestClassification.Legendary] = {
+        name = "Legendary",
+        atlasID = "MiniMap-QuestArrow",
+        atlasIDavailable = "quest-legendary-available",
+        atlasIDturnin = "quest-legendary-turnin",
+    },
+	[Enum.QuestClassification.Campaign] = {
+        name = "Campaign",
+        atlasID = "MiniMap-QuestArrow",
+        atlasIDavailable = "Quest-Campaign-Available",
+        atlasIDturnin = "Quest-Campaign-TurnIn",
+    },
+	[Enum.QuestClassification.Calling] = {
+        name = "Calling",
+        atlasID = "MiniMap-QuestArrow",
+        atlasIDavailable = "callings-available",
+        atlasIDturnin = "callings-turnin",
+    },
+	[Enum.QuestClassification.Meta] = {
+        name = "Meta",
+        atlasID = "MiniMap-QuestArrow",
+        atlasIDavailable = "quest-wrapper-available",
+        atlasIDturnin = "quest-wrapper-turnin",
+    },
+	[Enum.QuestClassification.Normal] = {
+        name = "Quest",
+        atlasID = "MiniMap-QuestArrow",
+        atlasIDavailable = "QuestNormal",
+        atlasIDturnin = "QuestTurnin",
+    },
+	[Enum.QuestClassification.Questline] = {
+        name = "Questline",
+        atlasID = "MiniMap-QuestArrow",
+        atlasIDavailable = "Islands-QuestBang",
+        atlasIDturnin = "Islands-QuestTurnin",
+    },
+	[Enum.QuestClassification.WorldQuest] = {
+        name = "World quest",
+        atlasID = "Rotating-MinimapGuideArrow",
+        atlasIDavailable = "vignettekillboss",
+        atlasIDturnin = "vignettekillboss",
+    },
+	[Enum.QuestFrequency.Daily + 100] = {
+        name = "Daily quest",
+        atlasID = "MiniMap-VignetteArrow",
+        atlasIDavailable = "quest-recurring-available",
+        atlasIDturnin = "quest-recurring-turnin",
+    },
+	[Enum.QuestFrequency.Weekly + 100] = {
+        name = "Weekly quest",
+        atlasID = "MiniMap-VignetteArrow",
+        atlasIDavailable = "quest-recurring-available",
+        atlasIDturnin = "quest-recurring-turnin",
+    },
+    [Enum.QuestFrequency.ResetByScheduler + 100] = {
+        name = "Scheduled quest",
+        atlasID = "MiniMap-VignetteArrow",
+        atlasIDavailable = "quest-recurring-available",
+        atlasIDturnin = "quest-recurring-turnin",
     },
 }
 
@@ -768,13 +813,51 @@ Addon.Options = {
             order = 30,
             name = "Pointers",
             get = function(info)
-                return Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]]
+                return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]]
             end,
             set = function(info, value)
-                Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]] = value
+                Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
                 Addon:UpdateHUDSettings()
             end,
             args = {},
+        },
+        Presets = {
+            type = "group",
+            order = 40,
+            name = "Presets",
+            args = {
+                Preset = {
+                    type = "select",
+                    order = 10,
+                    name = "Presets",
+                    values = {
+                        ["classic"] = "Classic",
+                        ["tww"] = "War Within",
+                    },
+                    get = function(info) return texturePreset end,
+                    set = function(info, value) texturePreset = value end,
+                },
+                Reset = {
+                    type = "execute",
+                    order = 20,
+                    name = "Set",
+                    func = function()
+                        for k, v in pairs(Addon.db.profile.Pointers) do
+                            local questPointer = questPointers[v.value]
+                            if texturePreset == "classic" then
+                                v.atlasID = questPointer.atlasID
+                                v.atlasAltID = questPointer.atlasID
+                            elseif texturePreset == "tww" then
+                                v.atlasID = questPointer.atlasIDavailable or questPointer.atlasID
+                                v.atlasAltID = questPointer.atlasIDturnin or questPointer.atlasID
+                            end
+                            v.textureScale = getPointerTextureByAtlasID(v.atlasID).textureScale or 1
+                            v.textureAltScale = getPointerTextureByAtlasID(v.atlasAltID).textureScale or 1
+                        end
+                        Addon:UpdateHUDSettings()
+                    end
+                },
+            },
         },
     },
 }
@@ -1064,7 +1147,9 @@ local function getPointerType(questID, questType)
     local questIndex = GetLogIndexForQuestID(questID)
     if not questIndex then return questPointerIdent .. questUnknown end
     local questInfo = GetQuestInfo(questIndex)
-    return questPointerIdent .. ((not questInfo or not questInfo.frequency or not questPointers[questInfo.frequency]) and questUnknown or questInfo.frequency)
+    if not questInfo then return questPointerIdent .. questUnknown end
+    if questInfo.questClassification == Enum.QuestClassification.Recurring then return questPointerIdent .. (questPointers[questInfo.frequency] and (questInfo.frequency + 10) or questUnknown) end
+    return questPointerIdent .. (questPointers[questInfo.questClassification] and questInfo.questClassification or questUnknown)
 end
 
 local function updateQuestIcon(questPointer)
@@ -1338,23 +1423,21 @@ local function OnEvent(event,...)
     if STtype then Debug:Info("ST type", STtype) end
     if STtypeID then Debug:Info("ST type ID", STtypeID) end
     if questID and questID > 0 then
-        local x, y, questType, uiMapID
+        local x, y, uiMapID
     	if IsWorldQuest(questID) then
             uiMapID = GetQuestZoneID(questID)
             if not uiMapID then
                 uiMapID = getMapId(questID)
             end
             if uiMapID then
-                questType = worldQuest
                 x, y = GetQuestLocation(questID, uiMapID)
             end
         else
             uiMapID, x, y, completed = GetQuestPOIInfo(questID)
-            questType = questNormal
         end
         if x and y and uiMapID then
-            Debug:Info("Pointer type:", ((questType == worldQuest) and "WorldQuest") or "Quest")
-            updateQuest(questID, x, y, uiMapID, questType, nil, completed)
+            Debug:Info("Pointer type:", "Quest")
+            updateQuest(questID, x, y, uiMapID, 0, nil, completed)
         end
     else
         questID = mapPin
@@ -1491,7 +1574,7 @@ function Addon:ConstructDefaultsAndOptions()
         pointersDefaults[questPointerIdent .. k].atlasAltID = v.atlasID
         pointersDefaults[questPointerIdent .. k].textureScale = v.textureScale or getPointerTextureByAtlasID(v.atlasID).textureScale or 1
         pointersDefaults[questPointerIdent .. k].textureAltScale = v.textureScale or getPointerTextureByAtlasID(v.atlasID).textureScale or 1
-        pointersDefaults[questPointerIdent .. k].pointerOffset = v.pointerOffset or getPointerTextureByAtlasID(v.atlasID).pointerOffset or 1
+        pointersDefaults[questPointerIdent .. k].pointerOffset = (v.name == "TomTom") and -1.1 or v.pointerOffset or 1
         pointersDefaults[questPointerIdent .. k].enabled = v.enabled or true
         pointersDefaults[questPointerIdent .. k].showDistance = v.showDistance or true
         pointersDefaults[questPointerIdent .. k].showTTA = v.showTTA or true
@@ -1519,6 +1602,7 @@ function Addon:ConstructDefaultsAndOptions()
         pointersOptionsArgs[questPointerIdent .. k] = {
             type = "group",
             order = k,
+            childGroups = "tab",
             name = function(info)
                 local atlasID = Addon.db.profile[info[#info-1]][info[#info]].atlasID
                 if atlasID:match("^%d") then
@@ -1543,12 +1627,24 @@ function Addon:ConstructDefaultsAndOptions()
             end,
             args = {}
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.enabled = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings = {
+            type = "group",
+            order = 10,
+            name = "Settings",
+            args = {}
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer = {
+            type = "group",
+            order = 20,
+            name = "Textures",
+            args = {}
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.enabled = {
             type = "toggle",
             order = 0,
             name = "Enabled",
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.copyFrom = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.copyFrom = {
             type = "select",
             order = 5,
             name = "Copy setting from",
@@ -1557,21 +1653,21 @@ function Addon:ConstructDefaultsAndOptions()
                 return ""
             end,
             set = function(info, value)
-                Addon:CopyPointerSettings(value, info[#info-1])
+                Addon:CopyPointerSettings(value, info[#info-2])
             end
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.header0 = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.header0 = {
             type = "header",
             order = 6,
             name = "Pointer textures and adjustments"
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.atlasIDPreview = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasIDPreview = {
             type = "description",
             order = 7,
             name = "",
             width = 1/6,
             image = function(info)
-                local selectedAtlasID = Addon.db.profile[info[#info-2]][info[#info-1]].atlasID
+                local selectedAtlasID = Addon.db.profile[info[#info-3]][info[#info-2]].atlasID
                 if selectedAtlasID then
                     return getAtlasTexture(selectedAtlasID)
                 end
@@ -1580,26 +1676,26 @@ function Addon:ConstructDefaultsAndOptions()
             imageWidth = 24,
             imageHeight = 24,
             imageCoords = function(info)
-                local selectedAtlasID = Addon.db.profile[info[#info-2]][info[#info-1]].atlasID
+                local selectedAtlasID = Addon.db.profile[info[#info-3]][info[#info-2]].atlasID
                 if selectedAtlasID then
                     return getAtlasCoords(selectedAtlasID)
                 end
             end
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.atlasID = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasID = {
             type = "select",
             order = 7.1,
             name = "Progress texture:",
             values = function() return getPointerAtlasIDs() end,
             sorting = function() return getSortedPointerAtlasIDKeys() end,
             set = function(info, value)
-                Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]] = value
+                Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
                 local texture = getPointerTextureByAtlasID(value)
-                Addon.db.profile[info[#info-2]][info[#info-1]].textureScale = texture and texture.textureScale or 1
+                Addon.db.profile[info[#info-3]][info[#info-2]].textureScale = texture and texture.textureScale or 1
                 Addon:UpdateHUDSettings()
             end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.textureScale = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.textureScale = {
             type = "range",
             order = 7.2,
             name = "Progress arrow scale:",
@@ -1608,26 +1704,26 @@ function Addon:ConstructDefaultsAndOptions()
             step = 0.01,
             isPercent = true,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.atlasCustom = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasCustom = {
             type = "input",
             order = 7.3,
             name = "Progress atlas:",
             width = "full",
             get = function(info)
-                return Addon.db.profile[info[#info-2]][info[#info-1]].atlasID
+                return Addon.db.profile[info[#info-3]][info[#info-2]].atlasID
             end,
             set = function(info, value)
-                Addon.db.profile[info[#info-2]][info[#info-1]].atlasID = value
+                Addon.db.profile[info[#info-3]][info[#info-2]].atlasID = value
                 Addon:UpdateHUDSettings()
             end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.atlasAltIDPreview = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasAltIDPreview = {
             type = "description",
             order = 8,
             name = "",
             width = 1/6,
             image = function(info)
-                local selectedAtlasID = Addon.db.profile[info[#info-2]][info[#info-1]].atlasAltID
+                local selectedAtlasID = Addon.db.profile[info[#info-3]][info[#info-2]].atlasAltID
                 if selectedAtlasID then
                     return getAtlasTexture(selectedAtlasID)
                 end
@@ -1636,26 +1732,26 @@ function Addon:ConstructDefaultsAndOptions()
             imageWidth = 24,
             imageHeight = 24,
             imageCoords = function(info)
-                local selectedAtlasID = Addon.db.profile[info[#info-2]][info[#info-1]].atlasAltID
+                local selectedAtlasID = Addon.db.profile[info[#info-3]][info[#info-2]].atlasAltID
                 if selectedAtlasID then
                     return getAtlasCoords(selectedAtlasID)
                 end
             end
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.atlasAltID = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasAltID = {
             type = "select",
             order = 8.1,
             name = "Completed texture:",
             values = function() return getPointerAtlasIDs() end,
             sorting = function() return getSortedPointerAtlasIDKeys() end,
             set = function(info, value)
-                Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]] = value
+                Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
                 local texture = getPointerTextureByAtlasID(value)
-                Addon.db.profile[info[#info-2]][info[#info-1]].textureAltScale = texture and texture.textureScale or 1
+                Addon.db.profile[info[#info-3]][info[#info-2]].textureAltScale = texture and texture.textureScale or 1
                 Addon:UpdateHUDSettings()
             end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.textureAltScale = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.textureAltScale = {
             type = "range",
             order = 8.2,
             name = "Completed arrow scale:",
@@ -1664,25 +1760,25 @@ function Addon:ConstructDefaultsAndOptions()
             step = 0.01,
             isPercent = true,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.atlasAltCustom = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasAltCustom = {
             type = "input",
             order = 8.3,
             name = "Completed atlas:",
             width = "full",
             get = function(info)
-                return Addon.db.profile[info[#info-2]][info[#info-1]].atlasAltID
+                return Addon.db.profile[info[#info-3]][info[#info-2]].atlasAltID
             end,
             set = function(info, value)
-                Addon.db.profile[info[#info-2]][info[#info-1]].atlasAltID = value
+                Addon.db.profile[info[#info-3]][info[#info-2]].atlasAltID = value
                 Addon:UpdateHUDSettings()
             end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.header1 = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.header1 = {
             type = "header",
             order = 9,
             name = "Pointer adujstments"
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.pointerOffset = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.pointerOffset = {
             type = "range",
             order = 10,
             name = "Pointer vertical adjustment",
@@ -1691,17 +1787,17 @@ function Addon:ConstructDefaultsAndOptions()
             step = 0.01,
             isPercent = true,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.header2 = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.header2 = {
             type = "header",
             order = 19,
             name = "Distance text"
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.showDistance = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.showDistance = {
             type = "toggle",
             order = 20,
             name = "Show",
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.distanceOffset = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.distanceOffset = {
             type = "range",
             order = 30,
             name = "Vertical adjustment",
@@ -1709,12 +1805,12 @@ function Addon:ConstructDefaultsAndOptions()
             max = 20,
             step = 0.5,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.distanceCustomFont = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.distanceCustomFont = {
             type = "toggle",
             order = 40,
             name = "Use custom font",
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.distanceFont = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.distanceFont = {
             type = "select",
             order = 50,
             name = "Font",
@@ -1723,7 +1819,7 @@ function Addon:ConstructDefaultsAndOptions()
             values = AceGUIWidgetLSMlists['font'],
             disabled = function() return not Options.Pointers[questPointerIdent .. k].distanceCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.distanceFontSize = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.distanceFontSize = {
             type = "range",
             order = 60,
             name = "Size",
@@ -1733,7 +1829,7 @@ function Addon:ConstructDefaultsAndOptions()
             step = 0.5,
             disabled = function() return not Options.Pointers[questPointerIdent .. k].distanceCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.distanceFontFlags = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.distanceFontFlags = {
             type = "select",
             order = 70,
             name = "Outline",
@@ -1745,18 +1841,18 @@ function Addon:ConstructDefaultsAndOptions()
             },
             disabled = function() return not Options.Pointers[questPointerIdent .. k].distanceCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.distanceFontColor = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.distanceFontColor = {
             type = "color",
             order = 80,
             name = "Color",
             width = 1/2,
             hasAlpha = true,
             get = function(info)
-                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                local color = Options[info[#info-3]][info[#info-2]][info[#info]]
                 return color.r, color.g, color.b, color.a
             end,
             set = function (info, r, g, b, a)
-                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                local color = Options[info[#info-3]][info[#info-2]][info[#info]]
                 color.r = r
                 color.g = g
                 color.b = b
@@ -1765,17 +1861,17 @@ function Addon:ConstructDefaultsAndOptions()
             end,
             disabled = function() return not Options.Pointers[questPointerIdent .. k].distanceCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.header3 = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.header3 = {
             type = "header",
             order = 89,
             name = "Time to arrive"
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.showTTA = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.showTTA = {
             type = "toggle",
             order = 90,
             name = "Show",
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.ttaOffset = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.ttaOffset = {
             type = "range",
             order = 100,
             name = "Vertical adjustment",
@@ -1783,12 +1879,12 @@ function Addon:ConstructDefaultsAndOptions()
             max = 20,
             step = 0.5,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.ttaCustomFont = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.ttaCustomFont = {
             type = "toggle",
             order = 110,
             name = "Use custom font",
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.ttaFont = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.ttaFont = {
             type = "select",
             order = 120,
             name = "Font",
@@ -1797,7 +1893,7 @@ function Addon:ConstructDefaultsAndOptions()
             values = AceGUIWidgetLSMlists['font'],
             disabled = function() return not Options.Pointers[questPointerIdent .. k].ttaCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.ttaFontSize = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.ttaFontSize = {
             type = "range",
             order = 130,
             name = "Size",
@@ -1807,7 +1903,7 @@ function Addon:ConstructDefaultsAndOptions()
             step = 0.5,
             disabled = function() return not Options.Pointers[questPointerIdent .. k].ttaCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.ttaFontFlags = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.ttaFontFlags = {
             type = "select",
             order = 140,
             name = "Outline",
@@ -1819,18 +1915,18 @@ function Addon:ConstructDefaultsAndOptions()
             },
             disabled = function() return not Options.Pointers[questPointerIdent .. k].ttaCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.ttaFontColor = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.ttaFontColor = {
             type = "color",
             order = 150,
             name = "Color",
             width = 1/2,
             hasAlpha = true,
             get = function(info)
-                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                local color = Options[info[#info-3]][info[#info-2]][info[#info]]
                 return color.r, color.g, color.b, color.a
             end,
             set = function (info, r, g, b, a)
-                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                local color = Options[info[#info-3]][info[#info-2]][info[#info]]
                 color.r = r
                 color.g = g
                 color.b = b
@@ -1839,17 +1935,17 @@ function Addon:ConstructDefaultsAndOptions()
             end,
             disabled = function() return not Options.Pointers[questPointerIdent .. k].ttaCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.header4 = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.header4 = {
             type = "header",
             order = 159,
             name = "Quest name"
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.showQuest = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.showQuest = {
             type = "toggle",
             order = 160,
             name = "Show",
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.questOffset = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.questOffset = {
             type = "range",
             order = 170,
             name = "Vertical adjustment",
@@ -1857,12 +1953,12 @@ function Addon:ConstructDefaultsAndOptions()
             max = 20,
             step = 0.5,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.questCustomFont = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.questCustomFont = {
             type = "toggle",
             order = 180,
             name = "Use custom font",
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.questFont = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.questFont = {
             type = "select",
             order = 190,
             name = "Font",
@@ -1871,7 +1967,7 @@ function Addon:ConstructDefaultsAndOptions()
             values = AceGUIWidgetLSMlists['font'],
             disabled = function() return not Options.Pointers[questPointerIdent .. k].questCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.questFontSize = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.questFontSize = {
             type = "range",
             order = 200,
             name = "Size",
@@ -1881,7 +1977,7 @@ function Addon:ConstructDefaultsAndOptions()
             step = 0.5,
             disabled = function() return not Options.Pointers[questPointerIdent .. k].questCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.questFontFlags = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.questFontFlags = {
             type = "select",
             order = 210,
             name = "Outline",
@@ -1893,18 +1989,18 @@ function Addon:ConstructDefaultsAndOptions()
             },
             disabled = function() return not Options.Pointers[questPointerIdent .. k].questCustomFont end,
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.questFontColor = {
+        pointersOptionsArgs[questPointerIdent .. k].args.Settings.args.questFontColor = {
             type = "color",
             order = 220,
             name = "Color",
             width = 1/2,
             hasAlpha = true,
             get = function(info)
-                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                local color = Options[info[#info-3]][info[#info-2]][info[#info]]
                 return color.r, color.g, color.b, color.a
             end,
             set = function (info, r, g, b, a)
-                local color = Options[info[#info-2]][info[#info-1]][info[#info]]
+                local color = Options[info[#info-3]][info[#info-2]][info[#info]]
                 color.r = r
                 color.g = g
                 color.b = b
@@ -1924,6 +2020,7 @@ function Addon:ConstructDefaultsAndOptions()
     self.Options.args.Profiles.order = 80
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME)
+    Debug:Table("Options", Addon.db.profile)
 end
 
 function Addon:RefreshConfig()
@@ -1962,6 +2059,26 @@ function Addon:OnDisable()
 end
 
 function Addon:OnInitialize()
+    local function atlasIDExists(atlasID)
+        for _, data in pairs(pointerTextures) do
+            if data.atlasID == atlasID then
+                return true
+            end
+        end
+        return false
+    end
+    for k, v in pairs(questPointers) do
+        local name = k > 100 and "Recurring" or  v.name
+        if v.atlasIDavailable and v.atlasIDturnin and v.atlasIDavailable == v.atlasIDturnin then
+            pointerTextures[name] = { atlasID = v.atlasIDavailable }
+        else
+            if v.atlasIDavailable and not atlasIDExists(v.atlasIDavailable) then
+                pointerTextures[name.." available"] = { atlasID = v.atlasIDavailable }
+            end
+            if v.atlasIDturnin and not atlasIDExists(v.atlasIDturnin) then
+                pointerTextures[name.." turn-in"] = { atlasID = v.atlasIDturnin }
+            end        end
+    end
     Addon:ConstructDefaultsAndOptions()
     Options = self.db.profile
     createHUD()

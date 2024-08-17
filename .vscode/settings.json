@@ -85,7 +85,11 @@
         "SHOW",
         "ObjectiveTrackerFrame",
         "QUESTS_LABEL",
-        "QuestScrollFrame"
+        "QuestScrollFrame",
+        "Important",
+        "Legendary",
+        "Campaign",
+        "Meta"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
