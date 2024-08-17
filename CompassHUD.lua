@@ -75,15 +75,19 @@ local pointerTextures = {
     ["Arrow Gold small"] = {
         atlasID = "Rotating-MinimapGuideArrow",
         textureScale = 1.35,
+        textureRotate = true,
     },
     ["Arrow Gold"] = {
         atlasID = "MiniMap-QuestArrow",
+        textureRotate = true,
     },
     ["Arrow Blue"] = {
         atlasID = "MiniMap-VignetteArrow",
+        textureRotate = true,
     },
     ["Arrow Red"] = {
         atlasID = "MiniMap-DeadArrow",
+        textureRotate = true,
     },
     ["Other"] = {
         atlasID = "128-Store-Main",
@@ -92,6 +96,7 @@ local pointerTextures = {
     ["Arrow Silver"] = {
         atlasID = "MinimapArrow",
         textureScale = 0.8,
+        textureRotate = true,
     },
     ["Repeatable Blue"] = {
         atlasID = "UI-QuestPoiRecurring-QuestNumber",
@@ -102,10 +107,12 @@ local pointerTextures = {
     ["Arrow Green small"] = {
         atlasID = "Rotating-MinimapGroupArrow",
         textureScale = 1.35,
+        textureRotate = true,
     },
     ["Arrow Blue small"] = {
         atlasID = "Rotating-MinimapArrow",
         textureScale = 1.35,
+        textureRotate = true,
     },
 }
 
@@ -165,25 +172,25 @@ local questPointers = {
         atlasIDturnin = "Islands-QuestTurnin",
     },
 	[Enum.QuestClassification.WorldQuest] = {
-        name = "World quest",
+        name = "WorldQuest",
         atlasID = "Rotating-MinimapGuideArrow",
-        atlasIDavailable = "vignettekillboss",
-        atlasIDturnin = "vignettekillboss",
+        atlasIDavailable = "completiondialog-warwithincampaign-worldquests-icon",
+        atlasIDturnin = "completiondialog-warwithincampaign-worldquests-icon",
     },
 	[Enum.QuestFrequency.Daily + 100] = {
-        name = "Daily quest",
+        name = "Daily",
         atlasID = "MiniMap-VignetteArrow",
         atlasIDavailable = "quest-recurring-available",
         atlasIDturnin = "quest-recurring-turnin",
     },
 	[Enum.QuestFrequency.Weekly + 100] = {
-        name = "Weekly quest",
+        name = "Weekly",
         atlasID = "MiniMap-VignetteArrow",
         atlasIDavailable = "quest-recurring-available",
         atlasIDturnin = "quest-recurring-turnin",
     },
     [Enum.QuestFrequency.ResetByScheduler + 100] = {
-        name = "Scheduled quest",
+        name = "Scheduled",
         atlasID = "MiniMap-VignetteArrow",
         atlasIDavailable = "quest-recurring-available",
         atlasIDturnin = "quest-recurring-turnin",
@@ -821,44 +828,6 @@ Addon.Options = {
             end,
             args = {},
         },
-        Presets = {
-            type = "group",
-            order = 40,
-            name = "Presets",
-            args = {
-                Preset = {
-                    type = "select",
-                    order = 10,
-                    name = "Presets",
-                    values = {
-                        ["classic"] = "Classic",
-                        ["tww"] = "War Within",
-                    },
-                    get = function(info) return texturePreset end,
-                    set = function(info, value) texturePreset = value end,
-                },
-                Reset = {
-                    type = "execute",
-                    order = 20,
-                    name = "Set",
-                    func = function()
-                        for k, v in pairs(Addon.db.profile.Pointers) do
-                            local questPointer = questPointers[v.value]
-                            if texturePreset == "classic" then
-                                v.atlasID = questPointer.atlasID
-                                v.atlasAltID = questPointer.atlasID
-                            elseif texturePreset == "tww" then
-                                v.atlasID = questPointer.atlasIDavailable or questPointer.atlasID
-                                v.atlasAltID = questPointer.atlasIDturnin or questPointer.atlasID
-                            end
-                            v.textureScale = getPointerTextureByAtlasID(v.atlasID).textureScale or 1
-                            v.textureAltScale = getPointerTextureByAtlasID(v.atlasAltID).textureScale or 1
-                        end
-                        Addon:UpdateHUDSettings()
-                    end
-                },
-            },
-        },
     },
 }
 
@@ -1197,7 +1166,9 @@ local function updateQuestIcon(questPointer)
     questPointer.flipped = false
     if questPointer.position > 0 then
         questPointer.flipped = true
-        questPointer.texture:SetTexCoord(0, 1, 1, 0)
+        if completed and (options.textureAltRotate == 1) or (options.textureRotate == 1) then
+            questPointer.texture:SetTexCoord(0, 1, 1, 0)
+        end
         point = "BOTTOM"
         relativePoint = "TOP"
         distanceTextPosition = ((options.showTTA and (options.ttaFontSize * 1.2)) or 0) + options.distanceOffset - 12
@@ -1285,7 +1256,10 @@ local function setQuestsIcons()
                         quest.frame:Show()
                     elseif Options.PointerStay then
                         local side = math.abs(angle)/angle
-                        quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
+                        local option = Options.Pointers[quest.frame.pointerType]
+                        if quest.completed and (option.textureAltRotate == 1) or (option.textureRotate == 1) then
+                                quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
+                        end
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * side * visible, quest.frame.position)
                         quest.frame:Show()
                     else
@@ -1436,7 +1410,6 @@ local function OnEvent(event,...)
             uiMapID, x, y, completed = GetQuestPOIInfo(questID)
         end
         if x and y and uiMapID then
-            Debug:Info("Pointer type:", "Quest")
             updateQuest(questID, x, y, uiMapID, 0, nil, completed)
         end
     else
@@ -1444,7 +1417,6 @@ local function OnEvent(event,...)
         local questType = mapPin
         local point = GetUserWaypoint()
         if IsSuperTrackingUserWaypoint() and point then
-            Debug:Info("Pointer type:", "Map pin")
             updateQuest(questID, point.position.x, point.position.y, point.uiMapID, questType, nil, completed)
         end
     end
@@ -1559,12 +1531,63 @@ function Addon:UpdateHUDSettings()
     updatePointerTextures()
     UnregisterAttributeDriver(HUD, 'state-hudvisibility')
     RegisterAttributeDriver(HUD, "state-hudvisibility", Options.Visibility)
+    Debug:Table("Options", Options)
 end
 
 function Addon:ConstructDefaultsAndOptions()
     local pointersDefaults = {}
     local pointersOptionsArgs = {}
 
+    -- presets
+    pointersOptionsArgs["presets"] = {
+        type = "group",
+        order = 0,
+        name = "|A:CreditsScreen-Assets-Buttons-FastForward:18:18|a |cnPURE_GREEN_COLOR:Presets|r |A:CreditsScreen-Assets-Buttons-Rewind:18:18|a",
+        args = {
+            PointersPreset = {
+                type = "select",
+                order = 10,
+                name = "Presets",
+                values = {
+                    ["classic"] = "Classic",
+                    ["tww"] = "War Within",
+                },
+                get = function(info) return texturePreset end,
+                set = function(info, value) texturePreset = value end,
+            },
+            Set = {
+                type = "execute",
+                order = 20,
+                name = "Set",
+                func = function()
+                    for k, v in pairs(Addon.db.profile.Pointers) do
+                        local questPointer = questPointers[v.value]
+                        if questPointer then
+                            if texturePreset == "classic" then
+                                v.atlasID = questPointer.atlasID
+                                v.atlasAltID = questPointer.atlasID
+                            elseif texturePreset == "tww" then
+                                v.atlasID = questPointer.atlasIDavailable or questPointer.atlasID
+                                v.atlasAltID = questPointer.atlasIDturnin or questPointer.atlasID
+                            end
+                            local texture = getPointerTextureByAtlasID(v.atlasID)
+                            if texture then
+                                v.textureScale = texture.textureScale or 1
+                                v.textureRotate = texture.textureRotate and 1 or -1
+                            end
+                            texture = getPointerTextureByAtlasID(v.atlasAltID)
+                            if texture then
+                                v.textureAltScale = texture.textureScale or 1
+                                v.textureAltRotate = texture.textureRotate and 1 or -1
+                            end
+                        end
+                    end
+                    Addon:UpdateHUDSettings()
+                end
+            },
+
+        }
+    }
     for k, v in pairs(questPointers) do
         -- defaults
         pointersDefaults[questPointerIdent .. k] = {value = k}
@@ -1574,6 +1597,8 @@ function Addon:ConstructDefaultsAndOptions()
         pointersDefaults[questPointerIdent .. k].atlasAltID = v.atlasID
         pointersDefaults[questPointerIdent .. k].textureScale = v.textureScale or getPointerTextureByAtlasID(v.atlasID).textureScale or 1
         pointersDefaults[questPointerIdent .. k].textureAltScale = v.textureScale or getPointerTextureByAtlasID(v.atlasID).textureScale or 1
+        pointersDefaults[questPointerIdent .. k].textureRotate = (v.textureRotate and 1) or (getPointerTextureByAtlasID(v.atlasID).textureRotate and 1) or 0
+        pointersDefaults[questPointerIdent .. k].textureAltRotate = (v.textureRotate and 1) or (getPointerTextureByAtlasID(v.atlasID).textureRotate and 1) or 0
         pointersDefaults[questPointerIdent .. k].pointerOffset = (v.name == "TomTom") and -1.1 or v.pointerOffset or 1
         pointersDefaults[questPointerIdent .. k].enabled = v.enabled or true
         pointersDefaults[questPointerIdent .. k].showDistance = v.showDistance or true
@@ -1614,7 +1639,7 @@ function Addon:ConstructDefaultsAndOptions()
                         local bottom = atlasInfo.bottomTexCoord * atlasInfo.height
 
                         return string.format(
-                            "|T%s:24:24:0:0:%d:%d:%f:%f:%f:%f|t %s",
+                            "|T%s:18:18:0:0:%d:%d:%f:%f:%f:%f|t %s",
                             atlasInfo.file,
                             atlasInfo.width, atlasInfo.height,
                             left, right, top, bottom,
@@ -1622,7 +1647,7 @@ function Addon:ConstructDefaultsAndOptions()
                         )
                     end
                 else
-                    return string.format("|A:%s:24:24|a %s", atlasID, v.name)
+                    return string.format("|A:%s:18:18|a %s", atlasID, v.name)
                 end
             end,
             args = {}
@@ -1692,21 +1717,34 @@ function Addon:ConstructDefaultsAndOptions()
                 Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
                 local texture = getPointerTextureByAtlasID(value)
                 Addon.db.profile[info[#info-3]][info[#info-2]].textureScale = texture and texture.textureScale or 1
+                Addon.db.profile[info[#info-3]][info[#info-2]].textureRotate = (texture and texture.textureRotate) and 1 or -1
                 Addon:UpdateHUDSettings()
             end,
         }
         pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.textureScale = {
             type = "range",
             order = 7.2,
-            name = "Progress arrow scale:",
+            name = "Progress texture scale:",
             min = 0,
             max = 3,
             step = 0.01,
             isPercent = true,
         }
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.textureRotate = {
+            type = "toggle",
+            order = 7.3,
+            name = "Rotate progress texture",
+            width = "full",
+            get = function(info)
+                return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] and Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] > 0
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value and 1 or -1
+            end,
+        }
         pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasCustom = {
             type = "input",
-            order = 7.3,
+            order = 7.4,
             name = "Progress atlas:",
             width = "full",
             get = function(info)
@@ -1741,29 +1779,42 @@ function Addon:ConstructDefaultsAndOptions()
         pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasAltID = {
             type = "select",
             order = 8.1,
-            name = "Completed texture:",
+            name = "Turn-in texture:",
             values = function() return getPointerAtlasIDs() end,
             sorting = function() return getSortedPointerAtlasIDKeys() end,
             set = function(info, value)
                 Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
                 local texture = getPointerTextureByAtlasID(value)
                 Addon.db.profile[info[#info-3]][info[#info-2]].textureAltScale = texture and texture.textureScale or 1
+                Addon.db.profile[info[#info-3]][info[#info-2]].textureAltRotate = (texture and texture.textureRotate) and 1 or -1
                 Addon:UpdateHUDSettings()
             end,
         }
         pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.textureAltScale = {
             type = "range",
             order = 8.2,
-            name = "Completed arrow scale:",
+            name = "Turn-in texture scale:",
             min = 0,
             max = 3,
             step = 0.01,
             isPercent = true,
         }
+        pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.textureAltRotate = {
+            type = "toggle",
+            order = 8.3,
+            name = "Rotate turn-in texture",
+            width = "full",
+            get = function(info)
+                return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] and Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] > 0
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value and 1 or -1
+            end,
+        }
         pointersOptionsArgs[questPointerIdent .. k].args.Pointer.args.atlasAltCustom = {
             type = "input",
-            order = 8.3,
-            name = "Completed atlas:",
+            order = 8.4,
+            name = "Turn-in atlas:",
             width = "full",
             get = function(info)
                 return Addon.db.profile[info[#info-3]][info[#info-2]].atlasAltID
@@ -2012,7 +2063,6 @@ function Addon:ConstructDefaultsAndOptions()
     end
 
     self.Defaults.profile.Pointers = pointersDefaults
-
     self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
 
     self.Options.args.Pointers.args = pointersOptionsArgs
@@ -2020,7 +2070,6 @@ function Addon:ConstructDefaultsAndOptions()
     self.Options.args.Profiles.order = 80
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME)
-    Debug:Table("Options", Addon.db.profile)
 end
 
 function Addon:RefreshConfig()
@@ -2069,15 +2118,34 @@ function Addon:OnInitialize()
     end
     for k, v in pairs(questPointers) do
         local name = k > 100 and "Recurring" or  v.name
-        if v.atlasIDavailable and v.atlasIDturnin and v.atlasIDavailable == v.atlasIDturnin then
+        if (v.atlasIDavailable and v.atlasIDturnin and v.atlasIDavailable == v.atlasIDturnin) or (v.atlasIDavailable and not v.atlasIDturnin) and not atlasIDExists(v.atlasIDavailable) then
             pointerTextures[name] = { atlasID = v.atlasIDavailable }
+            if v.atlasIDavailableScale then
+                pointerTextures[name].textureScale = v.atlasIDavailableScale
+            end
+            if v.atlasIDavailableRotate then
+                pointerTextures[name].textureRotate = v.atlasIDavailableRotate
+            end
         else
             if v.atlasIDavailable and not atlasIDExists(v.atlasIDavailable) then
                 pointerTextures[name.." available"] = { atlasID = v.atlasIDavailable }
+                if v.atlasIDavailableScale then
+                    pointerTextures[name.." available"].textureScale = v.atlasIDavailableScale
+                end
+                if v.atlasIDavailableRotate then
+                    pointerTextures[name.." available"].textureRotate = v.atlasIDavailableRotate
+                end
             end
             if v.atlasIDturnin and not atlasIDExists(v.atlasIDturnin) then
                 pointerTextures[name.." turn-in"] = { atlasID = v.atlasIDturnin }
-            end        end
+                if v.atlasIDturninScale then
+                    pointerTextures[name.." turn-in"].textureScale = v.atlasIDturninScale
+                end
+                if v.atlasIDturninRotate then
+                    pointerTextures[name.." turn-in"].textureRotate = v.atlasIDturninRotate
+                end
+            end
+        end
     end
     Addon:ConstructDefaultsAndOptions()
     Options = self.db.profile
