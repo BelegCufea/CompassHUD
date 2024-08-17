@@ -29,6 +29,8 @@ local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
 local GetNextWaypoint = C_QuestLog.GetNextWaypoint
 local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
 local IsWorldQuest = C_QuestLog.IsWorldQuest
+local GetQuestAdditionalHighlights = C_QuestLog.GetQuestAdditionalHighlights
+local ReadyForTurnIn = C_QuestLog.ReadyForTurnIn
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
 local GetMapInfo = C_Map.GetMapInfo
@@ -39,7 +41,7 @@ local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
 local Options
 local HUD
 local timer = 0
-local player = {x = 0, y = 0, angle = 0, instance = ""}
+local player = {x = 0, y = 0, angle = 0, instance = "none"}
 local tomTomActive
 local questPointsTable = {}
 local HBDmaps = {}
@@ -71,51 +73,75 @@ local questScheduler = 3
 
 local questPointerIdent = "pointer_"
 local pointerTextures = {
-    ["Interface\\MINIMAP\\Minimap-Waypoint-MapPin-Tracked"] = "User pin",
-    ["Interface\\MINIMAP\\SuperTrackerArrow"] = "Super tracker",
-    ["Interface\\MINIMAP\\MiniMap-QuestArrow"] = "Arrow Gold",
-    ["Interface\\MINIMAP\\MiniMap-VignetteArrow"] = "Arrow Blue",
-    ["Interface\\MINIMAP\\MiniMap-DeadArrow"] = "Arrow Red",
-    ["Interface\\MINIMAP\\ROTATING-MINIMAPCORPSEARROW"] = "Other",
-    ["Interface\\MINIMAP\\MinimapArrow"] = "Arrow Silver",
-    ["Interface\\MINIMAP\\Minimap_skull_normal"] = "Skull",
-    ["Interface\\AddOns\\"..ADDON_NAME.."\\textures\\RepeatableBlue"] = "Repeatable Blue",
-    ["Interface\\AddOns\\"..ADDON_NAME.."\\textures\\RepeatableGold"] = "Repeatable Gold",
-}
-local questPointers = {
-	[tomTom] = {
-        name = "TomTom crazy arrow",
-        texture = "Interface\\addons\\TomTom\\Images\\MinimapArrow-Green",
+    ["User pin"] = {
+        atlasID = "Waypoint-MapPin-Minimap-Tracked",
+    },
+    ["Super tracker"] = {
+        atlasID = "Rotating-MinimapGuideArrow",
+        textureScale = 1.35,
+    },
+    ["Arrow Gold"] = {
+        atlasID = "MiniMap-QuestArrow",
+    },
+    ["Arrow Blue"] = {
+        atlasID = "MiniMap-VignetteArrow",
+    },
+    ["Arrow Red"] = {
+        atlasID = "MiniMap-DeadArrow",
+    },
+    ["Other"] = {
+        atlasID = "128-Store-Main",
+        textureScale = 0.8,
+    },
+    ["Arrow Silver"] = {
+        atlasID = "MinimapArrow",
+        textureScale = 0.8,
+    },
+    ["Repeatable Blue"] = {
+        atlasID = "UI-QuestPoiRecurring-QuestNumber",
+    },
+    ["Repeatable Gold"] = {
+        atlasID = "UI-QuestPoiRecurring-QuestNumber-SuperTracked",
+    },
+    ["TomTom "] = {
+        atlasID = "Rotating-MinimapGroupArrow",
         textureScale = 1.35,
         pointerOffset = -1.1,
     },
+}
+
+local questPointers = {
+	[tomTom] = {
+        name = "TomTom",
+        atlasID = "Rotating-MinimapGroupArrow",
+    },
 	[mapPin] = {
         name = "User map pin",
-        texture = "Interface\\MINIMAP\\Minimap-Waypoint-MapPin-Tracked",
+        atlasID = "Waypoint-MapPin-Minimap-Tracked",
     },
 	[worldQuest] = {
         name = "World quest",
-        texture = "Interface\\MINIMAP\\SuperTrackerArrow",
+        atlasID = "Rotating-MinimapGuideArrow",
     },
 	[questNormal] = {
         name = "Quest",
-        texture = "Interface\\MINIMAP\\MiniMap-QuestArrow",
+        atlasID = "MiniMap-QuestArrow",
     },
 	[questDaily] = {
         name = "Daily quest",
-        texture = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
+        atlasID = "MiniMap-VignetteArrow",
     },
 	[questWeekly] = {
         name = "Weekly quest",
-        texture = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
+        atlasID = "MiniMap-VignetteArrow",
     },
     [questScheduler] = {
         name = "Scheduled quest",
-        texture = "Interface\\MINIMAP\\MiniMap-VignetteArrow",
+        atlasID = "MiniMap-VignetteArrow",
     },
 	[questUnknown] = {
         name = "Unknown pointer",
-        texture = "Interface\\MINIMAP\\ROTATING-MINIMAPCORPSEARROW",
+        atlasID = "128-Store-Main",
     },
 }
 
@@ -181,17 +207,55 @@ local strataLevels = {
     "TOOLTIP",
 }
 
-local function getSortedPointerTextureKeys()
+local function getPointerAtlasIDs()
+    local atlasIDs = {}
+    for key, value in pairs(pointerTextures) do
+        atlasIDs[value.atlasID] = key
+    end
+    return atlasIDs
+end
+
+local function getSortedPointerAtlasIDKeys()
     local sorting = {}
     local sortedKeys = {}
     for key, value in pairs(pointerTextures) do
-        table.insert(sortedKeys, {key = key, value = value})
+        table.insert(sortedKeys, {key = value.atlasID, value = key})
     end
     table.sort(sortedKeys, function(a, b) return a.value < b.value end)
     for _, entry in ipairs(sortedKeys) do
         table.insert(sorting, entry.key)
     end
     return sorting
+end
+
+local function getPointerTextureByAtlasID(atlasID)
+    for _, pointerTexture in pairs(pointerTextures) do
+        if pointerTexture.atlasID == atlasID then
+            return pointerTexture
+        end
+    end
+    return nil
+end
+
+local function getAtlasTexture(atlasID)
+    local atlasInfo = C_Texture.GetAtlasInfo(atlasID)
+    if not atlasInfo then return nil end
+    return atlasInfo.file
+end
+
+local function getAtlasCoords(atlasID)
+    local atlasInfo = C_Texture.GetAtlasInfo(atlasID)
+    if not atlasInfo then return {0,0,0,1,1,0,1,1} end
+    return {
+        atlasInfo.leftTexCoord,
+        atlasInfo.topTexCoord,
+        atlasInfo.leftTexCoord,
+        atlasInfo.bottomTexCoord,
+        atlasInfo.rightTexCoord,
+        atlasInfo.topTexCoord,
+        atlasInfo.rightTexCoord,
+        atlasInfo.bottomTexCoord
+    }
 end
 
 local function getStrateLevels()
@@ -717,23 +781,31 @@ Addon.Options = {
 
 local function GetQuestPOIInfo(questID)
     -- try to get waypoint
+    local completed = ReadyForTurnIn(questID)
     local uiMapID, x, y = GetNextWaypoint(questID)
     if x and y then
-        return uiMapID, x, y
+        Debug:Info("portal", uiMapID, x, y, completed)
+        return uiMapID, x, y, completed
     end
 
-    uiMapID = GetMapForQuestPOIs()
+    -- try to get waypoint from Blizzard?
+    uiMapID = GetQuestAdditionalHighlights(questID)
+    Debug:Info("map from highlights", uiMapID)
+    uiMapID = uiMapID or GetMapForQuestPOIs()
+    Debug:Info("map from POI", GetMapForQuestPOIs())
     if uiMapID and uiMapID > 0 then
         -- try to get waypoint when clicked on mapPin
         x, y = GetNextWaypointForMap(questID, uiMapID)
         if x and y then
-            return uiMapID, x, y
+            Debug:Info("waypoint", uiMapID, x, y, completed)
+            return uiMapID, x, y, completed
         end
         -- try to parse all quests on current Map
         local quests = GetQuestsOnMap(uiMapID)
         for _, quest in pairs(quests) do
             if quest.questID == questID then
-                return uiMapID, quest.x, quest.y
+                Debug:Info("map", uiMapID, quest.x, quest.y, completed)
+                return uiMapID, quest.x, quest.y, completed
             end
        end
     end
@@ -744,7 +816,8 @@ local function GetQuestPOIInfo(questID)
             local quests = GetQuestsOnMap(mapId)
             for _, quest in pairs(quests) do
                 if quest.questID == questID then
-                    return mapId, quest.x, quest.y
+                    Debug:Info("parse", mapId, quest.x, quest.y, completed)
+                    return mapId, quest.x, quest.y, completed
                 end
            end
         end
@@ -996,8 +1069,9 @@ end
 
 local function updateQuestIcon(questPointer)
     local options = Options.Pointers[questPointer.pointerType]
+    local completed = questPointsTable[questPointer.questID].completed
     questPointer.position = options.pointerOffset * textureHeight * -1
-    local size = textureHeight * 1.5 * options.textureScale
+    local size = textureHeight * 1.5 * (completed and options.textureAltScale or options.textureScale)
     questPointer:SetSize(size, size)
 
     local gameFontNormal = { fontColor = {}}
@@ -1031,9 +1105,9 @@ local function updateQuestIcon(questPointer)
 
     local point = "TOP"
     local relativePoint = "BOTTOM"
-    local distanceTextPosition = -options.distanceOffset + 4
-    local timeTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2)) or 0) - options.ttaOffset + 4
-    local questTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2)) or 0) - ((options.showTTA and (options.ttaFontSize * 1.2)) or 0) - options.questOffset + 6
+    local distanceTextPosition = -options.distanceOffset + 2
+    local timeTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2)) or 0) - options.ttaOffset + 2
+    local questTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2)) or 0) - ((options.showTTA and (options.ttaFontSize * 1.2)) or 0) - options.questOffset + 4
     questPointer.texture:SetTexCoord(0, 1, 0, 1)
     questPointer.flipped = false
     if questPointer.position > 0 then
@@ -1078,7 +1152,7 @@ local function createQuestIcon(questID, questType)
 	questPointer:SetPoint("CENTER");
 	questPointer.texture = questPointer:CreateTexture(ADDON_NAME..questID.."Texture")
 	questPointer.texture:SetAllPoints(questPointer)
-	questPointer.texture:SetTexture(Options.Pointers[pointerType].texture)
+	questPointer.texture:SetAtlas(Options.Pointers[pointerType].atlasID)
 	questPointer:Hide()
     if questID > 0 then
         questPointer:SetScript("OnEvent", function(self, event)
@@ -1161,7 +1235,8 @@ end
 
 local function updatePointerTextures()
     for _, v in pairs(questPointsTable) do
-        v.frame.texture:SetTexture(Options.Pointers[v.frame.pointerType].texture)
+        local options = Options.Pointers[v.frame.pointerType]
+        v.frame.texture:SetAtlas(v.completed and options.atlasAltID or options.atlasID)
     end
 end
 
@@ -1185,17 +1260,21 @@ local function createHUD()
     HUD.pointer:SetSize(textureHeight * 1.5, textureHeight * 1.5)
 	HUD.pointer:SetPoint('TOP', HUD, 'TOP', 0, 6)
     HUD:SetScript("OnAttributeChanged", function(self, name, value)
-        if name == "state-visibility" then
+        if name == "state-hudvisibility" then
             if value == "show" then
-                HUD:SetScript('OnUpdate', onUpdate)
+                if player.instance == "none" then
+                    HUD:Show()
+                    HUD:SetScript('OnUpdate', onUpdate)
+                end
             elseif value == "hide" then
+                HUD:Hide()
                 HUD:SetScript('OnUpdate', nil)
             end
         end
     end)
 end
 
-local function updateQuest(questID, x, y, uiMapID, questType, title)
+local function updateQuest(questID, x, y, uiMapID, questType, title, completed)
     if type(questPointsTable[questID]) ~= "table" then
         questPointsTable[questID] = {}
     end
@@ -1206,17 +1285,24 @@ local function updateQuest(questID, x, y, uiMapID, questType, title)
     questPointsTable[questID].mapId = uiMapID
     questPointsTable[questID].instance = instance
     questPointsTable[questID].text = title
+    questPointsTable[questID].completed = completed
     if not questPointsTable[questID].frame then
         questPointsTable[questID].frame = createQuestIcon(questID, questType)
     end
     questPointsTable[questID].frame.QuestText:SetText(title)
+    local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
+    questPointsTable[questID].frame.texture:SetAtlas(completed and options.atlasAltID or options.atlasID)
 end
 
 local function tomtomSetCrazyArrow(self, uid, dist, title)
     if not Options.Pointers[questPointerIdent .. tomTom].enabled then return end
     local questID = tomTom
     local questType = tomTom
-    updateQuest(questID, uid[2], uid[3], uid[1], questType, title)
+    local completed = false
+    if string.find(title, "^Turn in: ") then
+        completed = true
+    end
+    updateQuest(questID, uid[2], uid[3], uid[1], questType, title, completed)
     tomTomActive = TomTom:GetKey(uid)
     questPointsTable[tomTom].track = true
 end
@@ -1229,7 +1315,7 @@ local function tomtomRemoveWaypoint(self, uid)
 end
 
 local function OnEvent(event,...)
-        Debug:Info(event)
+    Debug:Info(event)
     if event == "PLAYER_ENTERING_WORLD" then
         local _, instanceType = IsInInstance()
         player.instance = instanceType
@@ -1245,13 +1331,12 @@ local function OnEvent(event,...)
         questPointsTable[tomTom].track = false
     end
     local questID = GetSuperTrackedQuestID()
+    local completed = false
     Debug:Info("questID", questID)
     -- figure how to track Quest offers
-    --[[
     local STtype, STtypeID = C_SuperTrack.GetSuperTrackedMapPin()
     if STtype then Debug:Info("ST type", STtype) end
     if STtypeID then Debug:Info("ST type ID", STtypeID) end
-    ]]
     if questID and questID > 0 then
         local x, y, questType, uiMapID
     	if IsWorldQuest(questID) then
@@ -1264,20 +1349,20 @@ local function OnEvent(event,...)
                 x, y = GetQuestLocation(questID, uiMapID)
             end
         else
-            uiMapID, x, y = GetQuestPOIInfo(questID)
+            uiMapID, x, y, completed = GetQuestPOIInfo(questID)
             questType = questNormal
         end
         if x and y and uiMapID then
-            Debug:Info(((questType == worldQuest) and "WorldQuest") or "Quest")
-            updateQuest(questID, x, y, uiMapID, questType)
+            Debug:Info("Pointer type:", ((questType == worldQuest) and "WorldQuest") or "Quest")
+            updateQuest(questID, x, y, uiMapID, questType, nil, completed)
         end
     else
         questID = mapPin
         local questType = mapPin
         local point = GetUserWaypoint()
         if IsSuperTrackingUserWaypoint() and point then
-            Debug:Info("Map pin")
-            updateQuest(questID, point.position.x, point.position.y, point.uiMapID, questType)
+            Debug:Info("Pointer type:", "Map pin")
+            updateQuest(questID, point.position.x, point.position.y, point.uiMapID, questType, nil, completed)
         end
     end
     setQuestsIcons()
@@ -1389,8 +1474,8 @@ function Addon:UpdateHUDSettings()
     end
     updateHUD(true)
     updatePointerTextures()
-    UnregisterAttributeDriver(HUD, 'state-visibility')
-    RegisterAttributeDriver(HUD, "state-visibility", Options.Visibility)
+    UnregisterAttributeDriver(HUD, 'state-hudvisibility')
+    RegisterAttributeDriver(HUD, "state-hudvisibility", Options.Visibility)
 end
 
 function Addon:ConstructDefaultsAndOptions()
@@ -1402,8 +1487,11 @@ function Addon:ConstructDefaultsAndOptions()
         pointersDefaults[questPointerIdent .. k] = {value = k}
         pointersDefaults[questPointerIdent .. k].name = v.name
         pointersDefaults[questPointerIdent .. k].texture = v.texture
-        pointersDefaults[questPointerIdent .. k].textureScale = v.textureScale or 1
-        pointersDefaults[questPointerIdent .. k].pointerOffset = v.pointerOffset or 1
+        pointersDefaults[questPointerIdent .. k].atlasID = v.atlasID
+        pointersDefaults[questPointerIdent .. k].atlasAltID = v.atlasID
+        pointersDefaults[questPointerIdent .. k].textureScale = v.textureScale or getPointerTextureByAtlasID(v.atlasID).textureScale or 1
+        pointersDefaults[questPointerIdent .. k].textureAltScale = v.textureScale or getPointerTextureByAtlasID(v.atlasID).textureScale or 1
+        pointersDefaults[questPointerIdent .. k].pointerOffset = v.pointerOffset or getPointerTextureByAtlasID(v.atlasID).pointerOffset or 1
         pointersDefaults[questPointerIdent .. k].enabled = v.enabled or true
         pointersDefaults[questPointerIdent .. k].showDistance = v.showDistance or true
         pointersDefaults[questPointerIdent .. k].showTTA = v.showTTA or true
@@ -1431,7 +1519,28 @@ function Addon:ConstructDefaultsAndOptions()
         pointersOptionsArgs[questPointerIdent .. k] = {
             type = "group",
             order = k,
-            name = v.name,
+            name = function(info)
+                local atlasID = Addon.db.profile[info[#info-1]][info[#info]].atlasID
+                if atlasID:match("^%d") then
+                    local atlasInfo = C_Texture.GetAtlasInfo(atlasID)
+                    if atlasInfo then
+                        local left = atlasInfo.leftTexCoord * atlasInfo.width
+                        local right = atlasInfo.rightTexCoord * atlasInfo.width
+                        local top = atlasInfo.topTexCoord * atlasInfo.height
+                        local bottom = atlasInfo.bottomTexCoord * atlasInfo.height
+
+                        return string.format(
+                            "|T%s:24:24:0:0:%d:%d:%f:%f:%f:%f|t %s",
+                            atlasInfo.file,
+                            atlasInfo.width, atlasInfo.height,
+                            left, right, top, bottom,
+                            v.name
+                        )
+                    end
+                else
+                    return string.format("|A:%s:24:24|a %s", atlasID, v.name)
+                end
+            end,
             args = {}
         }
         pointersOptionsArgs[questPointerIdent .. k].args.enabled = {
@@ -1454,27 +1563,117 @@ function Addon:ConstructDefaultsAndOptions()
         pointersOptionsArgs[questPointerIdent .. k].args.header0 = {
             type = "header",
             order = 6,
-            name = "Pointer texture"
+            name = "Pointer textures and adjustments"
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.texturePreview = {
+        pointersOptionsArgs[questPointerIdent .. k].args.atlasIDPreview = {
             type = "description",
             order = 7,
             name = "",
-            width = 1/4,
+            width = 1/6,
             image = function(info)
-                return Addon.db.profile[info[#info-2]][info[#info-1]].texture
+                local selectedAtlasID = Addon.db.profile[info[#info-2]][info[#info-1]].atlasID
+                if selectedAtlasID then
+                    return getAtlasTexture(selectedAtlasID)
+                end
+                return nil
             end,
             imageWidth = 24,
             imageHeight = 24,
+            imageCoords = function(info)
+                local selectedAtlasID = Addon.db.profile[info[#info-2]][info[#info-1]].atlasID
+                if selectedAtlasID then
+                    return getAtlasCoords(selectedAtlasID)
+                end
+            end
         }
-        pointersOptionsArgs[questPointerIdent .. k].args.texture = {
+        pointersOptionsArgs[questPointerIdent .. k].args.atlasID = {
             type = "select",
-            order = 8,
-            name = "",
-            values = pointerTextures,
-            sorting = function() return getSortedPointerTextureKeys() end,
+            order = 7.1,
+            name = "Progress texture:",
+            values = function() return getPointerAtlasIDs() end,
+            sorting = function() return getSortedPointerAtlasIDKeys() end,
             set = function(info, value)
                 Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]] = value
+                local texture = getPointerTextureByAtlasID(value)
+                Addon.db.profile[info[#info-2]][info[#info-1]].textureScale = texture and texture.textureScale or 1
+                Addon:UpdateHUDSettings()
+            end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.textureScale = {
+            type = "range",
+            order = 7.2,
+            name = "Progress arrow scale:",
+            min = 0,
+            max = 3,
+            step = 0.01,
+            isPercent = true,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.atlasCustom = {
+            type = "input",
+            order = 7.3,
+            name = "Progress atlas:",
+            width = "full",
+            get = function(info)
+                return Addon.db.profile[info[#info-2]][info[#info-1]].atlasID
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info-2]][info[#info-1]].atlasID = value
+                Addon:UpdateHUDSettings()
+            end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.atlasAltIDPreview = {
+            type = "description",
+            order = 8,
+            name = "",
+            width = 1/6,
+            image = function(info)
+                local selectedAtlasID = Addon.db.profile[info[#info-2]][info[#info-1]].atlasAltID
+                if selectedAtlasID then
+                    return getAtlasTexture(selectedAtlasID)
+                end
+                return nil
+            end,
+            imageWidth = 24,
+            imageHeight = 24,
+            imageCoords = function(info)
+                local selectedAtlasID = Addon.db.profile[info[#info-2]][info[#info-1]].atlasAltID
+                if selectedAtlasID then
+                    return getAtlasCoords(selectedAtlasID)
+                end
+            end
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.atlasAltID = {
+            type = "select",
+            order = 8.1,
+            name = "Completed texture:",
+            values = function() return getPointerAtlasIDs() end,
+            sorting = function() return getSortedPointerAtlasIDKeys() end,
+            set = function(info, value)
+                Addon.db.profile[info[#info-2]][info[#info-1]][info[#info]] = value
+                local texture = getPointerTextureByAtlasID(value)
+                Addon.db.profile[info[#info-2]][info[#info-1]].textureAltScale = texture and texture.textureScale or 1
+                Addon:UpdateHUDSettings()
+            end,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.textureAltScale = {
+            type = "range",
+            order = 8.2,
+            name = "Completed arrow scale:",
+            min = 0,
+            max = 3,
+            step = 0.01,
+            isPercent = true,
+        }
+        pointersOptionsArgs[questPointerIdent .. k].args.atlasAltCustom = {
+            type = "input",
+            order = 8.3,
+            name = "Completed atlas:",
+            width = "full",
+            get = function(info)
+                return Addon.db.profile[info[#info-2]][info[#info-1]].atlasAltID
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info-2]][info[#info-1]].atlasAltID = value
                 Addon:UpdateHUDSettings()
             end,
         }
@@ -1489,15 +1688,6 @@ function Addon:ConstructDefaultsAndOptions()
             name = "Pointer vertical adjustment",
             min = -5,
             max = 5,
-            step = 0.01,
-            isPercent = true,
-        }
-        pointersOptionsArgs[questPointerIdent .. k].args.textureScale = {
-            type = "range",
-            order = 15,
-            name = "Pointer arrow scale",
-            min = 0,
-            max = 3,
             step = 0.01,
             isPercent = true,
         }
@@ -1760,7 +1950,6 @@ function Addon:OnEnable()
     if TomTom then
         self:SecureHook(TomTom, "SetCrazyArrow", tomtomSetCrazyArrow)
         self:SecureHook(TomTom, "RemoveWaypoint", tomtomRemoveWaypoint)
-        pointerTextures["Interface\\addons\\TomTom\\Images\\MinimapArrow-Green"] = "TomTom crazy arrrow"
     end
 
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
