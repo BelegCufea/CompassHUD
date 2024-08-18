@@ -1,4 +1,37 @@
-# v1.1.5 ()
+# v1.2.0 (18.8.2024)
+
+## New
+
+### **Dynamic Pointer Textures**
+**Idea, help, and testing by [sampconrad](https://github.com/sampconrad)**
+
+First of all, the number of pointers has increased. This should somehow accommodate new quest types in the `The War Within` expansion.
+
+On the `Pointers` tab, the settings are now split into two tabs.
+
+The previous options are now moved into a `Texts` tab. The new `Textures` tab now includes settings for more options regarding pointer textures. The `Copy...` functionality will copy only settings from that particular tab.
+
+![PointersTextures](https://i.imgur.com/PjywdZ6.png)
+
+Options are split into two subsections: `Progress pointer`, which will be used when a quest is not finished yet, and `Turn-in pointer`, which will be used when a quest is ready for turn-in (dah!).
+
+Besides the obvious ones, the settings include these two options:
+
+- **Edge Detection** - Previously, the arrows were flipped when on the top side of the compass and, when `Pointers stays on HUD` was checked, they rotated when on the edge of the Compass. Now, for some textures, that may look ridiculous, so you have an option to disable that behavior.
+- **Custom Atlas ID** - If you don't like any of the available `Texture` pointers, you can enter an atlasID to use instead. WoW currently doesn't supply the list of these, but you can use, for example, the integrated Texture picker in [WeakAuras](https://www.curseforge.com/wow/addons/weakauras-2) (use `Blizzard Atlas` option) or [TextureAtlasViewer](https://www.curseforge.com/wow/addons/textureatlasviewer).
+
+There are also two `Presets` accessible by clicking that line on top of the pointers list.
+
+![PointersTextures](https://i.imgur.com/SghnLjp.png)
+
+The `Modern` one should closely follow the [The War Within](https://news.blizzard.com/en-us/world-of-warcraft/24117139/user-interface-and-quest-updates-in-the-war-within) new look.
+
+
+## Fix
+
+- Compass stayed visible in instances
+
+# v1.1.5 (15.8.2024)
 
 ## New
 
