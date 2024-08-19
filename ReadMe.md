@@ -32,8 +32,9 @@ I was inspired by [Compass](https://www.wowinterface.com/downloads/info14051-Com
 
     *- setting visibility and several other options for different types of pointers*
 
-    *- setting font, visibilty and colors for cardinal and ordinal directions and degrees for custom HUD*
+    ![CustomTextures](https://i.imgur.com/fhRaRWj.png)
 
+    *- setting font, visibilty and colors for cardinal and ordinal directions and degrees for custom HUD*
 
 ## Configuration
 
@@ -49,8 +50,12 @@ Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 
 - On the `Pointers` panel you can set visiblity and several other settings for different types of pointers.
 
-![Pointers](https://i.imgur.com/Xh1lwo5.png)
-
+*visibility, position and fonts*
+![PointerTexts](https://i.imgur.com/HUTgxJ6.png)
+*textures and sizes*
+![PointerTextures](https://i.imgur.com/PjywdZ6.png)
+*picking from texture presets*
+![PointerPresets](https://i.imgur.com/SghnLjp.png)
 
 ## Known bugs
 
@@ -58,7 +63,7 @@ Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 
 ### TODO (maybe, if there is a demand)
 
-- Marker for "Quest Offers"
+- Marker for "Quest Offers" (if it is even possible)
 - More textures
     - *You can use your own. It has to be 2048x16, has 720 degrees starting from N and be in BLP or TGA fromat (look at `CompassHUD.tga` at Media folder). Just put it somewhere in Interface\Addons folder (don't put it in any addon folder as it may be deleted when updating that addon) in SavedVariables put* `CompassTextureTexture = [[Interface\Addons\]] .. {your texture name},` *just after line* `["PositionX"]` ... *of your profile.*
 
