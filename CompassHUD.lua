@@ -96,6 +96,7 @@ local pointerTextures = {
     },
     ["Kite Gold"] = {
         atlasID = "Navigation-Tracked-Arrow",
+        textureScale = 0.9,
         textureRotate = true,
     },
     ["Up Green"] = {
@@ -150,7 +151,7 @@ local pointerTextures = {
         textureScale = 0.8,
         textureRotate = true,
     },
-    ["Questionmark blue"] = {
+    ["Questionmark Blue"] = {
         atlasID = "QuestRepeatableTurnin",
         textureScale = 0.8,
     }
@@ -310,6 +311,8 @@ local texturePresets = {
         [Enum.QuestClassification.WorldQuest] = {
             atlasIDavailable = "completiondialog-warwithincampaign-worldquests-icon",
             atlasIDturnin = "completiondialog-warwithincampaign-worldquests-icon",
+            textureScaleAvailable = 1.35,
+            textureScaleTurnin = 1.35,
         },
         [Enum.QuestFrequency.Daily + 100] = {
             atlasIDavailable = "quest-recurring-available",
@@ -351,8 +354,6 @@ local texturePresets = {
         [Enum.QuestClassification.Normal] = {
             atlasIDavailable = "MiniMap-QuestArrow",
             atlasIDturnin = "QuestTurnin",
-            atlasNameAvailable = "Arrow Gold",
-            atlasNameTurnIn = "Questionmark Gold",
             textureRotateAvailable = true,
             textureScaleTurnin = 0.8,
             textureRotateTurnin = false,
@@ -369,8 +370,6 @@ local texturePresets = {
         [Enum.QuestFrequency.Daily + 100] = {
             atlasIDavailable = "MiniMap-VignetteArrow",
             atlasIDturnin = "QuestRepeatableTurnin",
-            atlasNameAvailable = "Arrow Blue",
-            atlasNameTurnIn = "Questionmark Blue",
             textureRotateAvailable = true,
             textureScaleTurnin = 0.8,
             textureRotateTurnin = false,
@@ -1753,24 +1752,24 @@ function Addon:ConstructDefaultsAndOptions()
                 end
             else
                 if v.atlasIDavailable and not atlasIDExists(v.atlasIDavailable) then
-                    local name = v.atlasNameAvailable or (k > 100 and "Recurring") or questPointers[k]
-                    pointerTextures[name.." available"] = { atlasID = v.atlasIDavailable }
+                    local name = v.atlasNameAvailable or ((k > 100 and "Recurring") or questPointers[k]).." progress"
+                    pointerTextures[name] = { atlasID = v.atlasIDavailable }
                     if v.textureScaleAvailable then
-                        pointerTextures[name.." available"].textureScale = v.textureScaleAvailable
+                        pointerTextures[name].textureScale = v.textureScaleAvailable
                     end
                     if v.textureRotateAvailable then
-                        pointerTextures[name.." available"].textureRotate = v.textureRotateAvailable
+                        pointerTextures[name].textureRotate = v.textureRotateAvailable
                     end
                 end
                 if v.atlasIDturnin and not atlasIDExists(v.atlasIDturnin) then
-                    local name = v.atlasNameTurnin or v.atlasNameAvailable or (k > 100 and "Recurring") or questPointers[k]
+                    local name = v.atlasNameTurnin or v.atlasNameAvailable or ((k > 100 and "Recurring") or questPointers[k]).." turn-in"
 
-                    pointerTextures[name.." turn-in"] = { atlasID = v.atlasIDturnin }
+                    pointerTextures[name] = { atlasID = v.atlasIDturnin }
                     if v.textureScaleTurnin then
-                        pointerTextures[name.." turn-in"].textureScale = v.textureScaleTurnin
+                        pointerTextures[name].textureScale = v.textureScaleTurnin
                     end
                     if v.textureRotateTurnin then
-                        pointerTextures[name.." turn-in"].textureRotate = v.textureRotateTurnin
+                        pointerTextures[name].textureRotate = v.textureRotateTurnin
                     end
                 end
             end
