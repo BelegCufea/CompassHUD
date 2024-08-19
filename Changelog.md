@@ -1,3 +1,14 @@
+# v1.2.0a (19.8.2024)
+
+## Fix
+
+- The turn-in pointer texture was rotating at the edge of the compass even when "Edge rotation" was unchecked. This has been resolved.
+
+## Misc
+
+- Revamped the pointer texture presets system to allow for easier addition of new presets.
+- Added a new "Classic Turn-In" preset.
+
 # v1.2.0 (18.8.2024)
 
 ## New
