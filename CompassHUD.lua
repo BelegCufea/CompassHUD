@@ -68,32 +68,15 @@ local questUnknown = -999
 local tomTom = -200
 local mapPin = -100
 
-local texturePreset = "classic"
+local defaultTexturePreset = "Classic"
+local texturePreset = defaultTexturePreset
 local questPointerIdent = "pointer_"
+
+-- some predefined textures fo poiners (not used in texturePresets)
 local pointerTextures = {
-    ["User pin"] = {
-        atlasID = "Waypoint-MapPin-Minimap-Tracked",
-    },
-    ["Arrow Gold small"] = {
-        atlasID = "Rotating-MinimapGuideArrow",
-        textureScale = 1.35,
-        textureRotate = true,
-    },
-    ["Arrow Gold"] = {
-        atlasID = "MiniMap-QuestArrow",
-        textureRotate = true,
-    },
-    ["Arrow Blue"] = {
-        atlasID = "MiniMap-VignetteArrow",
-        textureRotate = true,
-    },
     ["Arrow Red"] = {
         atlasID = "MiniMap-DeadArrow",
         textureRotate = true,
-    },
-    ["Other"] = {
-        atlasID = "128-Store-Main",
-        textureScale = 0.8,
     },
     ["Arrow Silver"] = {
         atlasID = "MinimapArrow",
@@ -106,109 +89,300 @@ local pointerTextures = {
     ["Repeatable Gold"] = {
         atlasID = "UI-QuestPoiRecurring-QuestNumber-SuperTracked",
     },
-    ["Arrow Green small"] = {
-        atlasID = "Rotating-MinimapGroupArrow",
-        textureScale = 1.35,
-        textureRotate = true,
-    },
     ["Arrow Blue small"] = {
         atlasID = "Rotating-MinimapArrow",
         textureScale = 1.35,
         textureRotate = true,
     },
+    ["Kite Gold"] = {
+        atlasID = "Navigation-Tracked-Arrow",
+        textureRotate = true,
+    },
+    ["Up Green"] = {
+        atlasID = "Garr_LevelUpgradeArrow",
+        textureScale = 1.35,
+        textureRotate = true,
+    },
+    ["Double Wedge Gold"] = {
+        atlasID = "NPE_ArrowUp",
+        textureRotate = true,
+    },
+    ["Wedge Gold"] = {
+        atlasID = "NPE_ArrowUpGlow",
+        textureRotate = true,
+    },
+    ["Triangle White"] = {
+        atlasID = "Soulbinds_Collection_Scrollbar_Arrow_Up",
+        textureScale = 1.35,
+        textureRotate = true,
+    },
+    ["Up Red"] = {
+        atlasID = "Vehicle-SilvershardMines-Arrow",
+        textureRotate = true,
+    },
+    ["Triangle Yellow"] = {
+        atlasID = "glues-characterSelect-icon-arrowUp",
+        textureScale = 1.35,
+        textureRotate = true,
+    },
+    ["Pointer Green"] = {
+        atlasID = "loottoast-arrow-green",
+        textureScale = 0.8,
+        textureRotate = true,
+    },
+    ["Pointer Blue"] = {
+        atlasID = "loottoast-arrow-blue",
+        textureScale = 0.8,
+        textureRotate = true,
+    },
+    ["Pointer Purple"] = {
+        atlasID = "loottoast-arrow-purple",
+        textureScale = 0.8,
+        textureRotate = true,
+    },
+    ["Pointer Orange"] = {
+        atlasID = "loottoast-arrow-orange",
+        textureScale = 0.8,
+        textureRotate = true,
+    },
+    ["Up Gold"] = {
+        atlasID = "poi-door-arrow-up",
+        textureScale = 0.8,
+        textureRotate = true,
+    },
+    ["Questionmark blue"] = {
+        atlasID = "QuestRepeatableTurnin",
+        textureScale = 0.8,
+    }
 }
 
+-- "Quest" Classifications
 local questPointers = {
-	[tomTom] = {
-        name = "TomTom",
-        atlasID = "Rotating-MinimapGroupArrow",
+	[tomTom] =  "TomTom",
+	[questUnknown] = "Unknown pointer",
+    [mapPin] = "User map pin",
+	[Enum.QuestClassification.Important] = "Important",
+	[Enum.QuestClassification.Legendary] = "Legendary",
+	[Enum.QuestClassification.Campaign] = "Campaign",
+	[Enum.QuestClassification.Calling] = "Calling",
+	[Enum.QuestClassification.Meta] = "Meta",
+	[Enum.QuestClassification.Normal] = "Quest",
+	[Enum.QuestClassification.Questline] = "Questline",
+	[Enum.QuestClassification.BonusObjective] = "Bonus",
+	[Enum.QuestClassification.Threat] = "Threat",
+	[Enum.QuestClassification.WorldQuest] = "WorldQuest",
+	[Enum.QuestFrequency.Daily + 100] = "Daily",
+	[Enum.QuestFrequency.Weekly + 100] = "Weekly",
+    [Enum.QuestFrequency.ResetByScheduler + 100] = "Scheduled",
+}
+
+-- Texture Presets
+-- At least one of 'atlasIDavailable' or 'reference' must be defined for each preset.
+-- 'reference' will inherit the definition from the referenced member within the same preset, but it only supports one level of reference depth.
+-- You can use 'reference' in combination with other parameters. When used together, the defined parameters will override the inherited values from the reference. Undefined parameters will be inherited.
+-- 'atlasName...' will be displayed in the Texture drop-down box. If not present, some combination of 'questPointers' name and "_available"/"_turn-in" will be used.
+-- In 'defaultTexturePreset', all "Quest" classifications from 'questPointers' must be defined.
+-- In all other presets, if a member is omitted, the corresponding values from 'defaultTexturePreset' will be used.
+-- Currently, only the following parameters can be defined: 'atlasIDavailable', 'atlasIDturnin', 'textureScaleAvailable', 'textureScaleTurnin', 'textureRotateAvailable', and 'textureRotateTurnin'.
+-- If 'atlasIDturnin' and other '..Turnin' parameters are not defined, the corresponding 'available' parameter will be used instead.
+local texturePresets = {
+    [defaultTexturePreset] = {
+        [tomTom] = {
+            atlasIDavailable = "Rotating-MinimapGroupArrow",
+            atlasNameAvailable = "Arrow Green small",
+            textureScaleAvailable = 1.35,
+            textureRotateAvailable = true,
+        },
+        [questUnknown] = {
+            atlasIDavailable = "128-Store-Main",
+            atlasNameAvailable = "Other",
+            textureScaleAvailable = 0.8,
+        },
+        [mapPin] = {
+            atlasIDavailable = "Waypoint-MapPin-Minimap-Tracked",
+            atlasNameAvailable = "User pin",
+        },
+        [Enum.QuestClassification.Important] = {
+            reference = Enum.QuestClassification.Normal,
+        },
+        [Enum.QuestClassification.Legendary] = {
+            reference = Enum.QuestClassification.Normal,
+        },
+        [Enum.QuestClassification.Campaign] = {
+            reference = Enum.QuestClassification.Normal,
+        },
+        [Enum.QuestClassification.Calling] = {
+            reference = Enum.QuestClassification.Normal,
+        },
+        [Enum.QuestClassification.Meta] = {
+            reference = Enum.QuestClassification.Normal,
+        },
+        [Enum.QuestClassification.Normal] = {
+            atlasIDavailable = "MiniMap-QuestArrow",
+            atlasNameAvailable = "Arrow Gold",
+            textureRotateAvailable = true,
+        },
+        [Enum.QuestClassification.Questline] = {
+            reference = Enum.QuestClassification.Normal,
+        },
+        [Enum.QuestClassification.BonusObjective] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.Threat] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.WorldQuest] = {
+            atlasIDavailable = "Rotating-MinimapGuideArrow",
+            atlasNameAvailable = "Arrow Gold small",
+            textureScaleAvailable = 1.35,
+            textureRotateAvailable = true,
+        },
+        [Enum.QuestFrequency.Daily + 100] = {
+            atlasIDavailable = "MiniMap-VignetteArrow",
+            atlasNameAvailable = "Arrow Blue",
+            textureRotateAvailable = true,
+        },
+        [Enum.QuestFrequency.Weekly + 100] = {
+            reference = Enum.QuestFrequency.Daily + 100,
+        },
+        [Enum.QuestFrequency.ResetByScheduler + 100] = {
+            reference = Enum.QuestFrequency.Daily + 100,
+        },
     },
-	[questUnknown] = {
-        name = "Unknown pointer",
-        atlasID = "128-Store-Main",
+    ["Modern"] = {
+        [tomTom] = {
+            atlasIDavailable = "Rotating-MinimapGroupArrow",
+            atlasIDturnin = "Rotating-MinimapArrow",
+            atlasNameAvailable = "Arrow Green small",
+            atlasNameTurnin = "Arrow Blue small",
+            textureScaleAvailable = 1.35,
+            textureRotateAvailable = true,
+        },
+        [Enum.QuestClassification.Important] = {
+            atlasIDavailable = "quest-important-available",
+            atlasIDturnin = "quest-important-turnin",
+            textureScaleAvailable = 0.8,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Legendary] = {
+            atlasIDavailable = "quest-legendary-available",
+            atlasIDturnin = "quest-legendary-turnin",
+            textureScaleAvailable = 0.8,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Campaign] = {
+            atlasIDavailable = "Quest-Campaign-Available",
+            atlasIDturnin = "Quest-Campaign-TurnIn",
+            textureScaleAvailable = 0.8,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Calling] = {
+            atlasIDavailable = "callings-available",
+            atlasIDturnin = "callings-turnin",
+            textureScaleAvailable = 0.8,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Meta] = {
+            atlasIDavailable = "quest-wrapper-available",
+            atlasIDturnin = "quest-wrapper-turnin",
+            textureScaleAvailable = 0.8,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Normal] = {
+            atlasIDavailable = "QuestNormal",
+            atlasIDturnin = "QuestTurnin",
+            textureScaleAvailable = 0.8,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Questline] = {
+            reference = Enum.QuestClassification.Normal,
+        },
+        [Enum.QuestClassification.BonusObjective] = {
+            atlasIDavailable = "VignetteEvent",
+            atlasIDturnin = "VignetteEvent",
+            textureScaleAvailable = 0.8,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Threat] = {
+            atlasIDavailable = "vignettekillboss",
+            atlasIDturnin = "vignettekillboss",
+        },
+        [Enum.QuestClassification.WorldQuest] = {
+            atlasIDavailable = "completiondialog-warwithincampaign-worldquests-icon",
+            atlasIDturnin = "completiondialog-warwithincampaign-worldquests-icon",
+        },
+        [Enum.QuestFrequency.Daily + 100] = {
+            atlasIDavailable = "quest-recurring-available",
+            atlasIDturnin = "quest-recurring-turnin",
+            textureScaleAvailable = 0.8,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestFrequency.Weekly + 100] = {
+            reference = Enum.QuestFrequency.Daily + 100,
+        },
+        [Enum.QuestFrequency.ResetByScheduler + 100] = {
+            reference = Enum.QuestFrequency.Daily + 100,
+        },
     },
-    [mapPin] = {
-        name = "User map pin",
-        atlasID = "Waypoint-MapPin-Minimap-Tracked",
+    [defaultTexturePreset.." - turn-in"] = {
+        [tomTom] = {
+            atlasIDavailable = "Rotating-MinimapGroupArrow",
+            atlasIDturnin = "Rotating-MinimapArrow",
+            atlasNameAvailable = "Arrow Green small",
+            atlasNameTurnin = "Arrow Blue small",
+            textureScaleAvailable = 1.35,
+            textureRotateAvailable = true,
+        },
+        [Enum.QuestClassification.Important] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.Legendary] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.Campaign] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.Calling] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.Meta] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.Normal] = {
+            atlasIDavailable = "MiniMap-QuestArrow",
+            atlasIDturnin = "QuestTurnin",
+            atlasNameAvailable = "Arrow Gold",
+            atlasNameTurnIn = "Questionmark Gold",
+            textureRotateAvailable = true,
+            textureScaleTurnin = 0.8,
+            textureRotateTurnin = false,
+        },
+        [Enum.QuestClassification.Questline] = {
+            reference = Enum.QuestClassification.Normal,
+        },
+        [Enum.QuestClassification.BonusObjective] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.Threat] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestFrequency.Daily + 100] = {
+            atlasIDavailable = "MiniMap-VignetteArrow",
+            atlasIDturnin = "QuestRepeatableTurnin",
+            atlasNameAvailable = "Arrow Blue",
+            atlasNameTurnIn = "Questionmark Blue",
+            textureRotateAvailable = true,
+            textureScaleTurnin = 0.8,
+            textureRotateTurnin = false,
+        },
+        [Enum.QuestFrequency.Weekly + 100] = {
+            reference = Enum.QuestFrequency.Daily + 100,
+        },
+        [Enum.QuestFrequency.ResetByScheduler + 100] = {
+            reference = Enum.QuestFrequency.Daily + 100,
+        },
     },
-	[Enum.QuestClassification.Important] = {
-        name = "Important",
-        atlasID = "MiniMap-QuestArrow",
-        atlasIDavailable = "quest-important-available",
-        atlasIDturnin = "quest-important-turnin",
-    },
-	[Enum.QuestClassification.Legendary] = {
-        name = "Legendary",
-        atlasID = "MiniMap-QuestArrow",
-        atlasIDavailable = "quest-legendary-available",
-        atlasIDturnin = "quest-legendary-turnin",
-    },
-	[Enum.QuestClassification.Campaign] = {
-        name = "Campaign",
-        atlasID = "MiniMap-QuestArrow",
-        atlasIDavailable = "Quest-Campaign-Available",
-        atlasIDturnin = "Quest-Campaign-TurnIn",
-    },
-	[Enum.QuestClassification.Calling] = {
-        name = "Calling",
-        atlasID = "MiniMap-QuestArrow",
-        atlasIDavailable = "callings-available",
-        atlasIDturnin = "callings-turnin",
-    },
-	[Enum.QuestClassification.Meta] = {
-        name = "Meta",
-        atlasID = "MiniMap-QuestArrow",
-        atlasIDavailable = "quest-wrapper-available",
-        atlasIDturnin = "quest-wrapper-turnin",
-    },
-	[Enum.QuestClassification.Normal] = {
-        name = "Quest",
-        atlasID = "MiniMap-QuestArrow",
-        atlasIDavailable = "QuestNormal",
-        atlasIDturnin = "QuestTurnin",
-    },
-	[Enum.QuestClassification.Questline] = {
-        name = "Questline",
-        atlasID = "MiniMap-QuestArrow",
-        atlasIDavailable = "QuestNormal",
-        atlasIDturnin = "QuestTurnin",
-    },
-	[Enum.QuestClassification.BonusObjective] = {
-        name = "Bonus",
-        atlasID = "MiniMap-VignetteArrow",
-        atlasIDavailable = "VignetteEvent",
-        atlasIDturnin = "VignetteEvent",
-    },
-	[Enum.QuestClassification.Threat] = {
-        name = "Threat",
-        atlasID = "MiniMap-VignetteArrow",
-        atlasIDavailable = "vignettekillboss",
-        atlasIDturnin = "vignettekillboss",
-    },
-	[Enum.QuestClassification.WorldQuest] = {
-        name = "WorldQuest",
-        atlasID = "Rotating-MinimapGuideArrow",
-        atlasIDavailable = "completiondialog-warwithincampaign-worldquests-icon",
-        atlasIDturnin = "completiondialog-warwithincampaign-worldquests-icon",
-    },
-	[Enum.QuestFrequency.Daily + 100] = {
-        name = "Daily",
-        atlasID = "MiniMap-VignetteArrow",
-        atlasIDavailable = "quest-recurring-available",
-        atlasIDturnin = "quest-recurring-turnin",
-    },
-	[Enum.QuestFrequency.Weekly + 100] = {
-        name = "Weekly",
-        atlasID = "MiniMap-VignetteArrow",
-        atlasIDavailable = "quest-recurring-available",
-        atlasIDturnin = "quest-recurring-turnin",
-    },
-    [Enum.QuestFrequency.ResetByScheduler + 100] = {
-        name = "Scheduled",
-        atlasID = "MiniMap-VignetteArrow",
-        atlasIDavailable = "quest-recurring-available",
-        atlasIDturnin = "quest-recurring-turnin",
-    },
+
 }
 
 Addon.Defaults = {
@@ -1132,7 +1306,7 @@ local function getPointerType(questID, questType)
         local questInfo = GetQuestInfo(questIndex)
         questClassification = (questInfo and questInfo.frequency + 100) or questClassification
     end
-    Debug:Info("Classification", questPointers[questClassification] and questPointers[questClassification].name or "Unknown")
+    Debug:Info("Classification", questPointers[questClassification] and questClassification or "Unknown")
     return questPointerIdent .. (questPointers[questClassification] and questClassification or questUnknown)
 end
 
@@ -1181,7 +1355,7 @@ local function updateQuestIcon(questPointer)
     questPointer.flipped = false
     if questPointer.position > 0 then
         questPointer.flipped = true
-        if completed and (options.textureAltRotate == 1) or (options.textureRotate == 1) then
+        if (completed and (options.textureAltRotate == 1)) or (not completed and (options.textureRotate == 1)) then
             questPointer.texture:SetTexCoord(0, 1, 1, 0)
         end
         point = "BOTTOM"
@@ -1272,7 +1446,7 @@ local function setQuestsIcons()
                     elseif Options.PointerStay then
                         local side = math.abs(angle)/angle
                         local option = Options.Pointers[quest.frame.pointerType]
-                        if quest.completed and (option.textureAltRotate == 1) or (option.textureRotate == 1) then
+                        if (quest.completed and (option.textureAltRotate == 1)) or (not quest.completed and (option.textureRotate == 1)) then
                                 quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
                         end
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * side * visible, quest.frame.position)
@@ -1566,33 +1740,38 @@ function Addon:ConstructDefaultsAndOptions()
         return false
     end
     -- add textures from questPointers into pointerTextures
-    for k, v in pairs(questPointers) do
-        local name = k > 100 and "Recurring" or  v.name
-        if (v.atlasIDavailable and v.atlasIDturnin and v.atlasIDavailable == v.atlasIDturnin) or (v.atlasIDavailable and not v.atlasIDturnin) and not atlasIDExists(v.atlasIDavailable) then
-            pointerTextures[name] = { atlasID = v.atlasIDavailable }
-            if v.atlasIDavailableScale then
-                pointerTextures[name].textureScale = v.atlasIDavailableScale
-            end
-            if v.atlasIDavailableRotate then
-                pointerTextures[name].textureRotate = v.atlasIDavailableRotate
-            end
-        else
-            if v.atlasIDavailable and not atlasIDExists(v.atlasIDavailable) then
-                pointerTextures[name.." available"] = { atlasID = v.atlasIDavailable }
-                if v.atlasIDavailableScale then
-                    pointerTextures[name.." available"].textureScale = v.atlasIDavailableScale
+    for _, preset in pairs(texturePresets) do
+        for k, v in pairs(preset) do
+            if (v.atlasIDavailable and v.atlasIDturnin and v.atlasIDavailable == v.atlasIDturnin) or (v.atlasIDavailable and not v.atlasIDturnin) and not atlasIDExists(v.atlasIDavailable) then
+                local name = v.atlasNameAvailable or (k > 100 and "Recurring") or questPointers[k]
+                pointerTextures[name] = { atlasID = v.atlasIDavailable }
+                if v.textureScaleAvailable then
+                    pointerTextures[name].textureScale = v.textureScaleAvailable
                 end
-                if v.atlasIDavailableRotate then
-                    pointerTextures[name.." available"].textureRotate = v.atlasIDavailableRotate
+                if v.textureRotateAvailable then
+                    pointerTextures[name].textureRotate = v.textureRotateAvailable
                 end
-            end
-            if v.atlasIDturnin and not atlasIDExists(v.atlasIDturnin) then
-                pointerTextures[name.." turn-in"] = { atlasID = v.atlasIDturnin }
-                if v.atlasIDturninScale then
-                    pointerTextures[name.." turn-in"].textureScale = v.atlasIDturninScale
+            else
+                if v.atlasIDavailable and not atlasIDExists(v.atlasIDavailable) then
+                    local name = v.atlasNameAvailable or (k > 100 and "Recurring") or questPointers[k]
+                    pointerTextures[name.." available"] = { atlasID = v.atlasIDavailable }
+                    if v.textureScaleAvailable then
+                        pointerTextures[name.." available"].textureScale = v.textureScaleAvailable
+                    end
+                    if v.textureRotateAvailable then
+                        pointerTextures[name.." available"].textureRotate = v.textureRotateAvailable
+                    end
                 end
-                if v.atlasIDturninRotate then
-                    pointerTextures[name.." turn-in"].textureRotate = v.atlasIDturninRotate
+                if v.atlasIDturnin and not atlasIDExists(v.atlasIDturnin) then
+                    local name = v.atlasNameTurnin or v.atlasNameAvailable or (k > 100 and "Recurring") or questPointers[k]
+
+                    pointerTextures[name.." turn-in"] = { atlasID = v.atlasIDturnin }
+                    if v.textureScaleTurnin then
+                        pointerTextures[name.." turn-in"].textureScale = v.textureScaleTurnin
+                    end
+                    if v.textureRotateTurnin then
+                        pointerTextures[name.." turn-in"].textureRotate = v.textureRotateTurnin
+                    end
                 end
             end
         end
@@ -1611,16 +1790,22 @@ function Addon:ConstructDefaultsAndOptions()
                 type = "select",
                 order = 10,
                 name = "Texture presets",
-                values = {
-                    ["classic"] = "Classic",
-                    ["tww"] = "Modern",
-                },
+                values = function()
+                    local val = {}
+                    for k, _ in pairs(texturePresets) do
+                        val[k] = k
+                    end
+                    return val
+                end,
                 get = function(info)
                     local previews = Addon.Options.args.Pointers.args.Presets.args.Preview.args
                     wipe(previews)
                     for k, v in pairs(questPointers) do
-                        local atlasID = (texturePreset == "classic" and v.atlasID) or v.atlasIDavailable or v.atlasID
-                        local atlasAltID = (texturePreset == "classic" and v.atlasID) or v.atlasIDturnin or v.atlasIDavailable or v.atlasID
+                        local preset = texturePresets[texturePreset][k]
+                        local default = texturePresets[defaultTexturePreset][k]
+                        local reference = preset and preset.reference and texturePresets[texturePreset][preset.reference]
+                        local atlasID = preset and (preset.atlasIDavailable or (reference and reference.atlasIDavailable)) or default.atlasIDavailable
+                        local atlasAltID = preset and (preset.atlasIDturnin or (reference and reference.atlasIDturnin)) or default.atlasIDturnin or (reference and reference.atlasIDavailable) or default.atlasIDavailable
                         previews["AvailablePreview_"..k] = {
                             type = "description",
                             order = k*10,
@@ -1662,11 +1847,10 @@ function Addon:ConstructDefaultsAndOptions()
                         previews["QuestType_"..k] = {
                             type = "description",
                             order = k*10+5,
-                            name = v.name,
+                            name = v,
                             width = 5/6,
                         }
                     end
-                    Debug:Table("Previews", previews)
                     AceConfigRegistry:NotifyChange(Const.METADATA.NAME)
                     return texturePreset
                 end,
@@ -1677,16 +1861,16 @@ function Addon:ConstructDefaultsAndOptions()
                 order = 20,
                 name = "Set",
                 func = function()
-                    for k, v in pairs(Addon.db.profile.Pointers) do
+                    for k, v in pairs(Options.Pointers) do
                         local questPointer = questPointers[v.value]
                         if questPointer then
-                            if texturePreset == "classic" then
-                                v.atlasID = questPointer.atlasID
-                                v.atlasAltID = questPointer.atlasID
-                            elseif texturePreset == "tww" then
-                                v.atlasID = questPointer.atlasIDavailable or questPointer.atlasID
-                                v.atlasAltID = questPointer.atlasIDturnin or questPointer.atlasID
-                            end
+                            local preset = texturePresets[texturePreset][v.value]
+                            local default = texturePresets[defaultTexturePreset][v.value]
+                            local reference = preset and preset.reference and texturePresets[texturePreset][preset.reference]
+                            local atlasID = preset and (preset.atlasIDavailable or (reference and reference.atlasIDavailable)) or default.atlasIDavailable
+                            local atlasAltID = preset and (preset.atlasIDturnin or (reference and reference.atlasIDturnin)) or default.atlasIDturnin or (reference and reference.atlasIDavailable) or default.atlasIDavailable
+                            v.atlasID = atlasID
+                            v.atlasAltID = atlasAltID
                             local texture = getPointerTextureByAtlasID(v.atlasID)
                             if texture then
                                 v.textureScale = texture.textureScale or 1
@@ -1712,46 +1896,47 @@ function Addon:ConstructDefaultsAndOptions()
         },
     }
     for k, v in pairs(questPointers) do
+        local preset = texturePresets[defaultTexturePreset][k]
+        local reference = preset and preset.reference and texturePresets[defaultTexturePreset][preset.reference]
         -- defaults
         pointersDefaults[questPointerIdent .. k] = {value = k}
-        pointersDefaults[questPointerIdent .. k].name = v.name
-        pointersDefaults[questPointerIdent .. k].texture = v.texture
-        pointersDefaults[questPointerIdent .. k].atlasID = v.atlasID
-        pointersDefaults[questPointerIdent .. k].atlasAltID = v.atlasID
-        pointersDefaults[questPointerIdent .. k].textureScale = v.textureScale or getPointerTextureByAtlasID(v.atlasID).textureScale or 1
-        pointersDefaults[questPointerIdent .. k].textureAltScale = v.textureScale or getPointerTextureByAtlasID(v.atlasID).textureScale or 1
-        pointersDefaults[questPointerIdent .. k].textureRotate = (v.textureRotate and 1) or (getPointerTextureByAtlasID(v.atlasID).textureRotate and 1) or 0
-        pointersDefaults[questPointerIdent .. k].textureAltRotate = (v.textureRotate and 1) or (getPointerTextureByAtlasID(v.atlasID).textureRotate and 1) or 0
-        pointersDefaults[questPointerIdent .. k].pointerOffset = (v.name == "TomTom") and -1.1 or v.pointerOffset or 1
-        pointersDefaults[questPointerIdent .. k].enabled = v.enabled or true
-        pointersDefaults[questPointerIdent .. k].showDistance = v.showDistance or true
-        pointersDefaults[questPointerIdent .. k].showTTA = v.showTTA or true
-        pointersDefaults[questPointerIdent .. k].showQuest = v.showQuest or true
-        pointersDefaults[questPointerIdent .. k].distanceOffset = v.distanceOffset or 0
-        pointersDefaults[questPointerIdent .. k].ttaOffset = v.ttaOffset or 0
-        pointersDefaults[questPointerIdent .. k].questOffset = v.questOffset or 0
-        pointersDefaults[questPointerIdent .. k].distanceCustomFont = v.distanceCustomFont or false
-        pointersDefaults[questPointerIdent .. k].distanceFont = v.distanceFont or "Friz Quadrata TT"
-        pointersDefaults[questPointerIdent .. k].distanceFontSize = v.distanceFontSize or 12
-        pointersDefaults[questPointerIdent .. k].distanceFontColor = v.distanceFontColor or {r = 255/255, g = 215/255, b = 0/255, a = 1}
-        pointersDefaults[questPointerIdent .. k].distanceFontFlags = v.distanceFontFlags or ""
-        pointersDefaults[questPointerIdent .. k].ttaCustomFont = v.ttaCustomFont or false
-        pointersDefaults[questPointerIdent .. k].ttaFont = v.ttaFont or "Friz Quadrata TT"
-        pointersDefaults[questPointerIdent .. k].ttaFontSize = v.ttaFontSize or 12
-        pointersDefaults[questPointerIdent .. k].ttaFontColor = v.ttaFontColor or {r = 255/255, g = 215/255, b = 0/255, a = 1}
-        pointersDefaults[questPointerIdent .. k].ttaFontFlags = v.ttaFontFlags or ""
-        pointersDefaults[questPointerIdent .. k].questCustomFont = v.questCustomFont or false
-        pointersDefaults[questPointerIdent .. k].questFont = v.questFont or "Friz Quadrata TT"
-        pointersDefaults[questPointerIdent .. k].questFontSize = v.questFontSize or 12
-        pointersDefaults[questPointerIdent .. k].questFontColor = v.questFontColor or {r = 255/255, g = 215/255, b = 0/255, a = 1}
-        pointersDefaults[questPointerIdent .. k].questFontFlags = v.questFontFlags or ""
+        pointersDefaults[questPointerIdent .. k].name = v
+        pointersDefaults[questPointerIdent .. k].atlasID = preset.atlasIDavailable or (reference and reference.atlasIDavailable)
+        pointersDefaults[questPointerIdent .. k].atlasAltID = preset.atlasIDturnin or (reference and reference.atlasIDturnin) or (reference and reference.atlasIDavailable) or preset.atlasIDavailable
+        pointersDefaults[questPointerIdent .. k].textureScale = preset.textureScaleAvailable or (reference and reference.textureScaleAvailable) or 1
+        pointersDefaults[questPointerIdent .. k].textureAltScale = preset.textureScaleTurnin or (reference and reference.textureScaleTurnin) or (reference and reference.textureScaleAvailable) or preset.textureScaleAvailable or 1
+        pointersDefaults[questPointerIdent .. k].textureRotate = (preset.textureRotateAvailable and 1) or (reference and reference.textureRotateAvailable and 1) or 0
+        pointersDefaults[questPointerIdent .. k].textureAltRotate = (preset.textureRotateTurnin and 1) or (reference and reference.textureRoteteTurnin and 1) or (reference and reference.textureRotateAvailable and 1) or (preset.textureRotateAvailable and 1) or 0
+        pointersDefaults[questPointerIdent .. k].pointerOffset = (v == "TomTom") and -1.1 or 1
+        pointersDefaults[questPointerIdent .. k].enabled = true
+        pointersDefaults[questPointerIdent .. k].showDistance = true
+        pointersDefaults[questPointerIdent .. k].showTTA = true
+        pointersDefaults[questPointerIdent .. k].showQuest = true
+        pointersDefaults[questPointerIdent .. k].distanceOffset = 0
+        pointersDefaults[questPointerIdent .. k].ttaOffset =  0
+        pointersDefaults[questPointerIdent .. k].questOffset = 0
+        pointersDefaults[questPointerIdent .. k].distanceCustomFont = false
+        pointersDefaults[questPointerIdent .. k].distanceFont = "Friz Quadrata TT"
+        pointersDefaults[questPointerIdent .. k].distanceFontSize = 12
+        pointersDefaults[questPointerIdent .. k].distanceFontColor = {r = 255/255, g = 215/255, b = 0/255, a = 1}
+        pointersDefaults[questPointerIdent .. k].distanceFontFlags = ""
+        pointersDefaults[questPointerIdent .. k].ttaCustomFont = false
+        pointersDefaults[questPointerIdent .. k].ttaFont = "Friz Quadrata TT"
+        pointersDefaults[questPointerIdent .. k].ttaFontSize = 12
+        pointersDefaults[questPointerIdent .. k].ttaFontColor = {r = 255/255, g = 215/255, b = 0/255, a = 1}
+        pointersDefaults[questPointerIdent .. k].ttaFontFlags = ""
+        pointersDefaults[questPointerIdent .. k].questCustomFont = false
+        pointersDefaults[questPointerIdent .. k].questFont = "Friz Quadrata TT"
+        pointersDefaults[questPointerIdent .. k].questFontSize = 12
+        pointersDefaults[questPointerIdent .. k].questFontColor = {r = 255/255, g = 215/255, b = 0/255, a = 1}
+        pointersDefaults[questPointerIdent .. k].questFontFlags = ""
 
         -- options
         pointersOptionsArgs[questPointerIdent .. k] = {
             type = "group",
             order = k+10,
             childGroups = "tab",
-            name = v.name,
+            name = v,
             icon = function(info)
                 local atlasID = Addon.db.profile[info[#info-1]][info[#info]].atlasID
                 if atlasID then
@@ -2202,7 +2387,6 @@ function Addon:ConstructDefaultsAndOptions()
 
     self.Defaults.profile.Pointers = pointersDefaults
     self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
-
     self.Options.args.Pointers.args = pointersOptionsArgs
     self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
     self.Options.args.Profiles.order = 80
