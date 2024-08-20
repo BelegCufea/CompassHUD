@@ -60,8 +60,9 @@ local directions = {
 }
 
 local ADJ_FACTOR = 1 / math.rad(720)
-local textureWidth, textureHeight = 2048, 16
-local texturePosition = textureWidth * ADJ_FACTOR
+local defaultTextureWidth, defaultTextureHeight = 2048, 16
+local textureWidth, textureHeight = defaultTextureWidth, defaultTextureHeight
+local texturePosition = function() return textureWidth * ADJ_FACTOR end
 local adjCoord, currentFacing
 
 local questUnknown = -999
@@ -394,7 +395,10 @@ Addon.Defaults = {
 	    Interval        = 60,
 		Level           = 500,
 		Lock            = false,
+        PinVisible      = true,
 		Scale           = 1,
+        HorizontalScale = 1,
+        VerticalScale   = 1,
 		Strata          = 'HIGH',
         Transparency    = 1,
         Border          = 'Blizzard Dialog Gold',
@@ -402,36 +406,36 @@ Addon.Defaults = {
         BorderColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         Background      = 'Blizzard Tooltip',
         BackgroundColor = {r = 1, g = 1, b = 1, a = 1},
-        PointerTexture = [[Interface\MainMenuBar\UI-ExhaustionTickNormal]],
-        PointerStay = true,
-        Line = '',
-        LineThickness = 1,
-        LinePosition = 0,
-        LineColor = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        UseCustomCompass = true,
-        CompassTextureTexture = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\CompassHUD]],
-        CompassCustomMainVisible = true,
-        CompassCustomSecondaryVisible = true,
-        CompassCustomDegreesVisible = true,
-        CompassCustomDegreesSpan = 15,
-        CompassCustomMainFont = 'Arial Narrow',
-        CompassCustomSecondaryFont = 'Arial Narrow',
-        CompassCustomDegreesFont = 'Arial Narrow',
-        CompassCustomMainSize = 14,
-        CompassCustomSecondarySize = 12,
-        CompassCustomDegreesSize = 9,
-        CompassCustomMainPosition = -3,
-        CompassCustomSecondaryPosition = -3,
-        CompassCustomDegreesPosition = -5,
-        CompassCustomMainColor = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        CompassCustomSecondaryColor = {r = 0, g = 1, b = 1, a = 1},
-        CompassCustomDegreesColor = {r = 1, g = 1, b = 1, a = 1},
-        CompassCustomMainFlags = 'OUTLINE',
-        CompassCustomSecondaryFlags = 'OUTLINE',
-        CompassCustomDegreesFlags = '',
-        CompassCustomTicksPosition = 'TOP',
-        CompassCustomTicksForce = false,
-        Visibility = "[petbattle] hide; show",
+        PointerTexture  = [[Interface\MainMenuBar\UI-ExhaustionTickNormal]],
+        PointerStay     = true,
+        Line            = '',
+        LineThickness   = 1,
+        LinePosition    = 0,
+        LineColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        Visibility      = "[petbattle] hide; show",
+        UseCustomCompass                = true,
+        CompassTextureTexture           = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\CompassHUD]],
+        CompassCustomMainVisible        = true,
+        CompassCustomSecondaryVisible   = true,
+        CompassCustomDegreesVisible     = true,
+        CompassCustomDegreesSpan        = 15,
+        CompassCustomMainFont           = 'Arial Narrow',
+        CompassCustomSecondaryFont      = 'Arial Narrow',
+        CompassCustomDegreesFont        = 'Arial Narrow',
+        CompassCustomMainSize           = 14,
+        CompassCustomSecondarySize      = 12,
+        CompassCustomDegreesSize        = 9,
+        CompassCustomMainPosition       = -3,
+        CompassCustomSecondaryPosition  = -3,
+        CompassCustomDegreesPosition    = -5,
+        CompassCustomMainColor          = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        CompassCustomSecondaryColor     = {r = 0, g = 1, b = 1, a = 1},
+        CompassCustomDegreesColor       = {r = 1, g = 1, b = 1, a = 1},
+        CompassCustomMainFlags          = 'OUTLINE',
+        CompassCustomSecondaryFlags     = 'OUTLINE',
+        CompassCustomDegreesFlags       = '',
+        CompassCustomTicksPosition      = 'TOP',
+        CompassCustomTicksForce         = false,
     },
 }
 
@@ -539,8 +543,58 @@ Addon.Options = {
                     type = "toggle",
                     name = "Pointers stays on HUD",
                     desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows and remain positioned at the edge of the HUD.",
-                    width = "full",
+                    width = 1.5,
                     order = 25,
+                },
+                PinVisible = {
+                    type = "toggle",
+                    name = "Central HUD pin visible",
+                    width = 1.5,
+                    order = 25.5,
+                },
+                Scale = {
+                    type = "range",
+                    order = 26,
+                    name = "Scale",
+                    min = 0.01,
+                    max = 5,
+                    softMin = 0.2,
+                    softMax = 5,
+                    step = 0.01,
+                    bigStep = 0.05,
+                    isPercent = true,
+                },
+                HorizontalScale = {
+                    type = "range",
+                    order = 27,
+                    name = "Width",
+                    min = 0.01,
+                    max = 5,
+                    softMin = 0.2,
+                    softMax = 3,
+                    step = 0.01,
+                    isPercent = true,
+                    set = function(info, value)
+                        Options[info[#info]] = value
+                        textureWidth = defaultTextureWidth * value
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                VerticalScale = {
+                    type = "range",
+                    order = 28,
+                    name = "Height",
+                    min = 0.01,
+                    max = 5,
+                    softMin = 0.2,
+                    softMax = 3,
+                    step = 0.01,
+                    isPercent = true,
+                    set = function(info, value)
+                        Options[info[#info]] = value
+                        textureHeight = defaultTextureHeight * value
+                        Addon:UpdateHUDSettings()
+                    end,
                 },
                 Interval = {
                     type = "range",
@@ -564,14 +618,14 @@ Addon.Options = {
                     step = 1,
                     bigStep = 5,
                 },
-                Scale = {
+                Transparency = {
                     type = "range",
                     order = 50,
-                    name = "Scale",
-                    min = 0.01,
-                    max = 2,
-                    softMin = 0.5,
-                    softMax = 1.5,
+                    name = "Transparency",
+                    min = 0,
+                    max = 1,
+                    softMin = 0,
+                    softMax = 1,
                     step = 0.01,
                     bigStep = 0.05,
                     isPercent = true,
@@ -596,18 +650,6 @@ Addon.Options = {
                     softMax = 1000,
                     step = 1,
                     bigStep = 10,
-                },
-                Transparency = {
-                    type = "range",
-                    order = 80,
-                    name = "Transparency",
-                    min = 0,
-                    max = 1,
-                    softMin = 0,
-                    softMax = 1,
-                    step = 0.01,
-                    bigStep = 0.05,
-                    isPercent = true,
                 },
                 Blank0 = { type = "description", order = 89, fontSize = "small",name = "",width = "full", },
                 Border = {
@@ -1097,6 +1139,15 @@ local function getPlayerFacingAngle(questID)
 end
 
 local function updateCompassHUD()
+    local scale = Options.Scale * Options.VerticalScale
+    -- middle HUD pointer texture
+    HUD.pointer = HUD.pointer or HUD:CreateTexture(nil, "ARTWORK")
+    HUD.pointer:SetTexture(Options.PointerTexture)
+    HUD.pointer:ClearAllPoints()
+    HUD.pointer:SetSize(textureHeight * 1.5, textureHeight * 1.5)
+	HUD.pointer:SetPoint('TOP', HUD, 'TOP', 0, 6)
+    HUD.pointer:SetShown(Options.PinVisible)
+
     -- compass texture
     HUD.compassTexture = HUD.compassTexture or HUD:CreateTexture(nil, "BORDER")
     HUD.compassTexture:SetTexture(Options.CompassTextureTexture)
@@ -1160,12 +1211,12 @@ local function updateCompassHUD()
 
             if v.main then
                 letters[k*side]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", ((side == 1 and k) or (k - 360)) / 720 * textureWidth + 1, Options.CompassCustomMainPosition)
-                letters[k*side]:SetFont(lettersMainFont, Options.CompassCustomMainSize, Options.CompassCustomMainFlags)
+                letters[k*side]:SetFont(lettersMainFont, Options.CompassCustomMainSize * scale, Options.CompassCustomMainFlags)
                 letters[k*side]:SetTextColor(Options.CompassCustomMainColor.r, Options.CompassCustomMainColor.g, Options.CompassCustomMainColor.b, Options.CompassCustomMainColor.a)
                 letters[k*side]:SetShown(Options.CompassCustomMainVisible)
             else
                 letters[k*side]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", ((side == 1 and k) or (k - 360)) / 720 * textureWidth + 1, Options.CompassCustomSecondaryPosition)
-                letters[k*side]:SetFont(lettersSecondaryFont, Options.CompassCustomSecondarySize, Options.CompassCustomSecondaryFlags)
+                letters[k*side]:SetFont(lettersSecondaryFont, Options.CompassCustomSecondarySize * scale, Options.CompassCustomSecondaryFlags)
                 letters[k*side]:SetTextColor(Options.CompassCustomSecondaryColor.r, Options.CompassCustomSecondaryColor.g, Options.CompassCustomSecondaryColor.b, Options.CompassCustomSecondaryColor.a)
                 letters[k*side]:SetShown(Options.CompassCustomSecondaryVisible)
             end
@@ -1191,7 +1242,7 @@ local function updateCompassHUD()
             degrees[i]:ClearAllPoints()
             degrees[i]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", i / 720 * textureWidth + 1, Options.CompassCustomDegreesPosition)
             degrees[i]:SetParent(HUD.compassCustom.mask)
-            degrees[i]:SetFont(degreesFont, Options.CompassCustomDegreesSize, Options.CompassCustomDegreesFlags)
+            degrees[i]:SetFont(degreesFont, Options.CompassCustomDegreesSize * scale, Options.CompassCustomDegreesFlags)
             degrees[i]:SetTextColor(Options.CompassCustomDegreesColor.r, Options.CompassCustomDegreesColor.g, Options.CompassCustomDegreesColor.b, Options.CompassCustomDegreesColor.a)
             degrees[i]:SetShown(Options.CompassCustomDegreesVisible)
             degrees[i].span = true
@@ -1310,6 +1361,7 @@ local function getPointerType(questID, questType)
 end
 
 local function updateQuestIcon(questPointer)
+    local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
     local completed = questPointsTable[questPointer.questID].completed
     questPointer.position = options.pointerOffset * textureHeight * -1
@@ -1322,34 +1374,34 @@ local function updateQuestIcon(questPointer)
 
     if options.distanceCustomFont then
         local font = LSM:Fetch("font", options.distanceFont)
-        questPointer.DistanceText:SetFont(font, options.distanceFontSize, options.distanceFontFlags)
+        questPointer.DistanceText:SetFont(font, options.distanceFontSize * scale, options.distanceFontFlags)
         questPointer.DistanceText:SetTextColor(options.distanceFontColor.r, options.distanceFontColor.g, options.distanceFontColor.b, options.distanceFontColor.a)
     else
-        questPointer.DistanceText:SetFont(gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags)
+        questPointer.DistanceText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
         questPointer.DistanceText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
     end
     if options.ttaCustomFont then
         local font = LSM:Fetch("font", options.ttaFont)
-        questPointer.TimeText:SetFont(font, options.ttaFontSize, options.ttaFontFlags)
+        questPointer.TimeText:SetFont(font, options.ttaFontSize * scale, options.ttaFontFlags)
         questPointer.TimeText:SetTextColor(options.ttaFontColor.r, options.ttaFontColor.g, options.ttaFontColor.b, options.ttaFontColor.a)
     else
-        questPointer.TimeText:SetFont(gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags)
+        questPointer.TimeText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
         questPointer.TimeText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
     end
     if options.questCustomFont then
         local font = LSM:Fetch("font", options.questFont)
-        questPointer.QuestText:SetFont(font, options.questFontSize, options.questFontFlags)
+        questPointer.QuestText:SetFont(font, options.questFontSize * scale, options.questFontFlags)
         questPointer.QuestText:SetTextColor(options.questFontColor.r, options.questFontColor.g, options.questFontColor.b, options.questFontColor.a)
     else
-        questPointer.QuestText:SetFont(gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags)
+        questPointer.QuestText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
         questPointer.QuestText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
     end
 
     local point = "TOP"
     local relativePoint = "BOTTOM"
     local distanceTextPosition = -options.distanceOffset + 2
-    local timeTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2)) or 0) - options.ttaOffset + 2
-    local questTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2)) or 0) - ((options.showTTA and (options.ttaFontSize * 1.2)) or 0) - options.questOffset + 4
+    local timeTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2 * scale)) or 0) - options.ttaOffset + 2
+    local questTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2 * scale)) or 0) - ((options.showTTA and (options.ttaFontSize * 1.2 * scale)) or 0) - options.questOffset + 4
     questPointer.texture:SetTexCoord(0, 1, 0, 1)
     questPointer.flipped = false
     if questPointer.position > 0 then
@@ -1359,13 +1411,13 @@ local function updateQuestIcon(questPointer)
         end
         point = "BOTTOM"
         relativePoint = "TOP"
-        distanceTextPosition = ((options.showTTA and (options.ttaFontSize * 1.2)) or 0) + options.distanceOffset - 12
+        distanceTextPosition = ((options.showTTA and (options.ttaFontSize * 1.2 * scale)) or 0) + options.distanceOffset - 12
         timeTextPosition = options.ttaOffset - 12
         local questText = questPointsTable[questPointer.questID].text
         if questText and questText:match("%S") and options.showQuest then
             questTextPosition = options.questOffset - 6
-            timeTextPosition = timeTextPosition + (options.questFontSize * 1.2)
-            distanceTextPosition = distanceTextPosition + (options.questFontSize * 1.2)
+            timeTextPosition = timeTextPosition + (options.questFontSize * 1.2 * scale)
+            distanceTextPosition = distanceTextPosition + (options.questFontSize * 1.2 * scale)
         end
     end
 
@@ -1440,7 +1492,7 @@ local function setQuestsIcons()
                     local visible = math.rad(Options.Degrees)/2
                     if angle < visible and angle > -visible then
                         quest.frame.texture:SetRotation(0)
-                        quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * angle, quest.frame.position)
+                        quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, quest.frame.position)
                         quest.frame:Show()
                     elseif Options.PointerStay then
                         local side = math.abs(angle)/angle
@@ -1448,7 +1500,7 @@ local function setQuestsIcons()
                         if (quest.completed and (option.textureAltRotate == 1)) or (not quest.completed and (option.textureRotate == 1)) then
                                 quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
                         end
-                        quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition * side * visible, quest.frame.position)
+                        quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, quest.frame.position)
                         quest.frame:Show()
                     else
                         quest.frame:Hide()
@@ -1502,10 +1554,6 @@ local function createHUD()
     HUD:SetClampedToScreen(true)
     HUD:RegisterForDrag("LeftButton")
 
-    HUD.pointer = HUD:CreateTexture(nil, "ARTWORK")
-    HUD.pointer:SetTexture(Options.PointerTexture)
-    HUD.pointer:SetSize(textureHeight * 1.5, textureHeight * 1.5)
-	HUD.pointer:SetPoint('TOP', HUD, 'TOP', 0, 6)
     HUD:SetScript("OnAttributeChanged", function(self, name, value)
         if name == "state-hudvisibility" then
             if value == "show" then
@@ -2391,6 +2439,8 @@ function Addon:ConstructDefaultsAndOptions()
     self.Options.args.Profiles.order = 80
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME)
+    textureWidth = defaultTextureWidth * self.db.profile.HorizontalScale
+    textureHeight = defaultTextureHeight * self.db.profile.VerticalScale
 end
 
 function Addon:RefreshConfig()
