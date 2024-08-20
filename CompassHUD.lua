@@ -559,7 +559,7 @@ Addon.Options = {
                     min = 0.01,
                     max = 5,
                     softMin = 0.2,
-                    softMax = 5,
+                    softMax = 3,
                     step = 0.01,
                     bigStep = 0.05,
                     isPercent = true,
@@ -1701,6 +1701,8 @@ function Addon:ResetPosition(resetX, resetY)
 end
 
 function Addon:UpdateHUDSettings()
+    textureWidth = defaultTextureWidth * Options.HorizontalScale
+    textureHeight = defaultTextureHeight * Options.VerticalScale
     local width, height = Options.Degrees / (720 / textureWidth) + Options.BorderThickness * 2, textureHeight + Options.BorderThickness * 2
     adjCoord = Options.Degrees / 1440
 
@@ -2439,8 +2441,6 @@ function Addon:ConstructDefaultsAndOptions()
     self.Options.args.Profiles.order = 80
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME)
-    textureWidth = defaultTextureWidth * self.db.profile.HorizontalScale
-    textureHeight = defaultTextureHeight * self.db.profile.VerticalScale
 end
 
 function Addon:RefreshConfig()
