@@ -406,7 +406,7 @@ Addon.Defaults = {
         BorderColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         Background      = 'Blizzard Tooltip',
         BackgroundColor = {r = 1, g = 1, b = 1, a = 1},
-        PointerTexture  = [[Interface\MainMenuBar\UI-ExhaustionTickNormal]],
+        PinTexture      = [[Interface\MainMenuBar\UI-ExhaustionTickNormal]],
         PointerStay     = true,
         Line            = '',
         LineThickness   = 1,
@@ -1141,12 +1141,12 @@ end
 local function updateCompassHUD()
     local scale = Options.Scale * Options.VerticalScale
     -- middle HUD pointer texture
-    HUD.pointer = HUD.pointer or HUD:CreateTexture(nil, "ARTWORK")
-    HUD.pointer:SetTexture(Options.PointerTexture)
-    HUD.pointer:ClearAllPoints()
-    HUD.pointer:SetSize(textureHeight * 1.5, textureHeight * 1.5)
-	HUD.pointer:SetPoint('TOP', HUD, 'TOP', 0, 6)
-    HUD.pointer:SetShown(Options.PinVisible)
+    HUD.pin = HUD.pin or HUD:CreateTexture(nil, "ARTWORK")
+    HUD.pin:SetTexture(Options.PinTexture)
+    HUD.pin:ClearAllPoints()
+    HUD.pin:SetSize(textureHeight * 1.5, textureHeight * 1.5)
+	HUD.pin:SetPoint('TOP', HUD, 'TOP', 0, 6)
+    HUD.pin:SetShown(Options.PinVisible)
 
     -- compass texture
     HUD.compassTexture = HUD.compassTexture or HUD:CreateTexture(nil, "BORDER")
