@@ -8,9 +8,11 @@
 - CompassHUD gradient background with the ability to change color (see screenshot below)
 
 *Scale and `Out of HUD indicator` settings*
+
 ![ScaleSettings](https://i.imgur.com//kxXlfMi.png)
 
 *`Out of HUD indicator` and new `CompassHUD gradient` background demonstration*
+
 ![Gradient](https://i.imgur.com/piZGMsG.png)
 
 # v1.2.0a (19.8.2024)
