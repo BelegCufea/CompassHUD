@@ -385,6 +385,10 @@ local texturePresets = {
 
 }
 
+local function addToLSM()
+    LSM:Register("background", "CompassHUD gradient", [[Interface\Addons\]].. ADDON_NAME .. [[\Media\CompassHUD-gradient]])
+end
+
 Addon.Defaults = {
     profile = {
         Enabled         = true,
@@ -408,6 +412,8 @@ Addon.Defaults = {
         BackgroundColor = {r = 1, g = 1, b = 1, a = 1},
         PinTexture      = [[Interface\MainMenuBar\UI-ExhaustionTickNormal]],
         PointerStay     = true,
+        StayArrow       = true,
+        StayAtlasID     = "NPE_ArrowUp",
         Line            = '',
         LineThickness   = 1,
         LinePosition    = 0,
@@ -542,15 +548,22 @@ Addon.Options = {
                 PointerStay = {
                     type = "toggle",
                     name = "Pointers stays on HUD",
-                    desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows and remain positioned at the edge of the HUD.",
-                    width = 1.5,
-                    order = 25,
+                    desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows, remaining positioned at the edge of the HUD.",                    width = 1.1,
+                    order = 21,
+                },
+                StayArrow = {
+                    type = "toggle",
+                    name = "Out of HUD indicator",
+                    desc = "Show a small indicator that the pointer is out of the HUD boundaries. Only show this for textures that don't have Edge rotation enabled.",                    width = 1.1,
+                    order = 22,
+                    disabled = function() return not Addon.db.profile.PointerStay end,
                 },
                 PinVisible = {
                     type = "toggle",
                     name = "Central HUD pin visible",
-                    width = 1.5,
-                    order = 25.5,
+                    desc = "Shows a small reticule on the HUD indicating your current facing direction.",
+                    width = 1.1,
+                    order = 23,
                 },
                 Scale = {
                     type = "range",
@@ -1446,10 +1459,14 @@ local function createQuestIcon(questID, questType)
     questPointer.pointerType = pointerType
 	questPointer:SetSize(textureHeight, textureHeight)
 	questPointer:SetPoint("CENTER");
-	questPointer.texture = questPointer:CreateTexture(ADDON_NAME..questID.."Texture")
+	questPointer.texture = questPointer:CreateTexture(ADDON_NAME..questID.."Texture", "ARTWORK")
 	questPointer.texture:SetAllPoints(questPointer)
 	questPointer.texture:SetAtlas(Options.Pointers[pointerType].atlasID)
 	questPointer:Hide()
+    questPointer.arrowTexture = questPointer:CreateTexture(ADDON_NAME..questID.."ArrowTexture", "BACKGROUND")
+    questPointer.arrowTexture:SetAllPoints(questPointer)
+	questPointer.arrowTexture:SetAtlas(Options.StayAtlasID)
+    questPointer.arrowTexture:Hide()
     if questID > 0 then
         questPointer:SetScript("OnEvent", function(self, event)
             if event == "QUEST_LOG_UPDATE" then
@@ -1492,6 +1509,7 @@ local function setQuestsIcons()
                     local visible = math.rad(Options.Degrees)/2
                     if angle < visible and angle > -visible then
                         quest.frame.texture:SetRotation(0)
+                        quest.frame.arrowTexture:Hide()
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, quest.frame.position)
                         quest.frame:Show()
                     elseif Options.PointerStay then
@@ -1499,6 +1517,14 @@ local function setQuestsIcons()
                         local option = Options.Pointers[quest.frame.pointerType]
                         if (quest.completed and (option.textureAltRotate == 1)) or (not quest.completed and (option.textureRotate == 1)) then
                                 quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
+                        elseif (quest.completed and (option.textureAltRotate ~= 1)) or (not quest.completed and (option.textureRotate ~= 1)) and Options.StayArrow then
+                            local width, height = quest.frame.texture:GetSize()
+                            quest.frame.arrowTexture:ClearAllPoints()
+                            quest.frame.arrowTexture:SetPoint("CENTER", quest.frame, "CENTER", side * width * 0.75, 0)
+                            quest.frame.arrowTexture:SetSize(width, height)
+                            quest.frame.arrowTexture:SetScale(0.75)
+                            quest.frame.arrowTexture:SetRotation(PI/2 * side * -1)
+                            quest.frame.arrowTexture:Show()
                         end
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, quest.frame.position)
                         quest.frame:Show()
@@ -2451,6 +2477,9 @@ end
 function Addon:OnEnable()
     HBDmaps = HBD:GetAllMapIDs()
     table.sort(HBDmaps, function(a, b) return a > b end)
+
+    addToLSM()
+
     self:UpdateHUDSettings()
     HUD:SetScript('OnUpdate', onUpdate)
 

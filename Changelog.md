@@ -1,3 +1,18 @@
+# v1.2.1 (21.8.2024)
+
+## Added
+
+- More options for scaling (separate width and height)
+- Option to show a small indicator when the pointer is out of the HUD boundaries for non-rotating textures
+- Option to show/hide center HUD pin indicating player's facing
+- CompassHUD gradient background with the ability to change color (see screenshot below)
+
+*Scale and `Out of HUD indicator` settings*
+![ScaleSettings](https://i.imgur.com//kxXlfMi.png)
+
+*`Out of HUD indicator` and new `CompassHUD gradient` background demonstration*
+![Gradient](https://i.imgur.com/piZGMsG.png)
+
 # v1.2.0a (19.8.2024)
 
 ## Fix
