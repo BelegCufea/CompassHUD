@@ -1,3 +1,14 @@
+# v1.2.2 ()
+
+## Fix
+
+- Quest pointer did not change scale and orientation (when on the edge) upon quest completion
+- Fixed a typo in the settings (there may still be more).
+
+## Misc
+
+- "Borrowed" a much more efficient code for obtaining quest positions on the map from [Kaliel's Tracker]https://www.curseforge.com/wow/addons/kaliels-tracker
+
 # v1.2.1 (21.8.2024)
 
 ## Added

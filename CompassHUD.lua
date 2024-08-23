@@ -31,7 +31,7 @@ local GetNextWaypoint = C_QuestLog.GetNextWaypoint
 local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
 local IsWorldQuest = C_QuestLog.IsWorldQuest
 local GetQuestAdditionalHighlights = C_QuestLog.GetQuestAdditionalHighlights
-local ReadyForTurnIn = C_QuestLog.ReadyForTurnIn
+local IsComplete = C_QuestLog.IsComplete
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
 local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
@@ -1074,17 +1074,17 @@ Addon.Options = {
 }
 
 local function GetQuestPOIInfo(questID)
+    local completed = IsComplete(questID)
+
     -- try to get waypoint
-    local completed = ReadyForTurnIn(questID)
     local uiMapID, x, y = GetNextWaypoint(questID)
-    if x and y then
+    if uiMapID and x and y then
         Debug:Info("portal", uiMapID, x, y, completed)
         return uiMapID, x, y, completed
     end
 
-    -- try to get waypoint from Blizzard?
-    uiMapID = GetQuestAdditionalHighlights(questID)
-    uiMapID = uiMapID or GetMapForQuestPOIs()
+    -- give me proper uiMapID
+    uiMapID = GetQuestUiMapID(questID) or GetQuestAdditionalHighlights(questID)
     if uiMapID and uiMapID > 0 then
         -- try to get waypoint when clicked on mapPin
         x, y = GetNextWaypointForMap(questID, uiMapID)
@@ -1100,19 +1100,6 @@ local function GetQuestPOIInfo(questID)
                 return uiMapID, quest.x, quest.y, completed
             end
        end
-    end
-    -- fallback when quest coordinates were not found earlier (parse all quests on all maps until found)
-    for _, mapId in ipairs(HBDmaps) do
-        local mapInfo = GetMapInfo(mapId)
-        if mapInfo.mapType == 3 then
-            local quests = GetQuestsOnMap(mapId)
-            for _, quest in pairs(quests) do
-                if quest.questID == questID then
-                    Debug:Info("parse", mapId, quest.x, quest.y, completed)
-                    return mapId, quest.x, quest.y, completed
-                end
-           end
-        end
     end
 end
 
@@ -1507,16 +1494,17 @@ local function setQuestsIcons()
 			if quest.frame and angle then
                 if Options.Pointers[quest.frame.pointerType].enabled then
                     local visible = math.rad(Options.Degrees)/2
+                    local arrowShow = false
+                    local pointerRotate = 0
+                    quest.frame.texture:SetRotation(0)
                     if angle < visible and angle > -visible then
-                        quest.frame.texture:SetRotation(0)
-                        quest.frame.arrowTexture:Hide()
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, quest.frame.position)
                         quest.frame:Show()
                     elseif Options.PointerStay then
                         local side = math.abs(angle)/angle
                         local option = Options.Pointers[quest.frame.pointerType]
                         if (quest.completed and (option.textureAltRotate == 1)) or (not quest.completed and (option.textureRotate == 1)) then
-                                quest.frame.texture:SetRotation(PI/2 * side * ((quest.frame.flipped and 1) or -1))
+                            pointerRotate = PI/2 * side * ((quest.frame.flipped and 1) or -1)
                         elseif (quest.completed and (option.textureAltRotate ~= 1)) or (not quest.completed and (option.textureRotate ~= 1)) and Options.StayArrow then
                             local width, height = quest.frame.texture:GetSize()
                             quest.frame.arrowTexture:ClearAllPoints()
@@ -1524,13 +1512,15 @@ local function setQuestsIcons()
                             quest.frame.arrowTexture:SetSize(width, height)
                             quest.frame.arrowTexture:SetScale(0.75)
                             quest.frame.arrowTexture:SetRotation(PI/2 * side * -1)
-                            quest.frame.arrowTexture:Show()
+                            arrowShow = true
                         end
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, quest.frame.position)
                         quest.frame:Show()
                     else
                         quest.frame:Hide()
                     end
+                    quest.frame.arrowTexture:SetShown(arrowShow)
+                    quest.frame.texture:SetRotation(pointerRotate)
                 else
                     quest.frame:Hide()
                 end
@@ -1613,6 +1603,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed)
     questPointsTable[questID].frame.QuestText:SetText(title)
     local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
     questPointsTable[questID].frame.texture:SetAtlas(completed and options.atlasAltID or options.atlasID)
+    updateQuestIcon(questPointsTable[questID].frame)
 end
 
 local function tomtomSetCrazyArrow(self, uid, dist, title)
@@ -2044,7 +2035,7 @@ function Addon:ConstructDefaultsAndOptions()
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.enabled = {
             type = "toggle",
             order = 0,
-            name = "Enable poniter",
+            name = "Enable pointer",
         }
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.copyFrom = {
             type = "select",
@@ -2475,9 +2466,6 @@ function Addon:RefreshConfig()
 end
 
 function Addon:OnEnable()
-    HBDmaps = HBD:GetAllMapIDs()
-    table.sort(HBDmaps, function(a, b) return a > b end)
-
     addToLSM()
 
     self:UpdateHUDSettings()
