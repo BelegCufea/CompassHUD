@@ -419,6 +419,23 @@ Addon.Defaults = {
         LinePosition    = 0,
         LineColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         Visibility      = "[petbattle] hide; show",
+        HeadingEnabled         = false,
+        HeadingDecimals        = 0,
+        HeadingScale           = 1,
+        HeadingWidth           = 1,
+        HeadingPosition        = 0,
+        HeadingTransparency    = 1,
+        HeadingBorder          = 'Blizzard Dialog Gold',
+        HeadingBorderThickness = 2.5,
+        HeadingBorderColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        HeadingBackground      = 'Blizzard Tooltip',
+        HeadingBackgroundColor = {r = 1, g = 1, b = 1, a = 1},
+        HeadingFont            = 'Arial Narrow',
+        HeadingFontSize        = 14,
+        HeadingFontFlags       = 'OUTLINE',
+        HeadingFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        HeadingFontPositionV   = 0,
+        HeadingFontPositionH   = 0,
         UseCustomCompass                = true,
         CompassTextureTexture           = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\CompassHUD]],
         CompassCustomMainVisible        = true,
@@ -634,7 +651,7 @@ Addon.Options = {
                 Transparency = {
                     type = "range",
                     order = 50,
-                    name = "Transparency",
+                    name = "Opacity",
                     min = 0,
                     max = 1,
                     softMin = 0,
@@ -802,7 +819,7 @@ Addon.Options = {
         CompassHUD = {
             type = "group",
             order = 20,
-            name = "Compass HUD settings",
+            name = "Custom HUD",
             get = function(info)
                 return Addon.db.profile[info[#info]]
             end,
@@ -1057,9 +1074,197 @@ Addon.Options = {
                 },
             },
         },
-        Pointers = {
+        Heading ={
             type = "group",
             order = 30,
+            name = "Heading",
+            get = function(info)
+                return Addon.db.profile[info[#info]]
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info]] = value
+                Addon:UpdateHUDSettings()
+            end,
+            args = {
+                HeadingEnabled = {
+                    type = "toggle",
+                    name = "Show heading",
+                    width = "full",
+                    order = 10,
+                },
+                HeadingDecimals = {
+                    type = "range",
+                    order = 15,
+                    name = "Decimal points",
+                    desc = "-1 = to nearest 5, -2 to nearset 10 degree",
+                    min = -2,
+                    max = 3,
+                    step = 1,
+                },
+                HeadingScale = {
+                    type = "range",
+                    order = 20,
+                    name = "Scale",
+                    min = 0.01,
+                    max = 5,
+                    softMin = 0.2,
+                    softMax = 3,
+                    step = 0.01,
+                    bigStep = 0.05,
+                    isPercent = true,
+                },
+                HeadingWidth = {
+                    type = "range",
+                    order = 20,
+                    name = "Width",
+                    min = 0.01,
+                    max = 5,
+                    softMin = 0.2,
+                    softMax = 3,
+                    step = 0.01,
+                    bigStep = 0.05,
+                    isPercent = true,
+                },
+                HeadingPosition = {
+                    type = "range",
+                    order = 20,
+                    name = "Vertical adjustment",
+                    min = -64,
+                    max = 64,
+                    step = 1,
+                },
+                HeadingTransparency = {
+                    type = "range",
+                    order = 30,
+                    name = "Opacity",
+                    min = 0,
+                    max = 1,
+                    softMin = 0,
+                    softMax = 1,
+                    step = 0.01,
+                    bigStep = 0.05,
+                    isPercent = true,
+                },
+                HeadingBorder = {
+                    type = "select",
+                    order = 40,
+                    name = "Border",
+                    dialogControl = "LSM30_Border",
+                    values = AceGUIWidgetLSMlists.border,
+                },
+                HeadingBorderColor = {
+                    type = "color",
+                    order = 50,
+                    name = "Border color",
+                    hasAlpha = true,
+                    get = function(info)
+                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                    end,
+                    set = function (info, r, g, b, a)
+                        Options[info[#info]].r = r
+                        Options[info[#info]].g = g
+                        Options[info[#info]].b = b
+                        Options[info[#info]].a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                HeadingBorderThickness = {
+                    type = "range",
+                    order = 60,
+                    name = "Border thickness",
+                    min = 1,
+                    max = 24,
+                    step = 0.5,
+                },
+                HeadingBackground = {
+                    type = "select",
+                    order = 70,
+                    name = "Background",
+                    dialogControl = "LSM30_Background",
+                    values = AceGUIWidgetLSMlists['background'],
+                },
+                HeadingBackgroundColor = {
+                    type = "color",
+                    order = 80,
+                    name = "Background color",
+                    hasAlpha = true,
+                    get = function(info)
+                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                    end,
+                    set = function (info, r, g, b, a)
+                        Options[info[#info]].r = r
+                        Options[info[#info]].g = g
+                        Options[info[#info]].b = b
+                        Options[info[#info]].a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                HeadingFont = {
+                    type = "select",
+                    order = 90,
+                    name = "Font",
+                    width = 1,
+                    dialogControl = "LSM30_Font",
+                    values = AceGUIWidgetLSMlists['font'],
+                },
+                HeadingFontSize = {
+                    type = "range",
+                    order = 100,
+                    name = "Size",
+                    width = 3/4,
+                    min = 2,
+                    max = 36,
+                    step = 0.5,
+                },
+                HeadingFontFlags = {
+                    type = "select",
+                    order = 110,
+                    name = "Outline",
+                    width = 3/4,
+                    values = {
+                        [""] = "None",
+                        ["OUTLINE"] = "Normal",
+                        ["THICKOUTLINE"] = "Thick",
+                    },
+                },
+                HeadingFontColor = {
+                    type = "color",
+                    order = 120,
+                    name = "Color",
+                    width = 1/2,
+                    hasAlpha = true,
+                    get = function(info)
+                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                    end,
+                    set = function (info, r, g, b, a)
+                        Options[info[#info]].r = r
+                        Options[info[#info]].g = g
+                        Options[info[#info]].b = b
+                        Options[info[#info]].a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                HeadingFontPositionV = {
+                    type = "range",
+                    order = 130,
+                    name = "Vertical text adjustment",
+                    min = -64,
+                    max = 64,
+                    step = 1,
+                },
+                HeadingFontPositionH = {
+                    type = "range",
+                    order = 140,
+                    name = "Horizontal text adjustment",
+                    min = -64,
+                    max = 64,
+                    step = 1,
+                },
+            },
+        },
+        Pointers = {
+            type = "group",
+            order = 40,
             name = "Pointers",
             get = function(info)
                 return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]]
@@ -1297,8 +1502,39 @@ local function updateCompassHUD()
         end
     end
 
+    -- heading frame
+    HUD.heading = HUD.heading or CreateFrame('Frame', ADDON_NAME .. '_heading', HUD, "BackdropTemplate")
+    HUD.heading:SetSize(textureHeight * 2 * Options.HeadingWidth, textureHeight)
+    HUD.heading:SetPoint('CENTER', HUD, 'CENTER', 0, Options.HeadingPosition)
+    HUD.heading:SetClipsChildren(true)
+
+    HUD.heading:SetScale(Options.HeadingScale)
+	HUD.heading:SetFrameLevel(Options.Level+1)
+    HUD.heading:SetAlpha(Options.HeadingTransparency)
+
+	local headingBackdrop = {
+		bgFile = LSM:Fetch("background", Options.HeadingBackground),
+		edgeFile = LSM:Fetch("border", Options.HeadingBorder),
+		edgeSize = Options.HeadingBorderThickness,
+		insets = { left = 0, right = 0, top = 0, bottom = 0 }
+	}
+	HUD.heading:SetBackdrop(headingBackdrop)
+    HUD.heading:SetBackdropColor(Options.HeadingBackgroundColor.r,Options.HeadingBackgroundColor.g, Options.HeadingBackgroundColor.b, Options.HeadingBackgroundColor.a)
+	HUD.heading:SetBackdropBorderColor(Options.HeadingBorderColor.r,Options.HeadingBorderColor.g, Options.HeadingBorderColor.b, Options.HeadingBorderColor.a)
+
+    local headingFont = LSM:Fetch("font", Options.HeadingFont)
+    HUD.heading.text = HUD.heading.text or HUD.heading:CreateFontString(ADDON_NAME .. '_headingtext', "OVERLAY", "GameFontNormal")
+    HUD.heading.text:SetJustifyV("MIDDLE")
+    HUD.heading.text:SetJustifyH("CENTER")
+    HUD.heading.text:SetParent(HUD.heading)
+    HUD.heading.text:ClearAllPoints()
+    HUD.heading.text:SetPoint("CENTER", HUD.heading, "CENTER", Options.HeadingFontPositionH, Options.HeadingFontPositionV)
+    HUD.heading.text:SetFont(headingFont, Options.HeadingFontSize * scale, Options.HeadingFontFlags)
+    HUD.heading.text:SetTextColor(Options.HeadingFontColor.r, Options.HeadingFontColor.g, Options.HeadingFontColor.b, Options.HeadingFontColor.a)
+
     HUD.compassTexture:SetShown(not Options.UseCustomCompass)
     HUD.compassCustom:SetShown(Options.UseCustomCompass)
+    HUD.heading:SetShown(Options.HeadingEnabled)
 end
 
 local function setTime(frame, distance, speed)
@@ -1533,6 +1769,21 @@ local function setQuestsIcons()
 	end
 end
 
+local function updateHeading()
+    if HUD.heading and HUD.heading.text and player.angle then
+        local heading = (360 - (player.angle * (180 / math.pi))) % 360
+        if Options.HeadingDecimals >= 0 then
+            local multiplier = 10^Options.HeadingDecimals
+            heading = math.floor(heading * multiplier + 0.5) / multiplier
+        else
+            local multiplier = Options.HeadingDecimals * 5 * -1
+            heading = math.floor((heading + multiplier/2) / multiplier) * multiplier
+        end
+
+        HUD.heading.text:SetText(heading)
+    end
+end
+
 local function updateHUD(force)
     local facing = GetPlayerFacing() or 0
     if force or facing ~= currentFacing then
@@ -1545,6 +1796,7 @@ local function updateHUD(force)
         currentFacing = facing
     end
     updatePlayerCoords()
+    updateHeading()
     setQuestsIcons()
 end
 
@@ -1784,6 +2036,7 @@ function Addon:UpdateHUDSettings()
     Options.PositionY = HUD:GetBottom()
 
     updateCompassHUD()
+
     HUD.compassCustom:SetSize(width, height)
     for _, quest in pairs(questPointsTable) do
         if quest.frame then

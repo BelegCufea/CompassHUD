@@ -1,5 +1,9 @@
 # v1.2.2 ()
 
+# New
+
+- Option to display heading
+
 ## Fix
 
 - Quest pointer did not change scale and orientation (when on the edge) upon quest completion
@@ -11,7 +15,7 @@
 
 # v1.2.1 (21.8.2024)
 
-## Added
+## New
 
 - More options for scaling (separate width and height)
 - Option to show a small indicator when the pointer is out of the HUD boundaries for non-rotating textures
