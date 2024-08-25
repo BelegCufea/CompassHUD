@@ -421,6 +421,7 @@ Addon.Defaults = {
         Visibility      = "[petbattle] hide; show",
         HeadingEnabled         = false,
         HeadingDecimals        = 0,
+        HeadingTrueNorth       = true,
         HeadingScale           = 1,
         HeadingWidth           = 1,
         HeadingPosition        = 0,
@@ -1090,17 +1091,22 @@ Addon.Options = {
                     type = "toggle",
                     name = "Show heading",
                     width = "full",
-                    order = 10,
+                    order = 0,
                 },
-                HeadingDecimals = {
+                HeadingTrueNorth = {
+                    type = "toggle",
+                    name = "Display north as 360",
+                    order = 5,
+                },                HeadingDecimals = {
                     type = "range",
-                    order = 15,
+                    order = 10,
                     name = "Decimal points",
                     desc = "-1 = to nearest 5, -2 to nearset 10 degree",
                     min = -2,
                     max = 3,
                     step = 1,
                 },
+                Blank0 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
                 HeadingScale = {
                     type = "range",
                     order = 20,
@@ -1133,6 +1139,7 @@ Addon.Options = {
                     max = 64,
                     step = 1,
                 },
+                Blank1 = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
                 HeadingTransparency = {
                     type = "range",
                     order = 30,
@@ -1145,6 +1152,7 @@ Addon.Options = {
                     bigStep = 0.05,
                     isPercent = true,
                 },
+                Blank2 = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
                 HeadingBorder = {
                     type = "select",
                     order = 40,
@@ -1199,6 +1207,7 @@ Addon.Options = {
                         Addon:UpdateHUDSettings()
                     end,
                 },
+                HeadingText = { type = "header", order = 89, name = "Text settings", },
                 HeadingFont = {
                     type = "select",
                     order = 90,
@@ -1248,6 +1257,7 @@ Addon.Options = {
                     type = "range",
                     order = 130,
                     name = "Vertical text adjustment",
+                    width = 3/2,
                     min = -64,
                     max = 64,
                     step = 1,
@@ -1256,6 +1266,7 @@ Addon.Options = {
                     type = "range",
                     order = 140,
                     name = "Horizontal text adjustment",
+                    width = 3/2,
                     min = -64,
                     max = 64,
                     step = 1,
@@ -1778,6 +1789,11 @@ local function updateHeading()
         else
             local multiplier = Options.HeadingDecimals * 5 * -1
             heading = math.floor((heading + multiplier/2) / multiplier) * multiplier
+        end
+
+        --Zee-ro fix
+        if heading == 0 and Options.HeadingTrueNorth then
+            heading = 360
         end
 
         HUD.heading.text:SetText(heading)
