@@ -2,15 +2,16 @@
 
 # New
 
-- Option to display heading
+- Option to display heading (idea and testing by [Weischbier](https://github.com/Weischbier))
 
 ## Fix
 
 - Quest pointer did not change scale and orientation (when on the edge) upon quest completion
-- Fixed a typo in the settings (there may still be more).
+- Fixed few typos in the settings (there may still be more).
 
 ## Misc
 
+- Some shuffling of settings in addon options to make it less crowded and to make more room for additional features.
 - "Borrowed" a much more efficient code for obtaining quest positions on the map from [Kaliel's Tracker]https://www.curseforge.com/wow/addons/kaliels-tracker
 
 # v1.2.1 (21.8.2024)

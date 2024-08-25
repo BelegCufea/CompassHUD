@@ -541,7 +541,7 @@ Addon.Options = {
         Settings = {
             type = "group",
             order = 10,
-            name = "Settings",
+            name = "General",
             get = function(info)
                 return Addon.db.profile[info[#info]]
             end,
@@ -554,39 +554,62 @@ Addon.Options = {
                     type = "toggle",
                     name = "Enabled",
                     width = "full",
-                    order = 10,
+                    order = 00,
                     hidden = true,
                 },
                 Lock = {
                     type = "toggle",
                     name = "Lock compass",
                     width = "full",
-                    order = 20,
+                    order = 10,
                 },
+                BlankInterval = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
+                Interval = {
+                    type = "range",
+                    order = 30,
+                    name = "Update frequency",
+                    desc = "Number of updates per second",
+                    min = 1,
+                    max = 600,
+                    softMin = 5,
+                    softMax = 120,
+                    step = 1,
+                    bigStep = 5,
+                },
+                BlankDegrees = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
+                Degrees = {
+                    type = "range",
+                    order = 40,
+                    name = "Field of View",
+                    desc = "Adjusts the horizontal width of the compass display. Higher values show more directions at once. (45-360)",
+                    min = 45,
+                    max = 360,
+                    softMin = 90,
+                    softMax = 270,
+                    step = 1,
+                    bigStep = 5,
+                },
+                BlankStay = { type = "description", order = 49, fontSize = "small",name = "",width = "full", },
                 PointerStay = {
                     type = "toggle",
-                    name = "Pointers stays on HUD",
-                    desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows, remaining positioned at the edge of the HUD.",                    width = 1.1,
-                    order = 21,
+                    name = "Pointers stay on HUD",
+                    desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows, remaining positioned at the edge of the HUD.",
+                    width = 1.5,
+                    order = 50,
                 },
                 StayArrow = {
                     type = "toggle",
-                    name = "Out of HUD indicator",
-                    desc = "Show a small indicator that the pointer is out of the HUD boundaries. Only show this for textures that don't have Edge rotation enabled.",                    width = 1.1,
-                    order = 22,
+                    name = "Pointer Out-of-HUD indicator",
+                    desc = "Show a small indicator that the pointer is out of the HUD boundaries. Only show this for textures that don't have Edge rotation enabled.",
+                    width = 1.5,
+                    order = 60,
                     disabled = function() return not Addon.db.profile.PointerStay end,
                 },
-                PinVisible = {
-                    type = "toggle",
-                    name = "Central HUD pin visible",
-                    desc = "Shows a small reticule on the HUD indicating your current facing direction.",
-                    width = 1.1,
-                    order = 23,
-                },
+                BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
                 Scale = {
                     type = "range",
-                    order = 26,
                     name = "Scale",
+                    order = 70,
                     min = 0.01,
                     max = 5,
                     softMin = 0.2,
@@ -597,8 +620,8 @@ Addon.Options = {
                 },
                 HorizontalScale = {
                     type = "range",
-                    order = 27,
                     name = "Width",
+                    order = 80,
                     min = 0.01,
                     max = 5,
                     softMin = 0.2,
@@ -613,8 +636,8 @@ Addon.Options = {
                 },
                 VerticalScale = {
                     type = "range",
-                    order = 28,
                     name = "Height",
+                    order = 90,
                     min = 0.01,
                     max = 5,
                     softMin = 0.2,
@@ -627,31 +650,79 @@ Addon.Options = {
                         Addon:UpdateHUDSettings()
                     end,
                 },
-                Interval = {
-                    type = "range",
-                    order = 30,
-                    name = "Number of updates per second",
-                    min = 1,
-                    max = 600,
-                    softMin = 5,
-                    softMax = 120,
-                    step = 1,
-                    bigStep = 5,
+                Strata = {
+                    type = "select",
+                    name = "Strata",
+                    order = 100,
+                    values = function()
+                        return getStrateLevels()
+                    end,
+                    sorting = strataLevels,
+                    style = "dropdown",
                 },
-                Degrees = {
+                Level  = {
                     type = "range",
-                    order = 40,
-                    name = "Degrees shown",
-                    min = 45,
-                    max = 360,
-                    softMin = 90,
-                    softMax = 270,
+                    name = "Position in Strata",
+                    order = 110,
+                    min = 0,
+                    max = 1000,
+                    softMin = 0,
+                    softMax = 1000,
                     step = 1,
-                    bigStep = 5,
+                    bigStep = 10,
+                },
+                BlankVisibility = { type = "description", order = 499, fontSize = "small",name = "",width = "full", },
+                Visibility = {
+                    type = "input",
+                    order = 500,
+                    name = "Visibility State",
+                    desc = "This works like a macro, you can run different situations to get the compass to show/hide differently.\nExample: '[petbattle][combat] hide;show' to hide in combat and during pet battles.",
+                    width = "full",
+                },
+                Center = {
+                    type = "execute",
+                    order = 510,
+                    name = "Center HUD horizontally",
+                    width = 3/2,
+                    func = function() Addon:ResetPosition(true, false) end
+                },
+                Reset = {
+                    type = "execute",
+                    order = 520,
+                    name = "Reset HUD position",
+                    width = 3/2,
+                    func = function() Addon:ResetPosition(true, true) end
+                },
+                Debug = {
+                    type = "toggle",
+                    name = "Debug",
+                    width = "full",
+                    order = 900,
+                },
+            },
+        },
+        Display = {
+            type = "group",
+            order = 20,
+            name = "Appearance",
+            get = function(info)
+                return Addon.db.profile[info[#info]]
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info]] = value
+                Addon:UpdateHUDSettings()
+            end,
+            args = {
+                PinVisible = {
+                    type = "toggle",
+                    name = "Central HUD pin visible",
+                    desc = "Shows a small reticule on the HUD indicating your current facing direction.",
+                    width = "full",
+                    order = 10,
                 },
                 Transparency = {
                     type = "range",
-                    order = 50,
+                    order = 20,
                     name = "Opacity",
                     min = 0,
                     max = 1,
@@ -661,38 +732,17 @@ Addon.Options = {
                     bigStep = 0.05,
                     isPercent = true,
                 },
-                Strata = {
-                    type = "select",
-                    order = 60,
-                    name = "Strata",
-                    values = function()
-                        return getStrateLevels()
-                    end,
-                    sorting = strataLevels,
-                    style = "dropdown",
-                },
-                Level  = {
-                    type = "range",
-                    order = 70,
-                    name = "Position in Strata",
-                    min = 0,
-                    max = 1000,
-                    softMin = 0,
-                    softMax = 1000,
-                    step = 1,
-                    bigStep = 10,
-                },
-                Blank0 = { type = "description", order = 89, fontSize = "small",name = "",width = "full", },
+                BlankBorder = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
                 Border = {
                     type = "select",
-                    order = 90,
+                    order = 30,
                     name = "Border",
                     dialogControl = "LSM30_Border",
                     values = AceGUIWidgetLSMlists.border,
                 },
                 BorderColor = {
                     type = "color",
-                    order = 100,
+                    order = 40,
                     name = "Border color",
                     hasAlpha = true,
                     get = function(info)
@@ -708,7 +758,7 @@ Addon.Options = {
                 },
                 BorderThickness = {
                     type = "range",
-                    order = 110,
+                    order = 50,
                     name = "Border thickness",
                     min = 1,
                     max = 24,
@@ -716,14 +766,14 @@ Addon.Options = {
                 },
                 Background = {
                     type = "select",
-                    order = 120,
+                    order = 60,
                     name = "Background",
                     dialogControl = "LSM30_Background",
                     values = AceGUIWidgetLSMlists['background'],
                 },
                 BackgroundColor = {
                     type = "color",
-                    order = 130,
+                    order = 70,
                     name = "Background color",
                     hasAlpha = true,
                     get = function(info)
@@ -739,13 +789,13 @@ Addon.Options = {
                 },
                 LineGroup = {
                     type = "group",
-                    order = 200,
+                    order = 80,
                     name = "Edge line",
                     inline = true,
                     args = {
                         Line = {
                             type = "select",
-                            order = 210,
+                            order = 10,
                             name = "Position",
                             values = {
                                 [""] = "none",
@@ -756,7 +806,7 @@ Addon.Options = {
                         },
                         LineThickness = {
                             type = "range",
-                            order = 220,
+                            order = 20,
                             name = "Thickness",
                             min = 1,
                             max = 24,
@@ -764,15 +814,15 @@ Addon.Options = {
                         },
                         LinePosition = {
                             type = "range",
-                            order = 230,
-                            name = "Vertical adujustment",
+                            order = 30,
+                            name = "Vertical adjustment",
                             min = -16,
                             max = 16,
                             step = 0.5,
                         },
                         LineColor = {
                             type = "color",
-                            order = 240,
+                            order = 40,
                             name = "Color",
                             width = 1/2,
                             hasAlpha = true,
@@ -789,37 +839,11 @@ Addon.Options = {
                         },
                     },
                 },
-                Visibility = {
-                    type = "input",
-                    order = 490,
-                    name = "Visibility State",
-                    desc = "This works like a macro, you can run different situations to get the compass to show/hide differently.\nExample: '[petbattle][combat] hide;show' to hide in combat and during pet battles.",
-                    width = "full",
-                },
-                --Blank2 = { type = "description", order = 500, fontSize = "small",name = "",width = "full", },
-                Center = {
-                    type = "execute",
-                    order = 510,
-                    name = "Center HUD horizontaly",
-                    func = function() Addon:ResetPosition(true, false) end
-                },
-                Reset = {
-                    type = "execute",
-                    order = 520,
-                    name = "Reset HUD position",
-                    func = function() Addon:ResetPosition(true, true) end
-                },
-                Debug = {
-                    type = "toggle",
-                    name = "Debug",
-                    width = "full",
-                    order = 900,
-                },
             },
         },
         CompassHUD = {
             type = "group",
-            order = 20,
+            order = 30,
             name = "Custom HUD",
             get = function(info)
                 return Addon.db.profile[info[#info]]
@@ -1077,7 +1101,7 @@ Addon.Options = {
         },
         Heading ={
             type = "group",
-            order = 30,
+            order = 40,
             name = "Heading",
             get = function(info)
                 return Addon.db.profile[info[#info]]
@@ -1275,7 +1299,7 @@ Addon.Options = {
         },
         Pointers = {
             type = "group",
-            order = 40,
+            order = 50,
             name = "Pointers",
             get = function(info)
                 return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]]
