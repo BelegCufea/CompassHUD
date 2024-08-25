@@ -393,6 +393,8 @@ Addon.Defaults = {
     profile = {
         Enabled         = true,
         Debug           = false,
+        Minimap         = { hide = true, minimapPos = 220, radius = 80, },
+        Compartment     = { hide = false},
         PositionX       = -1,
         PositionY       = -1,
 		Degrees         = 180,
@@ -562,6 +564,40 @@ Addon.Options = {
                     name = "Lock compass",
                     width = "full",
                     order = 10,
+                },
+                Minimap = {
+                    type = "toggle",
+                    name = "Show minimap icon",
+                    width = 1.5,
+                    order = 20,
+                    get = function(info) return not Addon.db.profile[info[#info]].hide end,
+                    set = function(info, value)
+                        Addon.db.profile[info[#info]].hide = not value
+                        if Addon.db.profile[info[#info]].hide then
+                            Addon.icon:Hide(Addon.CONST.METADATA.NAME)
+                        else
+                            Addon.icon:Show(Addon.CONST.METADATA.NAME)
+                        end
+                     end,
+                },
+                Compartment = {
+                    type = "toggle",
+                    name = "Show in AddOns Compartment",
+                    width = 1.5,
+                    order = 25,
+                    get = function(info) return not Addon.db.profile[info[#info]].hide end,
+                    set = function(info, value)
+                        Addon.db.profile[info[#info]].hide = not value
+                        if Addon.db.profile[info[#info]].hide then
+                            if Addon.icon:IsButtonInCompartment(Addon.CONST.METADATA.NAME) then
+                                Addon.icon:RemoveButtonFromCompartment(Addon.CONST.METADATA.NAME)
+                            end
+                        else
+                            if not Addon.icon:IsButtonInCompartment(Addon.CONST.METADATA.NAME) then
+                                Addon.icon:AddButtonToCompartment(Addon.CONST.METADATA.NAME)
+                            end
+                        end
+                     end,
                 },
                 BlankInterval = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
                 Interval = {
@@ -2760,6 +2796,8 @@ end
 
 function Addon:OnEnable()
     addToLSM()
+
+    Addon:InitializeDataBroker()
 
     self:UpdateHUDSettings()
     HUD:SetScript('OnUpdate', onUpdate)

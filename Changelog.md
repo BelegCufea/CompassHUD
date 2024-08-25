@@ -1,8 +1,13 @@
-# v1.2.2 ()
+# v1.2.2 (25.8.2024)
 
 # New
 
 - Option to display heading (idea and testing by [Weischbier](https://github.com/Weischbier))
+
+![Heading](https://i.imgur.com/p5Jcgkl.png)
+
+- Option to show minimap button and/or entry in AddOns Compartment on General Tab (request by [raptormama](https://github.com/raptormama))
+- Support for DataBroker
 
 ## Fix
 
@@ -12,7 +17,7 @@
 ## Misc
 
 - Some shuffling of settings in addon options to make it less crowded and to make more room for additional features.
-- "Borrowed" a much more efficient code for obtaining quest positions on the map from [Kaliel's Tracker]https://www.curseforge.com/wow/addons/kaliels-tracker
+- "Borrowed" a much more efficient code for obtaining quest positions on the map from [Kaliel's Tracker](https://www.curseforge.com/wow/addons/kaliels-tracker)
 
 # v1.2.1 (21.8.2024)
 
