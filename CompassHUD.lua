@@ -155,6 +155,10 @@ local pointerTextures = {
     ["Questionmark Blue"] = {
         atlasID = "QuestRepeatableTurnin",
         textureScale = 0.8,
+    },
+    ["Event"] = {
+        atlasID = "VignetteEvent",
+        textureScale = 0.8,
     }
 }
 
@@ -300,10 +304,10 @@ local texturePresets = {
             reference = Enum.QuestClassification.Normal,
         },
         [Enum.QuestClassification.BonusObjective] = {
-            atlasIDavailable = "VignetteEvent",
-            atlasIDturnin = "VignetteEvent",
-            textureScaleAvailable = 0.8,
-            textureScaleTurnin = 0.8,
+            atlasIDavailable = "QuestBonusObjective",
+            atlasIDturnin = "QuestBonusObjective",
+            textureScaleAvailable = 1.35,
+            textureScaleTurnin = 1.35,
         },
         [Enum.QuestClassification.Threat] = {
             atlasIDavailable = "vignettekillboss",
@@ -1954,6 +1958,13 @@ local function tomtomRemoveWaypoint(self, uid)
     end
 end
 
+local function isTask(questID)
+    local classification = GetQuestClassification(questID)
+    return
+        (classification == Enum.QuestClassification.BonusObjective)
+        or (classification == Enum.QuestClassification.WorldQuest)
+end
+
 local function OnEvent(event,...)
     Debug:Info(event)
     if event == "PLAYER_ENTERING_WORLD" then
@@ -1979,7 +1990,7 @@ local function OnEvent(event,...)
     if STtypeID then Debug:Info("ST type ID", STtypeID) end
     if questID and questID > 0 then
         local x, y, uiMapID
-    	if IsWorldQuest(questID) then
+    	if isTask(questID)  then
             uiMapID = GetQuestZoneID(questID)
             if not uiMapID then
                 uiMapID = getMapId(questID)

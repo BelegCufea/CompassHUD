@@ -1,6 +1,13 @@
+# v1.2.2a (27.8.2024)
+
+## Fix
+
+- Bonus objective tracking and pointer in Moder preset
+  - more may come as I will play through the new expansion (sorry for inconvenience)
+
 # v1.2.2 (25.8.2024)
 
-# New
+## New
 
 - Option to display heading (idea and testing by [Weischbier](https://github.com/Weischbier))
 
