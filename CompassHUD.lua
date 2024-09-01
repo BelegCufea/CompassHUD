@@ -29,7 +29,6 @@ local GetTitleForQuestID = C_QuestLog.GetTitleForQuestID
 local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
 local GetNextWaypoint = C_QuestLog.GetNextWaypoint
 local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
-local IsWorldQuest = C_QuestLog.IsWorldQuest
 local GetQuestAdditionalHighlights = C_QuestLog.GetQuestAdditionalHighlights
 local IsComplete = C_QuestLog.IsComplete
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
@@ -43,7 +42,7 @@ local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
 local Options
 local HUD
 local timer = 0
-local player = {x = 0, y = 0, angle = 0, instance = "none"}
+local player = {x = 0, y = 0, angle = 0, inInstance = false}
 local tomTomActive
 local questPointsTable = {}
 local HBDmaps = {}
@@ -1491,7 +1490,7 @@ local function getMapId(questID)
 end
 
 local function updatePlayerCoords()
-    if player.instance ~= "none" then return end
+    if player.inInstance then return end
 
     player.x, player.y = HBD:GetPlayerWorldPosition()
     player.mapId = HBD:GetPlayerZone()
@@ -1716,7 +1715,7 @@ local function setTime(frame, distance, speed)
 end
 
 local function questPointerSetTexts(frame, dt)
-    if player.instance ~= "none" then return end
+    if player.inInstance then return end
 
     frame.distance = HBD:GetWorldDistance(questPointsTable[frame.questID].instance, player.x, player.y, questPointsTable[frame.questID].x, questPointsTable[frame.questID].y)
     if not frame.distance then
@@ -1979,7 +1978,7 @@ local function updatePointerTextures()
 end
 
 local function onUpdate(_, elapsed)
-    if player.instance ~= "none" then return end
+    if player.inInstance then return end
 
     timer = timer + elapsed
     if timer < (1 / Options.Interval) then return end
@@ -1995,15 +1994,11 @@ local function createHUD()
 
     HUD:SetScript("OnAttributeChanged", function(self, name, value)
         if name == "state-hudvisibility" then
-            if value == "show" then
-                if player.instance == "none" then
-                    HUD:Show()
-                    HUD:SetScript('OnUpdate', onUpdate)
-                end
-            elseif value == "hide" then
-                HUD:Hide()
-                HUD:SetScript('OnUpdate', nil)
+            local visible = false
+            if value == "show" and not player.inInstance then
+                visible = true
             end
+            Addon:SetVisibility(visible)
         end
     end)
 end
@@ -2058,17 +2053,6 @@ end
 
 local function OnEvent(event,...)
     Debug:Info(event)
-    if event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_MAP_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
-        local _, instanceType = IsInInstance()
-        player.instance = instanceType
-        if player.instance == "none" then
-            HUD:Show()
-            HUD:SetScript('OnUpdate', onUpdate)
-        else
-            HUD:Hide()
-            HUD:SetScript('OnUpdate',nil)
-        end
-    end
     if TomTom and TomTom:IsCrazyArrowEmpty() and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
     end
@@ -2102,6 +2086,22 @@ local function OnEvent(event,...)
         end
     end
     setQuestsIcons()
+end
+
+local function OnZoneChange(event, ...)
+    player.inInstance = IsInInstance()
+    Addon:SetVisibility(not player.inInstance)
+    OnEvent(event, ...)
+end
+
+function Addon:SetVisibility(visible)
+    if visible then
+        HUD:Show()
+        HUD:SetScript('OnUpdate', onUpdate)
+    else
+        HUD:Hide()
+        HUD:SetScript('OnUpdate',nil)
+    end
 end
 
 function Addon:GetPointerTypes()
@@ -2904,9 +2904,9 @@ function Addon:OnEnable()
     self:UpdateHUDSettings()
     HUD:SetScript('OnUpdate', onUpdate)
 
-    self:RegisterEvent("PLAYER_ENTERING_WORLD", OnEvent)
-    self:RegisterEvent("PLAYER_MAP_CHANGED", OnEvent)
-    self:RegisterEvent("ZONE_CHANGED_NEW_AREA", OnEvent)
+    self:RegisterEvent("PLAYER_ENTERING_WORLD", OnZoneChange)
+    self:RegisterEvent("PLAYER_MAP_CHANGED", OnZoneChange)
+    self:RegisterEvent("ZONE_CHANGED_NEW_AREA", OnZoneChange)
     self:RegisterEvent("ZONE_CHANGED", OnEvent)
     self:RegisterEvent("QUEST_ACCEPTED", OnEvent)
     self:RegisterEvent("QUEST_LOG_UPDATE", OnEvent)

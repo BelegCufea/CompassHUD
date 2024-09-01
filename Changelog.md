@@ -6,7 +6,7 @@
 
 ## Fix
 
-- Added option (on `General` tab) to hide compass in Delves
+- Compass visible in Delves
 
 # v1.2.2a (27.8.2024)
 
