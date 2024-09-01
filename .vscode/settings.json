@@ -90,7 +90,9 @@
         "Legendary",
         "Campaign",
         "Meta",
-        "MenuUtil"
+        "MenuUtil",
+        "UNKNOWN",
+        "TEXT_TO_SPEECH_SAMPLE_TEXT"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {

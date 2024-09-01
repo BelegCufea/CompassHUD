@@ -2,7 +2,7 @@
 ## Title: CompassHUD
 ## IconTexture: Interface\AddOns\CompassHUD\textures\icon
 ## Notes: Simple compass HUD
-## Version: 1.2.2a
+## Version: 1.2.3
 ## Author: Cufea
 ## SavedVariables: CompassHUDDB
 ## DefaultState: enabled

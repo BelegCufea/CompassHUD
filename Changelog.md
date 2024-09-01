@@ -1,8 +1,18 @@
+# v1.2.3 (1.9.2024)
+
+## New
+
+- Classic/Modern preset for pointers
+
+## Fix
+
+- Added option (on `General` tab) to hide compass in Delves
+
 # v1.2.2a (27.8.2024)
 
 ## Fix
 
-- Bonus objective tracking and pointer in Moder preset
+- Bonus objective tracking and pointer in Modern preset
   - more may come as I will play through the new expansion (sorry for inconvenience)
 
 # v1.2.2 (25.8.2024)
@@ -13,7 +23,7 @@
 
 ![Heading](https://i.imgur.com/p5Jcgkl.png)
 
-- Option to show minimap button and/or entry in AddOns Compartment on General Tab (request by [raptormama](https://github.com/raptormama))
+- Option to show minimap button and/or entry in AddOns Compartment on `General Tab` (request by [raptormama](https://github.com/raptormama))
 - Support for DataBroker
 
 ## Fix

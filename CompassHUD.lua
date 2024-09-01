@@ -232,10 +232,10 @@ local texturePresets = {
             reference = Enum.QuestClassification.Normal,
         },
         [Enum.QuestClassification.BonusObjective] = {
-            reference = Enum.QuestClassification.Normal
+            reference = Enum.QuestClassification.WorldQuest
         },
         [Enum.QuestClassification.Threat] = {
-            reference = Enum.QuestClassification.Normal
+            reference = Enum.QuestClassification.WorldQuest
         },
         [Enum.QuestClassification.WorldQuest] = {
             atlasIDavailable = "Rotating-MinimapGuideArrow",
@@ -354,7 +354,7 @@ local texturePresets = {
             reference = Enum.QuestClassification.Normal
         },
         [Enum.QuestClassification.Meta] = {
-            reference = Enum.QuestClassification.Normal
+            reference = Enum.QuestFrequency.Daily + 100
         },
         [Enum.QuestClassification.Normal] = {
             atlasIDavailable = "MiniMap-QuestArrow",
@@ -367,10 +367,16 @@ local texturePresets = {
             reference = Enum.QuestClassification.Normal,
         },
         [Enum.QuestClassification.BonusObjective] = {
-            reference = Enum.QuestClassification.Normal
+            reference = Enum.QuestClassification.WorldQuest
         },
         [Enum.QuestClassification.Threat] = {
-            reference = Enum.QuestClassification.Normal
+            reference = Enum.QuestClassification.WorldQuest
+        },
+        [Enum.QuestClassification.WorldQuest] = {
+            atlasIDavailable = "Rotating-MinimapGuideArrow",
+            atlasNameAvailable = "Arrow Gold small",
+            textureScaleAvailable = 1.35,
+            textureRotateAvailable = true,
         },
         [Enum.QuestFrequency.Daily + 100] = {
             atlasIDavailable = "MiniMap-VignetteArrow",
@@ -386,7 +392,92 @@ local texturePresets = {
             reference = Enum.QuestFrequency.Daily + 100,
         },
     },
-
+    ["Classic/Modern"] = {
+        [tomTom] = {
+            atlasIDavailable = "Rotating-MinimapGroupArrow",
+            atlasIDturnin = "Rotating-MinimapArrow",
+            atlasNameAvailable = "Arrow Green small",
+            atlasNameTurnin = "Arrow Blue small",
+            textureScaleAvailable = 1.35,
+            textureRotateAvailable = true,
+        },
+        [Enum.QuestClassification.Important] = {
+            atlasIDavailable = "MiniMap-QuestArrow",
+            atlasIDturnin = "quest-important-turnin",
+            textureRotateAvailable = true,
+            textureScaleAvailable = 1,
+            textureRotateTurnin = false,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Legendary] = {
+            atlasIDavailable = "MiniMap-QuestArrow",
+            atlasIDturnin = "quest-legendary-turnin",
+            textureRotateAvailable = true,
+            textureScaleAvailable = 1,
+            textureRotateTurnin = false,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Campaign] = {
+            atlasIDavailable = "MiniMap-QuestArrow",
+            atlasIDturnin = "Quest-Campaign-TurnIn",
+            textureRotateAvailable = true,
+            textureScaleAvailable = 1,
+            textureRotateTurnin = false,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Calling] = {
+            atlasIDavailable = "MiniMap-QuestArrow",
+            atlasIDturnin = "callings-turnin",
+            textureRotateAvailable = true,
+            textureScaleAvailable = 1,
+            textureRotateTurnin = false,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Meta] = {
+            atlasIDavailable = "MiniMap-QuestArrow",
+            atlasIDturnin = "quest-wrapper-turnin",
+            textureRotateAvailable = true,
+            textureScaleAvailable = 1,
+            textureRotateTurnin = false,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Normal] = {
+            atlasIDavailable = "QuestNormal",
+            atlasIDturnin = "QuestTurnin",
+            textureRotateAvailable = true,
+            textureScaleAvailable = 1,
+            textureRotateTurnin = false,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestClassification.Questline] = {
+            reference = Enum.QuestClassification.Normal
+        },
+        [Enum.QuestClassification.BonusObjective] = {
+            reference = Enum.QuestClassification.WorldQuest
+        },
+        [Enum.QuestClassification.Threat] = {
+            reference = Enum.QuestClassification.WorldQuest
+        },
+        [Enum.QuestClassification.WorldQuest] = {
+            atlasIDavailable = "Rotating-MinimapGuideArrow",
+            atlasNameAvailable = "Arrow Gold small",
+            textureScaleAvailable = 1.35,
+            textureRotateAvailable = true,
+        },
+        [Enum.QuestFrequency.Daily + 100] = {
+            atlasIDavailable = "MiniMap-VignetteArrow",
+            atlasIDturnin = "quest-recurring-turnin",
+            textureRotateAvailable = true,
+            textureRotateTurnin = false,
+            textureScaleTurnin = 0.8,
+        },
+        [Enum.QuestFrequency.Weekly + 100] = {
+            reference = Enum.QuestFrequency.Daily + 100,
+        },
+        [Enum.QuestFrequency.ResetByScheduler + 100] = {
+            reference = Enum.QuestFrequency.Daily + 100,
+        },
+    },
 }
 
 local function addToLSM()
@@ -1967,7 +2058,7 @@ end
 
 local function OnEvent(event,...)
     Debug:Info(event)
-    if event == "PLAYER_ENTERING_WORLD" then
+    if event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_MAP_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
         local _, instanceType = IsInInstance()
         player.instance = instanceType
         if player.instance == "none" then
@@ -2814,6 +2905,8 @@ function Addon:OnEnable()
     HUD:SetScript('OnUpdate', onUpdate)
 
     self:RegisterEvent("PLAYER_ENTERING_WORLD", OnEvent)
+    self:RegisterEvent("PLAYER_MAP_CHANGED", OnEvent)
+    self:RegisterEvent("ZONE_CHANGED_NEW_AREA", OnEvent)
     self:RegisterEvent("ZONE_CHANGED", OnEvent)
     self:RegisterEvent("QUEST_ACCEPTED", OnEvent)
     self:RegisterEvent("QUEST_LOG_UPDATE", OnEvent)
