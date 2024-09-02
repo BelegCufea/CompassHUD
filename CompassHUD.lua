@@ -561,6 +561,7 @@ Addon.Defaults = {
         CompassCustomTicksPosition      = 'TOP',
         CompassCustomTicksForce         = false,
         GroupTracking = true,
+        GroupInterval = 5,
     },
 }
 
@@ -1950,10 +1951,43 @@ local function createGroupIcon(unit)
 	return groupPointer
 end
 
+local function setGroupPosition(unit)
+    if not groupPointsTable[unit] then groupPointsTable[unit] = {} end
+    groupPointsTable[unit].active = false
+    local uiMapID = GetBestMapForUnit(unit)
+    if not uiMapID then return end
+    local position = GetPlayerMapPosition(uiMapID, unit)
+    if not position then return end
+    local x, y = position:GetXY()
+    if x and y then
+        groupPointsTable[unit] = { active = true, uiMapID = uiMapID, x = x, y = y }
+        Debug:Table("GroupPointsTable1", groupPointsTable)
+        if not groupPointsTable[unit].frame then
+            groupPointsTable[unit].frame = createGroupIcon(unit)
+        end
+        Debug:Table("GroupPointsTable2", groupPointsTable)
+    end
+end
+
+local function hideGroupIcons()
+    for _,v in pairs(groupPointsTable) do
+        if v.frame then v.frame:Hide() end
+    end
+end
+
 local function setGroupIcons()
-    if not Options.GroupTracking or not player.groupDirty then return end
-    for k, v in pairs(groupPointsTable) do
-        if v then
+    if not Options.GroupTracking then return end
+    --if not player.groupTimer or player.groupTimer < Options.GroupInterval then return end
+    --player.groupTimer = 0
+    hideGroupIcons()
+    if player.groupType then
+        local groupSize = player.groupType == "raid" and 40 or player.groupType == "party" and 4 or 0
+        for i = 1,groupSize do
+            setGroupPosition(player.groupType..i)
+        end
+    end
+    for _, v in pairs(groupPointsTable) do
+        if v and v.frame and v.active then
             if player.angle then
                 local x, y, instance = HBD:GetWorldCoordinatesFromZone(v.x, v.y, v.uiMapID)
                 if x and y and instance then
@@ -1965,8 +1999,6 @@ local function setGroupIcons()
                         if angle < visible and angle > -visible then
                             v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, 0)
                             v.frame:Show()
-                        else
-                            v.frame:Hide()
                         end
                     end
                 end
@@ -2009,6 +2041,7 @@ local function updateHUD(force)
     updatePlayerCoords()
     updateHeading()
     setQuestsIcons()
+    setGroupIcons()
 end
 
 local function updatePointerTextures()
@@ -2024,6 +2057,7 @@ local function onUpdate(_, elapsed)
     timer = timer + elapsed
     if timer < (1 / Options.Interval) then return end
     timer = 0
+    player.groupTimer = player.groupTimer and (player.groupTimer + 1) or 0
     updateHUD(false)
 end
 
@@ -2127,7 +2161,6 @@ local function OnEvent(event,...)
         end
     end
     setQuestsIcons()
-    setGroupIcons()
 end
 
 local function OnZoneChange(event, ...)
@@ -2137,30 +2170,10 @@ local function OnZoneChange(event, ...)
 end
 
 local function OnGroup(event, ...)
-    local function setUnitPosition(unit)
-        groupPointsTable[unit] = nil
-        local uiMapID = GetBestMapForUnit(unit)
-        if not uiMapID then return end
-        local position = GetPlayerMapPosition(uiMapID, unit)
-        if not position then return end
-        local x, y = position:GetXY()
-        if x and y then
-            groupPointsTable[unit] = { uiMapID = uiMapID, x = x, y = y }
-            if not groupPointsTable[unit].frame then
-                questPointsTable[unit].frame = createGroupIcon(unit)
-            end
-        end
-    end
-    player.groupDirty = false
+    hideGroupIcons()
     if not Options.GroupTracking then return end
     player.groupType = (IsInRaid() and "raid") or  (IsInGroup() and "party")
-    if not player.groupType then return end
-    Debug:Info("Group type", player.groupType)
-    local groupSize = player.groupType == "raid" and 40 or player.groupType == "party" and 4 or 0
-    for i = 1,groupSize do
-        setUnitPosition(player.groupType..i)
-    end
-    player.groupDirty = false
+    Debug:Info("Group update", player.groupType)
 end
 
 function Addon:SetVisibility(visible)
