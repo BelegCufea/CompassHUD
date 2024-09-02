@@ -391,7 +391,7 @@ local texturePresets = {
             reference = Enum.QuestFrequency.Daily + 100,
         },
     },
-    ["Classic/Modern"] = {
+    [defaultTexturePreset.."/Modern"] = {
         [tomTom] = {
             atlasIDavailable = "Rotating-MinimapGroupArrow",
             atlasIDturnin = "Rotating-MinimapArrow",
@@ -441,8 +441,9 @@ local texturePresets = {
             textureScaleTurnin = 0.8,
         },
         [Enum.QuestClassification.Normal] = {
-            atlasIDavailable = "QuestNormal",
+            atlasIDavailable = "MiniMap-QuestArrow",
             atlasIDturnin = "QuestTurnin",
+            atlasNameAvailable = "Arrow Gold",
             textureRotateAvailable = true,
             textureScaleAvailable = 1,
             textureRotateTurnin = false,
