@@ -44,6 +44,7 @@ local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
 local Options
 local HUD
 local timer = 0
+local groupThrottle = 0
 local player = {x = 0, y = 0, angle = 0}
 local tomTomActive
 local questPointsTable = {}
@@ -1940,7 +1941,7 @@ local function setQuestsIcons()
 	end
 end
 
-local function createGroupIcon(unit)
+local function createGroupMemberIcon(unit)
     local groupPointer = CreateFrame("FRAME", ADDON_NAME..unit, HUD)
 	groupPointer:SetSize(textureHeight, textureHeight)
 	groupPointer:SetPoint("CENTER");
@@ -1951,39 +1952,39 @@ local function createGroupIcon(unit)
 	return groupPointer
 end
 
-local function setGroupPosition(unit)
+local function updateGroupMember(unit)
     if not groupPointsTable[unit] then groupPointsTable[unit] = {} end
     groupPointsTable[unit].active = false
+    if not groupPointsTable[unit].frame then
+        groupPointsTable[unit].frame = createGroupMemberIcon(unit)
+    end
     local uiMapID = GetBestMapForUnit(unit)
     if not uiMapID then return end
     local position = GetPlayerMapPosition(uiMapID, unit)
     if not position then return end
     local x, y = position:GetXY()
     if x and y then
-        groupPointsTable[unit] = { active = true, uiMapID = uiMapID, x = x, y = y }
-        Debug:Table("GroupPointsTable1", groupPointsTable)
-        if not groupPointsTable[unit].frame then
-            groupPointsTable[unit].frame = createGroupIcon(unit)
-        end
-        Debug:Table("GroupPointsTable2", groupPointsTable)
+        groupPointsTable[unit].active = true
+        groupPointsTable[unit].uiMapID = uiMapID
+        groupPointsTable[unit].x = x
+        groupPointsTable[unit].y = y
     end
 end
 
 local function hideGroupIcons()
     for _,v in pairs(groupPointsTable) do
         if v.frame then v.frame:Hide() end
+        v.active = false
     end
 end
 
 local function setGroupIcons()
-    if not Options.GroupTracking then return end
-    --if not player.groupTimer or player.groupTimer < Options.GroupInterval then return end
-    --player.groupTimer = 0
-    hideGroupIcons()
-    if player.groupType then
-        local groupSize = player.groupType == "raid" and 40 or player.groupType == "party" and 4 or 0
+    if not Options.GroupTracking or not player.groupType or player.groupType == "none" then return end
+    if groupThrottle and groupThrottle >= Options.GroupInterval then
+        groupThrottle = 0
+        local groupSize = player.groupType == "raid" and 40 or player.groupType == "party" and 4
         for i = 1,groupSize do
-            setGroupPosition(player.groupType..i)
+            updateGroupMember(player.groupType..i)
         end
     end
     for _, v in pairs(groupPointsTable) do
@@ -2057,7 +2058,7 @@ local function onUpdate(_, elapsed)
     timer = timer + elapsed
     if timer < (1 / Options.Interval) then return end
     timer = 0
-    player.groupTimer = player.groupTimer and (player.groupTimer + 1) or 0
+    groupThrottle = groupThrottle + 1
     updateHUD(false)
 end
 
@@ -2170,10 +2171,9 @@ local function OnZoneChange(event, ...)
 end
 
 local function OnGroup(event, ...)
-    hideGroupIcons()
-    if not Options.GroupTracking then return end
-    player.groupType = (IsInRaid() and "raid") or  (IsInGroup() and "party")
-    Debug:Info("Group update", player.groupType)
+    local groupType = (IsInRaid() and "raid") or  (IsInGroup() and "party") or "none"
+    if groupType ~= (player.groupType or "") then hideGroupIcons() end
+    player.groupType = groupType
 end
 
 function Addon:SetVisibility(visible)
