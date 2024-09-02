@@ -1954,6 +1954,7 @@ end
 
 local function updateGroupMember(unit)
     if not groupPointsTable[unit] then groupPointsTable[unit] = {} end
+    local wasActive = groupPointsTable[unit].active
     groupPointsTable[unit].active = false
     if not groupPointsTable[unit].frame then
         groupPointsTable[unit].frame = createGroupMemberIcon(unit)
@@ -1969,6 +1970,10 @@ local function updateGroupMember(unit)
         groupPointsTable[unit].x = x
         groupPointsTable[unit].y = y
     end
+    if wasActive and not groupPointsTable[unit].active then
+        groupPointsTable[unit].frame:Hide()
+    end
+
 end
 
 local function hideGroupIcons()
