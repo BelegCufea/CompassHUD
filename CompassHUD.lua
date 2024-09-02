@@ -36,15 +36,18 @@ local GetQuestLocation = C_TaskQuest.GetQuestLocation
 local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
+local GetBestMapForUnit = C_Map.GetBestMapForUnit
+local GetPlayerMapPosition = C_Map.GetPlayerMapPosition
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
 
 local Options
 local HUD
 local timer = 0
-local player = {x = 0, y = 0, angle = 0, inInstance = false}
+local player = {x = 0, y = 0, angle = 0}
 local tomTomActive
 local questPointsTable = {}
+local groupPointsTable = {}
 local HBDmaps = {}
 local directions = {
     [0] = {letter = "N" , main = true },
@@ -557,6 +560,7 @@ Addon.Defaults = {
         CompassCustomDegreesFlags       = '',
         CompassCustomTicksPosition      = 'TOP',
         CompassCustomTicksForce         = false,
+        GroupTracking = true,
     },
 }
 
@@ -1935,6 +1939,42 @@ local function setQuestsIcons()
 	end
 end
 
+local function createGroupIcon(unit)
+    local groupPointer = CreateFrame("FRAME", ADDON_NAME..unit, HUD)
+	groupPointer:SetSize(textureHeight, textureHeight)
+	groupPointer:SetPoint("CENTER");
+	groupPointer.texture = groupPointer:CreateTexture(ADDON_NAME..unit.."Texture", "ARTWORK")
+	groupPointer.texture:SetAllPoints(groupPointer)
+	groupPointer.texture:SetAtlas("PartyMember")
+	groupPointer:Hide()
+	return groupPointer
+end
+
+local function setGroupIcons()
+    if not Options.GroupTracking or not player.groupDirty then return end
+    for k, v in pairs(groupPointsTable) do
+        if v then
+            if player.angle then
+                local x, y, instance = HBD:GetWorldCoordinatesFromZone(v.x, v.y, v.uiMapID)
+                if x and y and instance then
+                    local angle = player.angle - HBD:GetWorldVector(instance, player.x, player.y, x, y)
+                    if angle < 0 then angle = angle + (2 * PI) end
+                    if angle > PI then angle = angle - (2 * PI) end
+                    if v.frame and angle then
+                        local visible = math.rad(Options.Degrees)/2
+                        if angle < visible and angle > -visible then
+                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, 0)
+                            v.frame:Show()
+                        else
+                            v.frame:Hide()
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function updateHeading()
     if HUD.heading and HUD.heading.text and player.angle then
         local heading = (360 - (player.angle * (180 / math.pi))) % 360
@@ -2087,12 +2127,40 @@ local function OnEvent(event,...)
         end
     end
     setQuestsIcons()
+    setGroupIcons()
 end
 
 local function OnZoneChange(event, ...)
     player.inInstance = IsInInstance()
     Addon:SetVisibility(not player.inInstance)
     OnEvent(event, ...)
+end
+
+local function OnGroup(event, ...)
+    local function setUnitPosition(unit)
+        groupPointsTable[unit] = nil
+        local uiMapID = GetBestMapForUnit(unit)
+        if not uiMapID then return end
+        local position = GetPlayerMapPosition(uiMapID, unit)
+        if not position then return end
+        local x, y = position:GetXY()
+        if x and y then
+            groupPointsTable[unit] = { uiMapID = uiMapID, x = x, y = y }
+            if not groupPointsTable[unit].frame then
+                questPointsTable[unit].frame = createGroupIcon(unit)
+            end
+        end
+    end
+    player.groupDirty = false
+    if not Options.GroupTracking then return end
+    player.groupType = (IsInRaid() and "raid") or  (IsInGroup() and "party")
+    if not player.groupType then return end
+    Debug:Info("Group type", player.groupType)
+    local groupSize = player.groupType == "raid" and 40 or player.groupType == "party" and 4 or 0
+    for i = 1,groupSize do
+        setUnitPosition(player.groupType..i)
+    end
+    player.groupDirty = false
 end
 
 function Addon:SetVisibility(visible)
@@ -2908,6 +2976,7 @@ function Addon:OnEnable()
     self:RegisterEvent("PLAYER_ENTERING_WORLD", OnZoneChange)
     self:RegisterEvent("PLAYER_MAP_CHANGED", OnZoneChange)
     self:RegisterEvent("ZONE_CHANGED_NEW_AREA", OnZoneChange)
+    self:RegisterEvent("GROUP_ROSTER_UPDATE", OnGroup)
     self:RegisterEvent("ZONE_CHANGED", OnEvent)
     self:RegisterEvent("QUEST_ACCEPTED", OnEvent)
     self:RegisterEvent("QUEST_LOG_UPDATE", OnEvent)
