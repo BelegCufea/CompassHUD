@@ -19,7 +19,7 @@ local settings = {
         end
     end,
     OnClick = function(self, button, down)
-        Settings.OpenToCategory("CompassHUD")
+        Settings.OpenToCategory(Addon.categoryID)
     end,
 }
 

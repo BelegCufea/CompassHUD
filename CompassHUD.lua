@@ -561,8 +561,15 @@ Addon.Defaults = {
         CompassCustomDegreesFlags       = '',
         CompassCustomTicksPosition      = 'TOP',
         CompassCustomTicksForce         = false,
-        GroupTracking = true,
-        GroupInterval = 5,
+        GroupShowParty     = true,
+        GroupShowRaid      = false,
+        GroupInterval      = 6,
+        GroupShowAllZones  = true,
+        GroupDesaturate    = true,
+        GroupTransparency  = 0.7,
+        GroupScale         = 1,
+        GroupOffset        = 0,
+        GroupStay          = true,
     },
 }
 
@@ -636,15 +643,22 @@ local function getStrateLevels()
     return values
 end
 
+local function hideGroupIcons()
+    for _,v in pairs(groupPointsTable) do
+        if v.frame then v.frame:Hide() end
+        v.active = false
+    end
+end
+
 Addon.Options = {
     type = "group",
     name = Const.METADATA.NAME,
-    childGroups = "tab",
     args = {
-        Settings = {
+        Tabs = {
             type = "group",
             order = 10,
-            name = "General",
+            name = "Options",
+            childGroups = "tab",
             get = function(info)
                 return Addon.db.profile[info[#info]]
             end,
@@ -653,313 +667,737 @@ Addon.Options = {
                 Addon:UpdateHUDSettings()
             end,
             args = {
-                Enabled = {
-                    type = "toggle",
-                    name = "Enabled",
-                    width = "full",
-                    order = 00,
-                    hidden = true,
-                },
-                Lock = {
-                    type = "toggle",
-                    name = "Lock compass",
-                    width = "full",
-                    order = 10,
-                },
-                Minimap = {
-                    type = "toggle",
-                    name = "Show minimap icon",
-                    width = 1.5,
-                    order = 20,
-                    get = function(info) return not Addon.db.profile[info[#info]].hide end,
-                    set = function(info, value)
-                        Addon.db.profile[info[#info]].hide = not value
-                        if Addon.db.profile[info[#info]].hide then
-                            Addon.icon:Hide(Addon.CONST.METADATA.NAME)
-                        else
-                            Addon.icon:Show(Addon.CONST.METADATA.NAME)
-                        end
-                     end,
-                },
-                Compartment = {
-                    type = "toggle",
-                    name = "Show in AddOns Compartment",
-                    width = 1.5,
-                    order = 25,
-                    get = function(info) return not Addon.db.profile[info[#info]].hide end,
-                    set = function(info, value)
-                        Addon.db.profile[info[#info]].hide = not value
-                        if Addon.db.profile[info[#info]].hide then
-                            if Addon.icon:IsButtonInCompartment(Addon.CONST.METADATA.NAME) then
-                                Addon.icon:RemoveButtonFromCompartment(Addon.CONST.METADATA.NAME)
-                            end
-                        else
-                            if not Addon.icon:IsButtonInCompartment(Addon.CONST.METADATA.NAME) then
-                                Addon.icon:AddButtonToCompartment(Addon.CONST.METADATA.NAME)
-                            end
-                        end
-                     end,
-                },
-                BlankInterval = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
-                Interval = {
-                    type = "range",
-                    order = 30,
-                    name = "Update frequency",
-                    desc = "Number of updates per second",
-                    min = 1,
-                    max = 600,
-                    softMin = 5,
-                    softMax = 120,
-                    step = 1,
-                    bigStep = 5,
-                },
-                BlankDegrees = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
-                Degrees = {
-                    type = "range",
-                    order = 40,
-                    name = "Field of View",
-                    desc = "Adjusts the horizontal width of the compass display. Higher values show more directions at once. (45-360)",
-                    min = 45,
-                    max = 360,
-                    softMin = 90,
-                    softMax = 270,
-                    step = 1,
-                    bigStep = 5,
-                },
-                BlankStay = { type = "description", order = 49, fontSize = "small",name = "",width = "full", },
-                PointerStay = {
-                    type = "toggle",
-                    name = "Pointers stay on HUD",
-                    desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows, remaining positioned at the edge of the HUD.",
-                    width = 1.5,
-                    order = 50,
-                },
-                StayArrow = {
-                    type = "toggle",
-                    name = "Pointer Out-of-HUD indicator",
-                    desc = "Show a small indicator that the pointer is out of the HUD boundaries. Only show this for textures that don't have Edge rotation enabled.",
-                    width = 1.5,
-                    order = 60,
-                    disabled = function() return not Addon.db.profile.PointerStay end,
-                },
-                BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
-                Scale = {
-                    type = "range",
-                    name = "Scale",
-                    order = 70,
-                    min = 0.01,
-                    max = 5,
-                    softMin = 0.2,
-                    softMax = 3,
-                    step = 0.01,
-                    bigStep = 0.05,
-                    isPercent = true,
-                },
-                HorizontalScale = {
-                    type = "range",
-                    name = "Width",
-                    order = 80,
-                    min = 0.01,
-                    max = 5,
-                    softMin = 0.2,
-                    softMax = 3,
-                    step = 0.01,
-                    isPercent = true,
-                    set = function(info, value)
-                        Options[info[#info]] = value
-                        textureWidth = defaultTextureWidth * value
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                VerticalScale = {
-                    type = "range",
-                    name = "Height",
-                    order = 90,
-                    min = 0.01,
-                    max = 5,
-                    softMin = 0.2,
-                    softMax = 3,
-                    step = 0.01,
-                    isPercent = true,
-                    set = function(info, value)
-                        Options[info[#info]] = value
-                        textureHeight = defaultTextureHeight * value
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                Strata = {
-                    type = "select",
-                    name = "Strata",
-                    order = 100,
-                    values = function()
-                        return getStrateLevels()
-                    end,
-                    sorting = strataLevels,
-                    style = "dropdown",
-                },
-                Level  = {
-                    type = "range",
-                    name = "Position in Strata",
-                    order = 110,
-                    min = 0,
-                    max = 1000,
-                    softMin = 0,
-                    softMax = 1000,
-                    step = 1,
-                    bigStep = 10,
-                },
-                BlankVisibility = { type = "description", order = 499, fontSize = "small",name = "",width = "full", },
-                Visibility = {
-                    type = "input",
-                    order = 500,
-                    name = "Visibility State",
-                    desc = "This works like a macro, you can run different situations to get the compass to show/hide differently.\nExample: '[petbattle][combat] hide;show' to hide in combat and during pet battles.",
-                    width = "full",
-                },
-                Center = {
-                    type = "execute",
-                    order = 510,
-                    name = "Center HUD horizontally",
-                    width = 3/2,
-                    func = function() Addon:ResetPosition(true, false) end
-                },
-                Reset = {
-                    type = "execute",
-                    order = 520,
-                    name = "Reset HUD position",
-                    width = 3/2,
-                    func = function() Addon:ResetPosition(true, true) end
-                },
-                Debug = {
-                    type = "toggle",
-                    name = "Debug",
-                    width = "full",
-                    order = 900,
-                },
-            },
-        },
-        Display = {
-            type = "group",
-            order = 20,
-            name = "Appearance",
-            get = function(info)
-                return Addon.db.profile[info[#info]]
-            end,
-            set = function(info, value)
-                Addon.db.profile[info[#info]] = value
-                Addon:UpdateHUDSettings()
-            end,
-            args = {
-                PinVisible = {
-                    type = "toggle",
-                    name = "Central HUD pin visible",
-                    desc = "Shows a small reticule on the HUD indicating your current facing direction.",
-                    width = "full",
-                    order = 10,
-                },
-                Transparency = {
-                    type = "range",
-                    order = 20,
-                    name = "Opacity",
-                    min = 0,
-                    max = 1,
-                    softMin = 0,
-                    softMax = 1,
-                    step = 0.01,
-                    bigStep = 0.05,
-                    isPercent = true,
-                },
-                BlankBorder = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
-                Border = {
-                    type = "select",
-                    order = 30,
-                    name = "Border",
-                    dialogControl = "LSM30_Border",
-                    values = AceGUIWidgetLSMlists.border,
-                },
-                BorderColor = {
-                    type = "color",
-                    order = 40,
-                    name = "Border color",
-                    hasAlpha = true,
-                    get = function(info)
-                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
-                    end,
-                    set = function (info, r, g, b, a)
-                        Options[info[#info]].r = r
-                        Options[info[#info]].g = g
-                        Options[info[#info]].b = b
-                        Options[info[#info]].a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                BorderThickness = {
-                    type = "range",
-                    order = 50,
-                    name = "Border thickness",
-                    min = 1,
-                    max = 24,
-                    step = 0.5,
-                },
-                Background = {
-                    type = "select",
-                    order = 60,
-                    name = "Background",
-                    dialogControl = "LSM30_Background",
-                    values = AceGUIWidgetLSMlists['background'],
-                },
-                BackgroundColor = {
-                    type = "color",
-                    order = 70,
-                    name = "Background color",
-                    hasAlpha = true,
-                    get = function(info)
-                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
-                    end,
-                    set = function (info, r, g, b, a)
-                        Options[info[#info]].r = r
-                        Options[info[#info]].g = g
-                        Options[info[#info]].b = b
-                        Options[info[#info]].a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                LineGroup = {
+                Settings = {
                     type = "group",
-                    order = 80,
-                    name = "Edge line",
-                    inline = true,
+                    order = 10,
+                    name = "General",
                     args = {
-                        Line = {
-                            type = "select",
-                            order = 10,
-                            name = "Position",
-                            values = {
-                                [""] = "none",
-                                ["BOTTOM"] = "on the bottom",
-                                ["TOP"] = "on the top",
-                                ["BOTH"] = "both",
-                            },
+                        Enabled = {
+                            type = "toggle",
+                            name = "Enabled",
+                            width = "full",
+                            order = 00,
+                            hidden = true,
                         },
-                        LineThickness = {
+                        Lock = {
+                            type = "toggle",
+                            name = "Lock compass",
+                            width = "full",
+                            order = 10,
+                        },
+                        Minimap = {
+                            type = "toggle",
+                            name = "Show minimap icon",
+                            width = 1.5,
+                            order = 20,
+                            get = function(info) return not Addon.db.profile[info[#info]].hide end,
+                            set = function(info, value)
+                                Addon.db.profile[info[#info]].hide = not value
+                                if Addon.db.profile[info[#info]].hide then
+                                    Addon.icon:Hide(Addon.CONST.METADATA.NAME)
+                                else
+                                    Addon.icon:Show(Addon.CONST.METADATA.NAME)
+                                end
+                             end,
+                        },
+                        Compartment = {
+                            type = "toggle",
+                            name = "Show in AddOns Compartment",
+                            width = 1.5,
+                            order = 25,
+                            get = function(info) return not Addon.db.profile[info[#info]].hide end,
+                            set = function(info, value)
+                                Addon.db.profile[info[#info]].hide = not value
+                                if Addon.db.profile[info[#info]].hide then
+                                    if Addon.icon:IsButtonInCompartment(Addon.CONST.METADATA.NAME) then
+                                        Addon.icon:RemoveButtonFromCompartment(Addon.CONST.METADATA.NAME)
+                                    end
+                                else
+                                    if not Addon.icon:IsButtonInCompartment(Addon.CONST.METADATA.NAME) then
+                                        Addon.icon:AddButtonToCompartment(Addon.CONST.METADATA.NAME)
+                                    end
+                                end
+                             end,
+                        },
+                        BlankInterval = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
+                        Interval = {
+                            type = "range",
+                            order = 30,
+                            name = "Update frequency",
+                            desc = "Number of updates per second",
+                            min = 1,
+                            max = 600,
+                            softMin = 5,
+                            softMax = 120,
+                            step = 1,
+                            bigStep = 5,
+                        },
+                        BlankDegrees = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
+                        Degrees = {
+                            type = "range",
+                            order = 40,
+                            name = "Field of View",
+                            desc = "Adjusts the horizontal width of the compass display. Higher values show more directions at once. (45-360)",
+                            min = 45,
+                            max = 360,
+                            softMin = 90,
+                            softMax = 270,
+                            step = 1,
+                            bigStep = 5,
+                        },
+                        BlankStay = { type = "description", order = 49, fontSize = "small",name = "",width = "full", },
+                        PointerStay = {
+                            type = "toggle",
+                            name = "Pointers stay on HUD",
+                            desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows, remaining positioned at the edge of the HUD.",
+                            width = 1.5,
+                            order = 50,
+                        },
+                        StayArrow = {
+                            type = "toggle",
+                            name = "Pointer Out-of-HUD indicator",
+                            desc = "Show a small indicator that the pointer is out of the HUD boundaries. Only show this for textures that don't have Edge rotation enabled.",
+                            width = 1.5,
+                            order = 60,
+                            disabled = function() return not Addon.db.profile.PointerStay end,
+                        },
+                        BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
+                        Scale = {
+                            type = "range",
+                            name = "Scale",
+                            order = 70,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                        },
+                        HorizontalScale = {
+                            type = "range",
+                            name = "Width",
+                            order = 80,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            isPercent = true,
+                            set = function(info, value)
+                                Options[info[#info]] = value
+                                textureWidth = defaultTextureWidth * value
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        VerticalScale = {
+                            type = "range",
+                            name = "Height",
+                            order = 90,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            isPercent = true,
+                            set = function(info, value)
+                                Options[info[#info]] = value
+                                textureHeight = defaultTextureHeight * value
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        Strata = {
+                            type = "select",
+                            name = "Strata",
+                            order = 100,
+                            values = function()
+                                return getStrateLevels()
+                            end,
+                            sorting = strataLevels,
+                            style = "dropdown",
+                        },
+                        Level  = {
+                            type = "range",
+                            name = "Position in Strata",
+                            order = 110,
+                            min = 0,
+                            max = 1000,
+                            softMin = 0,
+                            softMax = 1000,
+                            step = 1,
+                            bigStep = 10,
+                        },
+                        BlankVisibility = { type = "description", order = 499, fontSize = "small",name = "",width = "full", },
+                        Visibility = {
+                            type = "input",
+                            order = 500,
+                            name = "Visibility State",
+                            desc = "This works like a macro, you can run different situations to get the compass to show/hide differently.\nExample: '[petbattle][combat] hide;show' to hide in combat and during pet battles.",
+                            width = "full",
+                        },
+                        Center = {
+                            type = "execute",
+                            order = 510,
+                            name = "Center HUD horizontally",
+                            width = 3/2,
+                            func = function() Addon:ResetPosition(true, false) end
+                        },
+                        Reset = {
+                            type = "execute",
+                            order = 520,
+                            name = "Reset HUD position",
+                            width = 3/2,
+                            func = function() Addon:ResetPosition(true, true) end
+                        },
+                        Debug = {
+                            type = "toggle",
+                            name = "Debug",
+                            width = "full",
+                            order = 900,
+                        },
+                    },
+                },
+                Display = {
+                    type = "group",
+                    order = 20,
+                    name = "Appearance",
+                    args = {
+                        PinVisible = {
+                            type = "toggle",
+                            name = "Central HUD pin visible",
+                            desc = "Shows a small reticule on the HUD indicating your current facing direction.",
+                            width = "full",
+                            order = 10,
+                        },
+                        Transparency = {
                             type = "range",
                             order = 20,
-                            name = "Thickness",
+                            name = "Opacity",
+                            min = 0,
+                            max = 1,
+                            softMin = 0,
+                            softMax = 1,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                        },
+                        BlankBorder = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
+                        Border = {
+                            type = "select",
+                            order = 30,
+                            name = "Border",
+                            dialogControl = "LSM30_Border",
+                            values = AceGUIWidgetLSMlists.border,
+                        },
+                        BorderColor = {
+                            type = "color",
+                            order = 40,
+                            name = "Border color",
+                            hasAlpha = true,
+                            get = function(info)
+                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Options[info[#info]].r = r
+                                Options[info[#info]].g = g
+                                Options[info[#info]].b = b
+                                Options[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        BorderThickness = {
+                            type = "range",
+                            order = 50,
+                            name = "Border thickness",
                             min = 1,
                             max = 24,
                             step = 0.5,
                         },
-                        LinePosition = {
+                        Background = {
+                            type = "select",
+                            order = 60,
+                            name = "Background",
+                            dialogControl = "LSM30_Background",
+                            values = AceGUIWidgetLSMlists['background'],
+                        },
+                        BackgroundColor = {
+                            type = "color",
+                            order = 70,
+                            name = "Background color",
+                            hasAlpha = true,
+                            get = function(info)
+                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Options[info[#info]].r = r
+                                Options[info[#info]].g = g
+                                Options[info[#info]].b = b
+                                Options[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        LineGroup = {
+                            type = "group",
+                            order = 80,
+                            name = "Edge line",
+                            inline = true,
+                            args = {
+                                Line = {
+                                    type = "select",
+                                    order = 10,
+                                    name = "Position",
+                                    values = {
+                                        [""] = "none",
+                                        ["BOTTOM"] = "on the bottom",
+                                        ["TOP"] = "on the top",
+                                        ["BOTH"] = "both",
+                                    },
+                                },
+                                LineThickness = {
+                                    type = "range",
+                                    order = 20,
+                                    name = "Thickness",
+                                    min = 1,
+                                    max = 24,
+                                    step = 0.5,
+                                },
+                                LinePosition = {
+                                    type = "range",
+                                    order = 30,
+                                    name = "Vertical adjustment",
+                                    min = -16,
+                                    max = 16,
+                                    step = 0.5,
+                                },
+                                LineColor = {
+                                    type = "color",
+                                    order = 40,
+                                    name = "Color",
+                                    width = 1/2,
+                                    hasAlpha = true,
+                                    get = function(info)
+                                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                                    end,
+                                    set = function (info, r, g, b, a)
+                                        Options[info[#info]].r = r
+                                        Options[info[#info]].g = g
+                                        Options[info[#info]].b = b
+                                        Options[info[#info]].a = a
+                                        Addon:UpdateHUDSettings()
+                                    end,
+                                },
+                            },
+                        },
+                    },
+                },
+                CompassHUD = {
+                    type = "group",
+                    order = 30,
+                    name = "Custom HUD",
+                    args = {
+                        UseCustomCompass = {
+                            type = "toggle",
+                            name = "Use Custom compass",
+                            width = "full",
+                            order = 10,
+                        },
+                        CustomCompass = {
+                            type = "group",
+                            order = 20,
+                            name = "Custom compass",
+                            inline = true,
+                            disabled = function() return not Addon.db.profile.UseCustomCompass end,
+                            args = {
+                                MainCardinal = {
+                                    type = "group",
+                                    order = 10,
+                                    name = "Main cardinal directions (N, E, S, W)",
+                                    inline = true,
+                                    args = {
+                                        CompassCustomMainVisible = {
+                                            type = "toggle",
+                                            order = 10,
+                                            name = "Enabled",
+                                        },
+                                        CompassCustomMainPosition = {
+                                            type = "range",
+                                            order = 15,
+                                            name = "Vertical adjustment",
+                                            min = -64,
+                                            max = 64,
+                                            step = 1,
+                                        },
+                                        Blank1 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
+                                        CompassCustomMainFont = {
+                                            type = "select",
+                                            order = 20,
+                                            name = "Font",
+                                            width = 1,
+                                            dialogControl = "LSM30_Font",
+                                            values = AceGUIWidgetLSMlists['font'],
+                                        },
+                                        CompassCustomMainSize = {
+                                            type = "range",
+                                            order = 30,
+                                            name = "Size",
+                                            width = 3/4,
+                                            min = 2,
+                                            max = 36,
+                                            step = 0.5,
+                                        },
+                                        CompassCustomMainFlags = {
+                                            type = "select",
+                                            order = 40,
+                                            name = "Outline",
+                                            width = 3/4,
+                                            values = {
+                                                [""] = "None",
+                                                ["OUTLINE"] = "Normal",
+                                                ["THICKOUTLINE"] = "Thick",
+                                            },
+                                        },
+                                        CompassCustomMainColor = {
+                                            type = "color",
+                                            order = 50,
+                                            name = "Color",
+                                            width = 1/2,
+                                            hasAlpha = true,
+                                            get = function(info)
+                                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                                            end,
+                                            set = function (info, r, g, b, a)
+                                                Options[info[#info]].r = r
+                                                Options[info[#info]].g = g
+                                                Options[info[#info]].b = b
+                                                Options[info[#info]].a = a
+                                                Addon:UpdateHUDSettings()
+                                            end,
+                                        },
+                                    },
+                                },
+                                SecondaryCardinal = {
+                                    type = "group",
+                                    order = 20,
+                                    name = "Ordinal directions (NE, SE, SW, NW)",
+                                    inline = true,
+                                    args = {
+                                        CompassCustomSecondaryVisible = {
+                                            type = "toggle",
+                                            order = 10,
+                                            name = "Enabled",
+                                        },
+                                        CompassCustomSecondaryPosition = {
+                                            type = "range",
+                                            order = 15,
+                                            name = "Vertical adjustment",
+                                            min = -64,
+                                            max = 64,
+                                            step = 1,
+                                        },
+                                        Blank1 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
+                                        CompassCustomSecondaryFont = {
+                                            type = "select",
+                                            order = 20,
+                                            name = "Font",
+                                            width = 1,
+                                            dialogControl = "LSM30_Font",
+                                            values = AceGUIWidgetLSMlists['font'],
+                                        },
+                                        CompassCustomSecondarySize = {
+                                            type = "range",
+                                            order = 30,
+                                            name = "Size",
+                                            width = 3/4,
+                                            min = 2,
+                                            max = 36,
+                                            step = 0.5,
+                                        },
+                                        CompassCustomSecondaryFlags = {
+                                            type = "select",
+                                            order = 40,
+                                            name = "Outline",
+                                            width = 3/4,
+                                            values = {
+                                                [""] = "None",
+                                                ["OUTLINE"] = "Normal",
+                                                ["THICKOUTLINE"] = "Thick",
+                                            },
+                                        },
+                                        CompassCustomSecondaryColor = {
+                                            type = "color",
+                                            order = 50,
+                                            name = "Color",
+                                            width = 1/2,
+                                            hasAlpha = true,
+                                            get = function(info)
+                                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                                            end,
+                                            set = function (info, r, g, b, a)
+                                                Options[info[#info]].r = r
+                                                Options[info[#info]].g = g
+                                                Options[info[#info]].b = b
+                                                Options[info[#info]].a = a
+                                                Addon:UpdateHUDSettings()
+                                            end,
+                                        },
+                                    },
+                                },
+                                Degrees = {
+                                    type = "group",
+                                    order = 30,
+                                    name = "Degrees",
+                                    inline = true,
+                                    args = {
+                                        CompassCustomDegreesVisible = {
+                                            type = "toggle",
+                                            order = 10,
+                                            name = "Enabled",
+                                        },
+                                        CompassCustomDegreesPosition = {
+                                            type = "range",
+                                            order = 15,
+                                            name = "Vertical adjustment",
+                                            min = -64,
+                                            max = 64,
+                                            step = 1,
+                                        },
+                                        CompassCustomDegreesSpan = {
+                                            type = "range",
+                                            order = 18,
+                                            name = "Interval between degrees",
+                                            min = 5,
+                                            max = 90,
+                                            softMin = 5,
+                                            softMax = 45,
+                                            step = 1,
+                                            bigStep = 5,
+                                        },
+                                        Blank1 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
+                                        CompassCustomDegreesFont = {
+                                            type = "select",
+                                            order = 20,
+                                            name = "Font",
+                                            width = 1,
+                                            dialogControl = "LSM30_Font",
+                                            values = AceGUIWidgetLSMlists['font'],
+                                        },
+                                        CompassCustomDegreesSize = {
+                                            type = "range",
+                                            order = 30,
+                                            name = "Size",
+                                            width = 3/4,
+                                            min = 2,
+                                            max = 36,
+                                            step = 0.5,
+                                        },
+                                        CompassCustomDegreesFlags = {
+                                            type = "select",
+                                            order = 40,
+                                            name = "Outline",
+                                            width = 3/4,
+                                            values = {
+                                                [""] = "None",
+                                                ["OUTLINE"] = "Normal",
+                                                ["THICKOUTLINE"] = "Thick",
+                                            },
+                                        },
+                                        CompassCustomDegreesColor = {
+                                            type = "color",
+                                            order = 50,
+                                            name = "Color",
+                                            width = 1/2,
+                                            hasAlpha = true,
+                                            get = function(info)
+                                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                                            end,
+                                            set = function (info, r, g, b, a)
+                                                Options[info[#info]].r = r
+                                                Options[info[#info]].g = g
+                                                Options[info[#info]].b = b
+                                                Options[info[#info]].a = a
+                                                Addon:UpdateHUDSettings()
+                                            end,
+                                        },
+                                    },
+                                },
+                                CompassCustomTicksPosition = {
+                                    type = "select",
+                                    order = 90,
+                                    name = "Ticks position",
+                                    values = {
+                                        [""] = "hide ticks",
+                                        ["TOP"] = "on top",
+                                        ["BOTTOM"] = "on bottom",
+                                        ["BOTH"] = "both on top and bottom",
+                                    },
+                                },
+                                CompassCustomTicksForce = {
+                                    type = "toggle",
+                                    order = 100,
+                                    name = "Force ticks",
+                                    desc = "Display ticks even if letters or degrees are not visible."
+                                },
+                            },
+                        },
+                    },
+                },
+                Heading ={
+                    type = "group",
+                    order = 40,
+                    name = "Heading",
+                    args = {
+                        HeadingEnabled = {
+                            type = "toggle",
+                            name = "Show heading",
+                            width = "full",
+                            order = 0,
+                        },
+                        HeadingTrueNorth = {
+                            type = "toggle",
+                            name = "Display north as 360",
+                            order = 5,
+                        },                HeadingDecimals = {
+                            type = "range",
+                            order = 10,
+                            name = "Decimal points",
+                            desc = "-1 = to nearest 5, -2 to nearset 10 degree",
+                            min = -2,
+                            max = 3,
+                            step = 1,
+                        },
+                        Blank0 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
+                        HeadingScale = {
+                            type = "range",
+                            order = 20,
+                            name = "Scale",
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                        },
+                        HeadingWidth = {
+                            type = "range",
+                            order = 20,
+                            name = "Width",
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                        },
+                        HeadingPosition = {
+                            type = "range",
+                            order = 20,
+                            name = "Vertical adjustment",
+                            min = -64,
+                            max = 64,
+                            step = 1,
+                        },
+                        Blank1 = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
+                        HeadingTransparency = {
                             type = "range",
                             order = 30,
-                            name = "Vertical adjustment",
-                            min = -16,
-                            max = 16,
+                            name = "Opacity",
+                            min = 0,
+                            max = 1,
+                            softMin = 0,
+                            softMax = 1,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                        },
+                        Blank2 = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
+                        HeadingBorder = {
+                            type = "select",
+                            order = 40,
+                            name = "Border",
+                            dialogControl = "LSM30_Border",
+                            values = AceGUIWidgetLSMlists.border,
+                        },
+                        HeadingBorderColor = {
+                            type = "color",
+                            order = 50,
+                            name = "Border color",
+                            hasAlpha = true,
+                            get = function(info)
+                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Options[info[#info]].r = r
+                                Options[info[#info]].g = g
+                                Options[info[#info]].b = b
+                                Options[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        HeadingBorderThickness = {
+                            type = "range",
+                            order = 60,
+                            name = "Border thickness",
+                            min = 1,
+                            max = 24,
                             step = 0.5,
                         },
-                        LineColor = {
+                        HeadingBackground = {
+                            type = "select",
+                            order = 70,
+                            name = "Background",
+                            dialogControl = "LSM30_Background",
+                            values = AceGUIWidgetLSMlists['background'],
+                        },
+                        HeadingBackgroundColor = {
                             type = "color",
-                            order = 40,
+                            order = 80,
+                            name = "Background color",
+                            hasAlpha = true,
+                            get = function(info)
+                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Options[info[#info]].r = r
+                                Options[info[#info]].g = g
+                                Options[info[#info]].b = b
+                                Options[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        HeadingText = { type = "header", order = 89, name = "Text settings", },
+                        HeadingFont = {
+                            type = "select",
+                            order = 90,
+                            name = "Font",
+                            width = 1,
+                            dialogControl = "LSM30_Font",
+                            values = AceGUIWidgetLSMlists['font'],
+                        },
+                        HeadingFontSize = {
+                            type = "range",
+                            order = 100,
+                            name = "Size",
+                            width = 3/4,
+                            min = 2,
+                            max = 36,
+                            step = 0.5,
+                        },
+                        HeadingFontFlags = {
+                            type = "select",
+                            order = 110,
+                            name = "Outline",
+                            width = 3/4,
+                            values = {
+                                [""] = "None",
+                                ["OUTLINE"] = "Normal",
+                                ["THICKOUTLINE"] = "Thick",
+                            },
+                        },
+                        HeadingFontColor = {
+                            type = "color",
+                            order = 120,
                             name = "Color",
                             width = 1/2,
                             hasAlpha = true,
@@ -974,478 +1412,136 @@ Addon.Options = {
                                 Addon:UpdateHUDSettings()
                             end,
                         },
+                        HeadingFontPositionV = {
+                            type = "range",
+                            order = 130,
+                            name = "Vertical text adjustment",
+                            width = 3/2,
+                            min = -64,
+                            max = 64,
+                            step = 1,
+                        },
+                        HeadingFontPositionH = {
+                            type = "range",
+                            order = 140,
+                            name = "Horizontal text adjustment",
+                            width = 3/2,
+                            min = -64,
+                            max = 64,
+                            step = 1,
+                        },
                     },
                 },
-            },
-        },
-        CompassHUD = {
-            type = "group",
-            order = 30,
-            name = "Custom HUD",
-            get = function(info)
-                return Addon.db.profile[info[#info]]
-            end,
-            set = function(info, value)
-                Addon.db.profile[info[#info]] = value
-                Addon:UpdateHUDSettings()
-            end,
-            args = {
-                UseCustomCompass = {
-                    type = "toggle",
-                    name = "Use Custom compass",
-                    width = "full",
-                    order = 10,
-                },
-                CustomCompass = {
+                Pointers = {
                     type = "group",
-                    order = 20,
-                    name = "Custom compass",
-                    inline = true,
-                    disabled = function() return not Addon.db.profile.UseCustomCompass end,
-                    args = {
-                        MainCardinal = {
-                            type = "group",
-                            order = 10,
-                            name = "Main cardinal directions (N, E, S, W)",
-                            inline = true,
-                            args = {
-                                CompassCustomMainVisible = {
-                                    type = "toggle",
-                                    order = 10,
-                                    name = "Enabled",
-                                },
-                                CompassCustomMainPosition = {
-                                    type = "range",
-                                    order = 15,
-                                    name = "Vertical adjustment",
-                                    min = -64,
-                                    max = 64,
-                                    step = 1,
-                                },
-                                Blank1 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
-                                CompassCustomMainFont = {
-                                    type = "select",
-                                    order = 20,
-                                    name = "Font",
-                                    width = 1,
-                                    dialogControl = "LSM30_Font",
-                                    values = AceGUIWidgetLSMlists['font'],
-                                },
-                                CompassCustomMainSize = {
-                                    type = "range",
-                                    order = 30,
-                                    name = "Size",
-                                    width = 3/4,
-                                    min = 2,
-                                    max = 36,
-                                    step = 0.5,
-                                },
-                                CompassCustomMainFlags = {
-                                    type = "select",
-                                    order = 40,
-                                    name = "Outline",
-                                    width = 3/4,
-                                    values = {
-                                        [""] = "None",
-                                        ["OUTLINE"] = "Normal",
-                                        ["THICKOUTLINE"] = "Thick",
-                                    },
-                                },
-                                CompassCustomMainColor = {
-                                    type = "color",
-                                    order = 50,
-                                    name = "Color",
-                                    width = 1/2,
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        Options[info[#info]].r = r
-                                        Options[info[#info]].g = g
-                                        Options[info[#info]].b = b
-                                        Options[info[#info]].a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                },
-                            },
-                        },
-                        SecondaryCardinal = {
-                            type = "group",
-                            order = 20,
-                            name = "Ordinal directions (NE, SE, SW, NW)",
-                            inline = true,
-                            args = {
-                                CompassCustomSecondaryVisible = {
-                                    type = "toggle",
-                                    order = 10,
-                                    name = "Enabled",
-                                },
-                                CompassCustomSecondaryPosition = {
-                                    type = "range",
-                                    order = 15,
-                                    name = "Vertical adjustment",
-                                    min = -64,
-                                    max = 64,
-                                    step = 1,
-                                },
-                                Blank1 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
-                                CompassCustomSecondaryFont = {
-                                    type = "select",
-                                    order = 20,
-                                    name = "Font",
-                                    width = 1,
-                                    dialogControl = "LSM30_Font",
-                                    values = AceGUIWidgetLSMlists['font'],
-                                },
-                                CompassCustomSecondarySize = {
-                                    type = "range",
-                                    order = 30,
-                                    name = "Size",
-                                    width = 3/4,
-                                    min = 2,
-                                    max = 36,
-                                    step = 0.5,
-                                },
-                                CompassCustomSecondaryFlags = {
-                                    type = "select",
-                                    order = 40,
-                                    name = "Outline",
-                                    width = 3/4,
-                                    values = {
-                                        [""] = "None",
-                                        ["OUTLINE"] = "Normal",
-                                        ["THICKOUTLINE"] = "Thick",
-                                    },
-                                },
-                                CompassCustomSecondaryColor = {
-                                    type = "color",
-                                    order = 50,
-                                    name = "Color",
-                                    width = 1/2,
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        Options[info[#info]].r = r
-                                        Options[info[#info]].g = g
-                                        Options[info[#info]].b = b
-                                        Options[info[#info]].a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                },
-                            },
-                        },
-                        Degrees = {
-                            type = "group",
-                            order = 30,
-                            name = "Degrees",
-                            inline = true,
-                            args = {
-                                CompassCustomDegreesVisible = {
-                                    type = "toggle",
-                                    order = 10,
-                                    name = "Enabled",
-                                },
-                                CompassCustomDegreesPosition = {
-                                    type = "range",
-                                    order = 15,
-                                    name = "Vertical adjustment",
-                                    min = -64,
-                                    max = 64,
-                                    step = 1,
-                                },
-                                CompassCustomDegreesSpan = {
-                                    type = "range",
-                                    order = 18,
-                                    name = "Interval between degrees",
-                                    min = 5,
-                                    max = 90,
-                                    softMin = 5,
-                                    softMax = 45,
-                                    step = 1,
-                                    bigStep = 5,
-                                },
-                                Blank1 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
-                                CompassCustomDegreesFont = {
-                                    type = "select",
-                                    order = 20,
-                                    name = "Font",
-                                    width = 1,
-                                    dialogControl = "LSM30_Font",
-                                    values = AceGUIWidgetLSMlists['font'],
-                                },
-                                CompassCustomDegreesSize = {
-                                    type = "range",
-                                    order = 30,
-                                    name = "Size",
-                                    width = 3/4,
-                                    min = 2,
-                                    max = 36,
-                                    step = 0.5,
-                                },
-                                CompassCustomDegreesFlags = {
-                                    type = "select",
-                                    order = 40,
-                                    name = "Outline",
-                                    width = 3/4,
-                                    values = {
-                                        [""] = "None",
-                                        ["OUTLINE"] = "Normal",
-                                        ["THICKOUTLINE"] = "Thick",
-                                    },
-                                },
-                                CompassCustomDegreesColor = {
-                                    type = "color",
-                                    order = 50,
-                                    name = "Color",
-                                    width = 1/2,
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        Options[info[#info]].r = r
-                                        Options[info[#info]].g = g
-                                        Options[info[#info]].b = b
-                                        Options[info[#info]].a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                },
-                            },
-                        },
-                        CompassCustomTicksPosition = {
-                            type = "select",
-                            order = 90,
-                            name = "Ticks position",
-                            values = {
-                                [""] = "hide ticks",
-                                ["TOP"] = "on top",
-                                ["BOTTOM"] = "on bottom",
-                                ["BOTH"] = "both on top and bottom",
-                            },
-                        },
-                        CompassCustomTicksForce = {
-                            type = "toggle",
-                            order = 100,
-                            name = "Force ticks",
-                            desc = "Display ticks even if letters or degrees are not visible."
-                        },
-                    },
-                },
-            },
-        },
-        Heading ={
-            type = "group",
-            order = 40,
-            name = "Heading",
-            get = function(info)
-                return Addon.db.profile[info[#info]]
-            end,
-            set = function(info, value)
-                Addon.db.profile[info[#info]] = value
-                Addon:UpdateHUDSettings()
-            end,
-            args = {
-                HeadingEnabled = {
-                    type = "toggle",
-                    name = "Show heading",
-                    width = "full",
-                    order = 0,
-                },
-                HeadingTrueNorth = {
-                    type = "toggle",
-                    name = "Display north as 360",
-                    order = 5,
-                },                HeadingDecimals = {
-                    type = "range",
-                    order = 10,
-                    name = "Decimal points",
-                    desc = "-1 = to nearest 5, -2 to nearset 10 degree",
-                    min = -2,
-                    max = 3,
-                    step = 1,
-                },
-                Blank0 = { type = "description", order = 19, fontSize = "small",name = "",width = "full", },
-                HeadingScale = {
-                    type = "range",
-                    order = 20,
-                    name = "Scale",
-                    min = 0.01,
-                    max = 5,
-                    softMin = 0.2,
-                    softMax = 3,
-                    step = 0.01,
-                    bigStep = 0.05,
-                    isPercent = true,
-                },
-                HeadingWidth = {
-                    type = "range",
-                    order = 20,
-                    name = "Width",
-                    min = 0.01,
-                    max = 5,
-                    softMin = 0.2,
-                    softMax = 3,
-                    step = 0.01,
-                    bigStep = 0.05,
-                    isPercent = true,
-                },
-                HeadingPosition = {
-                    type = "range",
-                    order = 20,
-                    name = "Vertical adjustment",
-                    min = -64,
-                    max = 64,
-                    step = 1,
-                },
-                Blank1 = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
-                HeadingTransparency = {
-                    type = "range",
-                    order = 30,
-                    name = "Opacity",
-                    min = 0,
-                    max = 1,
-                    softMin = 0,
-                    softMax = 1,
-                    step = 0.01,
-                    bigStep = 0.05,
-                    isPercent = true,
-                },
-                Blank2 = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
-                HeadingBorder = {
-                    type = "select",
-                    order = 40,
-                    name = "Border",
-                    dialogControl = "LSM30_Border",
-                    values = AceGUIWidgetLSMlists.border,
-                },
-                HeadingBorderColor = {
-                    type = "color",
                     order = 50,
-                    name = "Border color",
-                    hasAlpha = true,
+                    name = "Pointers",
                     get = function(info)
-                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                        return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]]
                     end,
-                    set = function (info, r, g, b, a)
-                        Options[info[#info]].r = r
-                        Options[info[#info]].g = g
-                        Options[info[#info]].b = b
-                        Options[info[#info]].a = a
+                    set = function(info, value)
+                        Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
                         Addon:UpdateHUDSettings()
                     end,
+                    args = {},
                 },
-                HeadingBorderThickness = {
-                    type = "range",
+                Group = {
+                    type = "group",
                     order = 60,
-                    name = "Border thickness",
-                    min = 1,
-                    max = 24,
-                    step = 0.5,
-                },
-                HeadingBackground = {
-                    type = "select",
-                    order = 70,
-                    name = "Background",
-                    dialogControl = "LSM30_Background",
-                    values = AceGUIWidgetLSMlists['background'],
-                },
-                HeadingBackgroundColor = {
-                    type = "color",
-                    order = 80,
-                    name = "Background color",
-                    hasAlpha = true,
-                    get = function(info)
-                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
-                    end,
-                    set = function (info, r, g, b, a)
-                        Options[info[#info]].r = r
-                        Options[info[#info]].g = g
-                        Options[info[#info]].b = b
-                        Options[info[#info]].a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                HeadingText = { type = "header", order = 89, name = "Text settings", },
-                HeadingFont = {
-                    type = "select",
-                    order = 90,
-                    name = "Font",
-                    width = 1,
-                    dialogControl = "LSM30_Font",
-                    values = AceGUIWidgetLSMlists['font'],
-                },
-                HeadingFontSize = {
-                    type = "range",
-                    order = 100,
-                    name = "Size",
-                    width = 3/4,
-                    min = 2,
-                    max = 36,
-                    step = 0.5,
-                },
-                HeadingFontFlags = {
-                    type = "select",
-                    order = 110,
-                    name = "Outline",
-                    width = 3/4,
-                    values = {
-                        [""] = "None",
-                        ["OUTLINE"] = "Normal",
-                        ["THICKOUTLINE"] = "Thick",
-                    },
-                },
-                HeadingFontColor = {
-                    type = "color",
-                    order = 120,
-                    name = "Color",
-                    width = 1/2,
-                    hasAlpha = true,
-                    get = function(info)
-                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
-                    end,
-                    set = function (info, r, g, b, a)
-                        Options[info[#info]].r = r
-                        Options[info[#info]].g = g
-                        Options[info[#info]].b = b
-                        Options[info[#info]].a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                HeadingFontPositionV = {
-                    type = "range",
-                    order = 130,
-                    name = "Vertical text adjustment",
-                    width = 3/2,
-                    min = -64,
-                    max = 64,
-                    step = 1,
-                },
-                HeadingFontPositionH = {
-                    type = "range",
-                    order = 140,
-                    name = "Horizontal text adjustment",
-                    width = 3/2,
-                    min = -64,
-                    max = 64,
-                    step = 1,
+                    name = "Group",
+                    args = {
+                        GroupShowParty = {
+                            type = "toggle",
+                            name = "Show markers for party members",
+                            width = "full",
+                            order = 10,
+                            set = function(info, value)
+                                Addon.db.profile[info[#info]] = value
+                                hideGroupIcons()
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        GroupShowRaid = {
+                            type = "toggle",
+                            name = "Show markers for raid members",
+                            width = "full",
+                            order = 20,
+                            set = function(info, value)
+                                Addon.db.profile[info[#info]] = value
+                                hideGroupIcons()
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        GroupScale = {
+                            type = "range",
+                            name = "Scale",
+                            order = 30,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                        },
+                        GroupOffset = {
+                            type = "range",
+                            order = 40,
+                            name = "Vertical adjustment",
+                            min = -64,
+                            max = 64,
+                            step = 1,
+                        },
+                        BlankGroupInterval = { type = "description", order = 49, fontSize = "small",name = "",width = "full", },
+                        GroupInterval = {
+                            type = "range",
+                            order = 50,
+                            name = "Update throttle",
+                            desc = "Interval between checking group members' positions relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then positions will be updated 60/6 = 10 times per second.",
+                            min = 1,
+                            max = 100,
+                            softMin = 1,
+                            softMax = 10,
+                            step = 1,
+                        },
+                        BlankGroupStayArrow = { type = "description", order = 59, fontSize = "small",name = "",width = "full", },
+                        GroupStay = {
+                            type = "toggle",
+                            name = "Group marker stay on HUD",
+                            desc = "Show markers on the edge of compass if they are out of the HUD bounderies. ",
+                            width = "full",
+                            order = 60,
+                        },
+                        HeaderShowAllZones = { type = "header", order = 69, name = "Group member in different zone", },
+                        GroupShowAllZones = {
+                            type = "toggle",
+                            name = "Show markers even if in different zone",
+                            width = "full",
+                            order = 70,
+                        },
+                        GroupDesaturate = {
+                            type = "toggle",
+                            name = "Desaturate markers in different zone",
+                            width = "full",
+                            order = 80,
+                            disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                        },
+                        GroupTransparency = {
+                            type = "range",
+                            name = "Opacity of markers in different zone",
+                            order = 90,
+                            min = 0.01,
+                            max = 1,
+                            softMin = 0.1,
+                            softMax = 1,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                            disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                        },
+                    }
                 },
             },
-        },
-        Pointers = {
-            type = "group",
-            order = 50,
-            name = "Pointers",
-            get = function(info)
-                return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]]
-            end,
-            set = function(info, value)
-                Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
-                Addon:UpdateHUDSettings()
-            end,
-            args = {},
         },
     },
 }
@@ -1499,7 +1595,7 @@ end
 local function updatePlayerCoords()
     if player.inInstance then return end
 
-    player.x, player.y = HBD:GetPlayerWorldPosition()
+    player.x, player.y, player.instance = HBD:GetPlayerWorldPosition()
     player.mapId = HBD:GetPlayerZone()
     player.angle = GetPlayerFacing()
 end
@@ -1959,32 +2055,30 @@ local function updateGroupMember(unit)
     if not groupPointsTable[unit].frame then
         groupPointsTable[unit].frame = createGroupMemberIcon(unit)
     end
-    local uiMapID = GetBestMapForUnit(unit)
-    if not uiMapID then return end
-    local position = GetPlayerMapPosition(uiMapID, unit)
-    if not position then return end
-    local x, y = position:GetXY()
-    if x and y then
-        groupPointsTable[unit].active = true
-        groupPointsTable[unit].uiMapID = uiMapID
-        groupPointsTable[unit].x = x
-        groupPointsTable[unit].y = y
+    if UnitExists(unit) then
+        local x, y, instance = HBD:GetUnitWorldPosition(unit)
+        if x and y and instance then
+            groupPointsTable[unit].x = x
+            groupPointsTable[unit].y = y
+            groupPointsTable[unit].instance = instance
+            groupPointsTable[unit].name, groupPointsTable[unit].realm = UnitName(unit)
+            groupPointsTable[unit].realm = groupPointsTable[unit].realm or player.realm
+            groupPointsTable[unit].active = true
+        end
+    end
+    if groupPointsTable[unit].name == player.name and groupPointsTable[unit].realm == player.realm then
+        groupPointsTable[unit].active = false
     end
     if wasActive and not groupPointsTable[unit].active then
         groupPointsTable[unit].frame:Hide()
     end
-
-end
-
-local function hideGroupIcons()
-    for _,v in pairs(groupPointsTable) do
-        if v.frame then v.frame:Hide() end
-        v.active = false
-    end
 end
 
 local function setGroupIcons()
-    if not Options.GroupTracking or not player.groupType or player.groupType == "none" then return end
+    if not player.groupType or player.groupType == "none" then return end
+    if player.groupType == "party" and not Options.GroupShowParty then return end
+    if player.groupType == "raid" and not Options.GroupShowRaid then return end
+    local size = textureHeight * (Options.GroupScale)
     if groupThrottle and groupThrottle >= Options.GroupInterval then
         groupThrottle = 0
         local groupSize = player.groupType == "raid" and 40 or player.groupType == "party" and 4
@@ -1993,22 +2087,32 @@ local function setGroupIcons()
         end
     end
     for _, v in pairs(groupPointsTable) do
-        if v and v.frame and v.active then
-            if player.angle then
-                local x, y, instance = HBD:GetWorldCoordinatesFromZone(v.x, v.y, v.uiMapID)
-                if x and y and instance then
-                    local angle = player.angle - HBD:GetWorldVector(instance, player.x, player.y, x, y)
+        if v and v.frame then
+            local shown = false
+            local desaturated = Options.GroupDesaturate and (player.instance ~= v.instance)
+            if v.active and player.angle then
+                if v.x and v.y and v.instance then
+                    local angle = player.angle - HBD:GetWorldVector(v.instance, player.x, player.y, v.x, v.y)
                     if angle < 0 then angle = angle + (2 * PI) end
                     if angle > PI then angle = angle - (2 * PI) end
-                    if v.frame and angle then
+                    if angle then
                         local visible = math.rad(Options.Degrees)/2
                         if angle < visible and angle > -visible then
-                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, 0)
-                            v.frame:Show()
+                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.GroupOffset)
+                            shown = true
+                        elseif Options.GroupStay then
+                            local side = math.abs(angle)/angle
+                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, Options.GroupOffset)
+                            shown = true
                         end
                     end
                 end
             end
+            shown = shown and (Options.GroupShowAllZones or player.instance == v.instance)
+            v.frame:SetShown(shown)
+            v.frame.texture:SetDesaturated(desaturated)
+            v.frame:SetAlpha(desaturated and Options.GroupTransparency or 1)
+            v.frame:SetSize(size, size)
         end
     end
 end
@@ -2971,11 +3075,12 @@ function Addon:ConstructDefaultsAndOptions()
 
     self.Defaults.profile.Pointers = pointersDefaults
     self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
-    self.Options.args.Pointers.args = pointersOptionsArgs
+    self.Options.args.Tabs.args.Pointers.args = pointersOptionsArgs
     self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
     self.Options.args.Profiles.order = 80
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
-    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME)
+    _, Addon.categoryID = AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, nil, nil, "Tabs")
+    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Profiles", Const.METADATA.NAME, "Profiles")
 end
 
 function Addon:RefreshConfig()
@@ -2987,6 +3092,8 @@ function Addon:OnEnable()
     addToLSM()
 
     Addon:InitializeDataBroker()
+    player.name = UnitName("player")
+    player.realm = GetRealmName()
 
     self:UpdateHUDSettings()
     HUD:SetScript('OnUpdate', onUpdate)
