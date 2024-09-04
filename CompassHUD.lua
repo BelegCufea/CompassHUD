@@ -2027,6 +2027,8 @@ end
 
 local function tomtomSetCrazyArrow(self, uid, dist, title)
     if not Options.Pointers[questPointerIdent .. tomTom].enabled then return end
+    if not uid then return end
+    if type(uid) ~= "table" then return end
     local questID = tomTom
     local questType = tomTom
     local completed = false
@@ -2038,7 +2040,9 @@ local function tomtomSetCrazyArrow(self, uid, dist, title)
     questPointsTable[tomTom].track = true
 end
 
-local function tomtomRemoveWaypoint(self, uid)
+local function tomtomClearWaypoint(self, uid)
+    if not uid then return end
+    if type(uid) ~= "table" then return end
     local tomTomRemoved = TomTom:GetKey(uid)
     if tomTomActive == tomTomRemoved then
         questPointsTable[tomTom].track = false
@@ -2919,7 +2923,7 @@ function Addon:OnEnable()
 
     if TomTom then
         self:SecureHook(TomTom, "SetCrazyArrow", tomtomSetCrazyArrow)
-        self:SecureHook(TomTom, "RemoveWaypoint", tomtomRemoveWaypoint)
+        self:SecureHook(TomTom, "ClearWaypoint", tomtomClearWaypoint)
     end
 
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
