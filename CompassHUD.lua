@@ -2306,7 +2306,7 @@ end
 
 function Addon:CopyPointerSettings(from, to, what)
     local optionNames = {}
-    for _, pointer in pairs(Addon.Options.args.Pointers.args) do
+    for _, pointer in pairs(Addon.Options.args.Tabs.args.Pointers.args) do
         if pointer.args.Textures then
             for option, _ in pairs(pointer.args[what].args) do
                 optionNames[option] = true
@@ -2486,7 +2486,7 @@ function Addon:ConstructDefaultsAndOptions()
                     return val
                 end,
                 get = function(info)
-                    local previews = Addon.Options.args.Pointers.args.Presets.args.Preview.args
+                    local previews = Addon.Options.args.Tabs.args.Pointers.args.Presets.args.Preview.args
                     wipe(previews)
                     for k, v in pairs(questPointers) do
                         local preset = texturePresets[texturePreset][k]
