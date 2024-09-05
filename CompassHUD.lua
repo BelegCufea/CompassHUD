@@ -2177,7 +2177,6 @@ local function setQuestsIcons()
                     local visible = math.rad(Options.Degrees)/2
                     local arrowShow = false
                     local pointerRotate = 0
-                    --quest.frame.texture:SetRotation(0)
                     if angle < visible and angle > -visible then
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, quest.frame.position)
                         quest.frame:Show()
@@ -2286,6 +2285,7 @@ local function setGroupIcons()
             local markerRotate = 0
             local differentZone = player.instance ~= v.instance
             local size = textureHeight * (differentZone and Options.GroupZoneScale or Options.GroupScale)
+            local flipped = (differentZone and Options.GroupZoneOffset > 0 and Options.GroupZoneRotate == 1) or (not differentZone and Options.GroupOffset > 0 and Options.GroupRotate == 1)
             if v.active and player.angle then
                 if v.x and v.y and v.instance then
                     local angle = player.angle - HBD:GetWorldVector(v.instance, player.x, player.y, v.x, v.y)
@@ -2298,7 +2298,6 @@ local function setGroupIcons()
                             shown = true
                         elseif Options.GroupStay then
                             local side = math.abs(angle)/angle
-                            local flipped = (differentZone and Options.GroupZoneOffset > 0) or (not differentZone and Options.GroupOffset > 0)
                             if (differentZone and (Options.GroupZoneRotate == 1)) or (not differentZone and (Options.GroupRotate == 1)) then
                                 markerRotate = PI/2 * side * ((flipped and 1) or -1)
                             end
@@ -2314,6 +2313,7 @@ local function setGroupIcons()
                 v.frame:SetSize(size, size)
                 v.frame:SetAlpha(differentZone and Options.GroupZoneTransparency or 1)
                 v.frame:SetFrameLevel(Options.Level + (v.strataLevel or 0))
+                v.frame.texture:SetTexCoord(0, 1, flipped and 1 or 0, flipped and 0 or 1)
                 v.frame.texture:SetAtlas(differentZone and Options.GroupZoneTexture or Options.GroupTexture)
                 v.frame.texture:SetDesaturated(differentZone and Options.GroupZoneDesaturate)
                 v.frame.texture:SetRotation(markerRotate)
