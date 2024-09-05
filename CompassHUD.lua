@@ -36,8 +36,6 @@ local GetQuestLocation = C_TaskQuest.GetQuestLocation
 local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
-local GetBestMapForUnit = C_Map.GetBestMapForUnit
-local GetPlayerMapPosition = C_Map.GetPlayerMapPosition
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
 
@@ -162,7 +160,30 @@ local pointerTextures = {
     ["Event"] = {
         atlasID = "VignetteEvent",
         textureScale = 0.8,
-    }
+    },
+    ["Party"] = {
+        atlasID = "PartyMember",
+    },
+    ["Circle Gold"] = {
+        atlasID = "honorsystem-bar-rewardborder-circle",
+        textureScale = 0.8,
+    },
+    ["Circle Silver"] = {
+        atlasID = "jailerstower-wayfinder-rewardcircle",
+        textureScale = 0.8,
+    },
+    ["Circle Green"] = {
+        atlasID = "talents-node-choiceflyout-circle-greenglow",
+        textureScale = 0.8,
+    },
+    ["Circle White"] = {
+        atlasID = "Relic-Rankselected-circle",
+        textureScale = 0.8,
+    },
+    ["Circle Red"] = {
+        atlasID = "talents-node-circle-red",
+        textureScale = 0.6,
+    },
 }
 
 -- "Quest" Classifications
@@ -561,15 +582,20 @@ Addon.Defaults = {
         CompassCustomDegreesFlags       = '',
         CompassCustomTicksPosition      = 'TOP',
         CompassCustomTicksForce         = false,
-        GroupShowParty     = true,
-        GroupShowRaid      = false,
-        GroupInterval      = 6,
-        GroupShowAllZones  = true,
-        GroupDesaturate    = true,
-        GroupTransparency  = 0.7,
-        GroupScale         = 1,
-        GroupOffset        = 0,
-        GroupStay          = true,
+        GroupShowParty         = true,
+        GroupShowRaid          = false,
+        GroupInterval          = 6,
+        GroupShowAllZones      = true,
+        GroupOffset            = 0,
+        GroupStay              = true,
+        GroupScale             = 1,
+        GroupTexture           = 'PartyMember',
+        GroupRotate            = 0,
+        GroupZoneDesaturate    = true,
+        GroupZoneTransparency  = 0.7,
+        GroupZoneScale         = 0.8,
+        GroupZoneTexture       = 'PartyMember',
+        GroupZoneRotate        = 0,
     },
 }
 
@@ -641,13 +667,6 @@ local function getStrateLevels()
         values[v] = i .. " - " .. v
     end
     return values
-end
-
-local function hideGroupIcons()
-    for _,v in pairs(groupPointsTable) do
-        if v.frame then v.frame:Hide() end
-        v.active = false
-    end
 end
 
 Addon.Options = {
@@ -1450,52 +1469,39 @@ Addon.Options = {
                     order = 60,
                     name = "Group",
                     args = {
+                        GroupAlert = {
+                            type = "description",
+                            name = "|cnPURE_RED_COLOR:Be aware that the compass is hidden in instances (dungeons, raids, delves, etc.), so this functionality won't be available there either.|r",
+                            fontSize = "medium",
+                            image = "Interface/EncounterJournal/UI-EJ-WarningTextIcon",
+                            order = 1,
+                        },
                         GroupShowParty = {
                             type = "toggle",
                             name = "Show markers for party members",
-                            width = "full",
+                            width = 1.5,
                             order = 10,
                             set = function(info, value)
                                 Addon.db.profile[info[#info]] = value
-                                hideGroupIcons()
+                                Addon:HideGroupIcons()
                                 Addon:UpdateHUDSettings()
                             end,
                         },
                         GroupShowRaid = {
                             type = "toggle",
                             name = "Show markers for raid members",
-                            width = "full",
+                            width = 1.5,
                             order = 20,
                             set = function(info, value)
                                 Addon.db.profile[info[#info]] = value
-                                hideGroupIcons()
+                                Addon:HideGroupIcons()
                                 Addon:UpdateHUDSettings()
                             end,
-                        },
-                        GroupScale = {
-                            type = "range",
-                            name = "Scale",
-                            order = 30,
-                            min = 0.01,
-                            max = 5,
-                            softMin = 0.2,
-                            softMax = 3,
-                            step = 0.01,
-                            bigStep = 0.05,
-                            isPercent = true,
-                        },
-                        GroupOffset = {
-                            type = "range",
-                            order = 40,
-                            name = "Vertical adjustment",
-                            min = -64,
-                            max = 64,
-                            step = 1,
                         },
                         BlankGroupInterval = { type = "description", order = 49, fontSize = "small",name = "",width = "full", },
                         GroupInterval = {
                             type = "range",
-                            order = 50,
+                            order = 30,
                             name = "Update throttle",
                             desc = "Interval between checking group members' positions relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then positions will be updated 60/6 = 10 times per second.",
                             min = 1,
@@ -1507,29 +1513,111 @@ Addon.Options = {
                         BlankGroupStayArrow = { type = "description", order = 59, fontSize = "small",name = "",width = "full", },
                         GroupStay = {
                             type = "toggle",
-                            name = "Group marker stay on HUD",
+                            name = "Group markers stay on HUD",
                             desc = "Show markers on the edge of compass if they are out of the HUD bounderies. ",
                             width = "full",
-                            order = 60,
+                            order = 40,
                         },
-                        HeaderShowAllZones = { type = "header", order = 69, name = "Group member in different zone", },
+                        HeaderGroupTexture = { type = "header", order = 100, name = "Group member in the same zone", },
+                        GroupTexturePreview = {
+                            type = "description",
+                            order = 110,
+                            name = "",
+                            width = 1/6,
+                            image = function(info)
+                                local atlasID = Addon.db.profile.GroupTexture
+                                if atlasID then
+                                    return getAtlasTexture(atlasID)
+                                end
+                                return nil
+                            end,
+                            imageWidth = 24,
+                            imageHeight = 24,
+                            imageCoords = function(info)
+                                local atlasID = Addon.db.profile.GroupTexture
+                                if atlasID then
+                                    return getAtlasCoords(atlasID)
+                                end
+                            end
+                        },
+                        GroupTexture = {
+                            type = "select",
+                            order = 120,
+                            name = "Texture",
+                            values = function() return getPointerAtlasIDs() end,
+                            sorting = function() return getSortedPointerAtlasIDKeys() end,
+                            set = function(info, value)
+                                Addon.db.profile[info[#info]] = value
+                                local texture = getPointerTextureByAtlasID(value)
+                                Addon.db.profile.GroupScale = texture and texture.textureScale or 1
+                                Addon.db.profile.GroupRotate = (texture and texture.textureRotate) and 1 or -1
+                                Addon:HideGroupIcons()
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        GroupScale = {
+                            type = "range",
+                            name = "Scale",
+                            order = 130,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                        },
+                        GroupOffset = {
+                            type = "range",
+                            order = 140,
+                            name = "Vertical adjustment",
+                            min = -64,
+                            max = 64,
+                            step = 1,
+                        },
+                        GroupTextureCustom = {
+                            type = "input",
+                            order = 150,
+                            name = "Custom atlas ID",
+                            desc = "AtlasID of the texture. You can enter your own. Try WeakAuras' internal texture browser to pick one.",
+                            width = "full",
+                            get = function(info)
+                                return Addon.db.profile.GroupTexture
+                            end,
+                            set = function(info, value)
+                                Addon.db.profile.GroupTexture = value
+                                Addon:HideGroupIcons()
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        GroupRotate = {
+                            type = "toggle",
+                            order = 160,
+                            name = "Edge rotation",
+                            desc = "When enabled, the marker will flip when at the top side of the compass and rotate 90° when on the edge.",
+                            get = function(info)
+                                return Addon.db.profile[info[#info]] and Addon.db.profile[info[#info]] > 0
+                            end,
+                            set = function(info, value)
+                                Addon.db.profile[info[#info]] = value and 1 or -1
+                            end,
+                        },
+                        HeaderGroupShowAllZones = { type = "header", order = 200, name = "Group member in different zone", },
                         GroupShowAllZones = {
                             type = "toggle",
-                            name = "Show markers even if in different zone",
-                            width = "full",
-                            order = 70,
+                            name = "Show marker",
+                            order = 201,
                         },
-                        GroupDesaturate = {
+                        GroupZoneDesaturate = {
                             type = "toggle",
-                            name = "Desaturate markers in different zone",
-                            width = "full",
-                            order = 80,
+                            name = "Desaturate marker",
+                            order = 202,
                             disabled = function() return not Addon.db.profile.GroupShowAllZones end,
                         },
-                        GroupTransparency = {
+                        GroupZoneTransparency = {
                             type = "range",
-                            name = "Opacity of markers in different zone",
-                            order = 90,
+                            name = "Marker opacity",
+                            order = 203,
                             min = 0.01,
                             max = 1,
                             softMin = 0.1,
@@ -1539,7 +1627,96 @@ Addon.Options = {
                             isPercent = true,
                             disabled = function() return not Addon.db.profile.GroupShowAllZones end,
                         },
-                    }
+                        BlankGroupZoneTexturePreview = { type = "description", order = 209, fontSize = "small",name = "",width = "full", },
+                        GroupZoneTexturePreview = {
+                            type = "description",
+                            order = 210,
+                            name = "",
+                            width = 1/6,
+                            image = function(info)
+                                local atlasID = Addon.db.profile.GroupZoneTexture
+                                if atlasID then
+                                    return getAtlasTexture(atlasID)
+                                end
+                                return nil
+                            end,
+                            imageWidth = 24,
+                            imageHeight = 24,
+                            imageCoords = function(info)
+                                local atlasID = Addon.db.profile.GroupZoneTexture
+                                if atlasID then
+                                    return getAtlasCoords(atlasID)
+                                end
+                            end
+                        },
+                        GroupZoneTexture = {
+                            type = "select",
+                            order = 220,
+                            name = "Texture",
+                            values = function() return getPointerAtlasIDs() end,
+                            sorting = function() return getSortedPointerAtlasIDKeys() end,
+                            set = function(info, value)
+                                Addon.db.profile[info[#info]] = value
+                                local texture = getPointerTextureByAtlasID(value)
+                                Addon.db.profile.GroupZoneScale = texture and texture.textureScale or 1
+                                Addon.db.profile.GroupZoneRotate = (texture and texture.textureRotate) and 1 or -1
+                                Addon:HideGroupIcons()
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                        },
+                        GroupZoneScale = {
+                            type = "range",
+                            name = "Scale",
+                            order = 230,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                            disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                        },
+                        GroupZoneOffset = {
+                            type = "range",
+                            order = 240,
+                            name = "Vertical adjustment",
+                            min = -64,
+                            max = 64,
+                            step = 1,
+                            disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                        },
+                        GroupZoneTextureCustom = {
+                            type = "input",
+                            order = 250,
+                            name = "Custom atlas ID",
+                            desc = "AtlasID of the texture. You can enter your own. Try WeakAuras' internal texture browser to pick one.",
+                            width = "full",
+                            get = function(info)
+                                return Addon.db.profile.GroupZoneTexture
+                            end,
+                            set = function(info, value)
+                                Addon.db.profile.GroupZoneTexture = value
+                                Addon:HideGroupIcons()
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                        },
+                        GroupZoneRotate = {
+                            type = "toggle",
+                            order = 260,
+                            name = "Edge rotation",
+                            desc = "When enabled, the marker will flip when at the top side of the compass and rotate 90° when on the edge.",
+                            get = function(info)
+                                return Addon.db.profile[info[#info]] and Addon.db.profile[info[#info]] > 0
+                            end,
+                            set = function(info, value)
+                                Addon.db.profile[info[#info]] = value and 1 or -1
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                        },
+                    },
                 },
             },
         },
@@ -2000,7 +2177,7 @@ local function setQuestsIcons()
                     local visible = math.rad(Options.Degrees)/2
                     local arrowShow = false
                     local pointerRotate = 0
-                    quest.frame.texture:SetRotation(0)
+                    --quest.frame.texture:SetRotation(0)
                     if angle < visible and angle > -visible then
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, quest.frame.position)
                         quest.frame:Show()
@@ -2043,7 +2220,7 @@ local function createGroupMemberIcon(unit)
 	groupPointer:SetPoint("CENTER");
 	groupPointer.texture = groupPointer:CreateTexture(ADDON_NAME..unit.."Texture", "ARTWORK")
 	groupPointer.texture:SetAllPoints(groupPointer)
-	groupPointer.texture:SetAtlas("PartyMember")
+	groupPointer.texture:SetAtlas(Options.GroupTexture)
 	groupPointer:Hide()
 	return groupPointer
 end
@@ -2078,7 +2255,6 @@ local function setGroupIcons()
     if not player.groupType or player.groupType == "none" then return end
     if player.groupType == "party" and not Options.GroupShowParty then return end
     if player.groupType == "raid" and not Options.GroupShowRaid then return end
-    local size = textureHeight * (Options.GroupScale)
     if groupThrottle and groupThrottle >= Options.GroupInterval then
         groupThrottle = 0
         local groupSize = player.groupType == "raid" and 40 or player.groupType == "party" and 4
@@ -2089,7 +2265,9 @@ local function setGroupIcons()
     for _, v in pairs(groupPointsTable) do
         if v and v.frame then
             local shown = false
-            local desaturated = Options.GroupDesaturate and (player.instance ~= v.instance)
+            local markerRotate = 0
+            local differentZone = player.instance ~= v.instance
+            local size = textureHeight * (differentZone and Options.GroupZoneScale or Options.GroupScale)
             if v.active and player.angle then
                 if v.x and v.y and v.instance then
                     local angle = player.angle - HBD:GetWorldVector(v.instance, player.x, player.y, v.x, v.y)
@@ -2098,21 +2276,26 @@ local function setGroupIcons()
                     if angle then
                         local visible = math.rad(Options.Degrees)/2
                         if angle < visible and angle > -visible then
-                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.GroupOffset)
+                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, differentZone and Options.GroupZoneOffset or Options.GroupOffset)
                             shown = true
                         elseif Options.GroupStay then
                             local side = math.abs(angle)/angle
-                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, Options.GroupOffset)
+                            local flipped = (differentZone and Options.GroupZoneOffset > 0) or (not differentZone and Options.GroupOffset > 0)
+                            if (differentZone and (Options.GroupZoneRotate == 1)) or (not differentZone and (Options.GroupRotate == 1)) then
+                                markerRotate = PI/2 * side * ((flipped and 1) or -1)
+                            end
+                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, differentZone and Options.GroupZoneOffset or Options.GroupOffset)
                             shown = true
                         end
                     end
                 end
             end
-            shown = shown and (Options.GroupShowAllZones or player.instance == v.instance)
-            v.frame:SetShown(shown)
-            v.frame.texture:SetDesaturated(desaturated)
-            v.frame:SetAlpha(desaturated and Options.GroupTransparency or 1)
             v.frame:SetSize(size, size)
+            v.frame:SetAlpha(differentZone and Options.GroupZoneTransparency or 1)
+            v.frame:SetShown(shown and (Options.GroupShowAllZones or not differentZone))
+            v.frame.texture:SetAtlas(differentZone and Options.GroupZoneTexture or Options.GroupTexture)
+            v.frame.texture:SetDesaturated(differentZone and Options.GroupZoneDesaturate)
+            v.frame.texture:SetRotation(markerRotate)
         end
     end
 end
@@ -2281,8 +2464,15 @@ end
 
 local function OnGroup(event, ...)
     local groupType = (IsInRaid() and "raid") or  (IsInGroup() and "party") or "none"
-    if groupType ~= (player.groupType or "") then hideGroupIcons() end
+    if groupType ~= (player.groupType or "") then Addon:HideGroupIcons() end
     player.groupType = groupType
+end
+
+function Addon:HideGroupIcons()
+    for _,v in pairs(groupPointsTable) do
+        if v.frame then v.frame:Hide() end
+        v.active = false
+    end
 end
 
 function Addon:SetVisibility(visible)
