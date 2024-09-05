@@ -840,9 +840,9 @@ Addon.Options = {
                             name = "Position in Strata",
                             order = 110,
                             min = 0,
-                            max = 1000,
+                            max = 900,
                             softMin = 0,
-                            softMax = 1000,
+                            softMax = 900,
                             step = 1,
                             bigStep = 10,
                         },
@@ -1954,7 +1954,7 @@ local function updateCompassHUD()
     HUD.heading:SetClipsChildren(true)
 
     HUD.heading:SetScale(Options.HeadingScale)
-	HUD.heading:SetFrameLevel(Options.Level+1)
+	HUD.heading:SetFrameLevel(Options.Level+100)
     HUD.heading:SetAlpha(Options.HeadingTransparency)
 
 	local headingBackdrop = {
@@ -2241,6 +2241,9 @@ local function updateGroupMember(unit)
             groupPointsTable[unit].name, groupPointsTable[unit].realm = UnitName(unit)
             groupPointsTable[unit].realm = groupPointsTable[unit].realm or player.realm
             groupPointsTable[unit].active = true
+            if player.x and player.y then
+                groupPointsTable[unit].distance = HBD:GetWorldDistance(instance, player.x, player.y, x, y)
+            end
         end
     end
     if groupPointsTable[unit].name == player.name and groupPointsTable[unit].realm == player.realm then
@@ -2248,6 +2251,21 @@ local function updateGroupMember(unit)
     end
     if wasActive and not groupPointsTable[unit].active then
         groupPointsTable[unit].frame:Hide()
+    end
+end
+
+local function setGroupStrataLevels()
+    local activeUnits = {}
+    for unit, data in pairs(groupPointsTable) do
+        if data.active and data.distance then
+            table.insert(activeUnits, { unit = unit, distance = data.distance })
+        end
+    end
+    table.sort(activeUnits, function(a, b)
+        return a.distance > b.distance
+    end)
+    for rank, item in ipairs(activeUnits) do
+        groupPointsTable[item.unit].strataLevel = rank
     end
 end
 
@@ -2290,14 +2308,19 @@ local function setGroupIcons()
                     end
                 end
             end
-            v.frame:SetSize(size, size)
-            v.frame:SetAlpha(differentZone and Options.GroupZoneTransparency or 1)
-            v.frame:SetShown(shown and (Options.GroupShowAllZones or not differentZone))
-            v.frame.texture:SetAtlas(differentZone and Options.GroupZoneTexture or Options.GroupTexture)
-            v.frame.texture:SetDesaturated(differentZone and Options.GroupZoneDesaturate)
-            v.frame.texture:SetRotation(markerRotate)
+            shown = shown and (Options.GroupShowAllZones or not differentZone)
+            v.frame:SetShown(shown)
+            if shown then
+                v.frame:SetSize(size, size)
+                v.frame:SetAlpha(differentZone and Options.GroupZoneTransparency or 1)
+                v.frame:SetFrameLevel(Options.Level + (v.strataLevel or 0))
+                v.frame.texture:SetAtlas(differentZone and Options.GroupZoneTexture or Options.GroupTexture)
+                v.frame.texture:SetDesaturated(differentZone and Options.GroupZoneDesaturate)
+                v.frame.texture:SetRotation(markerRotate)
+            end
         end
     end
+    setGroupStrataLevels()
 end
 
 local function updateHeading()
