@@ -593,6 +593,7 @@ Addon.Defaults = {
         GroupRotate            = 0,
         GroupZoneDesaturate    = true,
         GroupZoneTransparency  = 0.7,
+        GroupZoneOffset        = 0,
         GroupZoneScale         = 0.8,
         GroupZoneTexture       = 'PartyMember',
         GroupZoneRotate        = 0,
