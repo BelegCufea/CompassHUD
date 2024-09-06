@@ -38,6 +38,7 @@ local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
+local GetClassColor = C_ClassColor.GetClassColor
 
 local Options
 local HUD
@@ -604,6 +605,7 @@ Addon.Defaults = {
         GroupPartyNameFontSize   = 12,
         GroupPartyNameFontFlags  = "",
         GroupPartyNameFontColor  = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        GroupPartyNameClassColor = true,
         GroupRaidNameShow        = true,
         GroupRaidNameOffset      = 0,
         GroupRaidNameCustomFont  = false,
@@ -611,6 +613,7 @@ Addon.Defaults = {
         GroupRaidNameFontSize    = 12,
         GroupRaidNameFontFlags   = "",
         GroupRaidNameFontColor   = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        GroupRaidNameClassColor  = true,
     },
 }
 
@@ -1290,7 +1293,8 @@ Addon.Options = {
                             type = "toggle",
                             name = "Display north as 360",
                             order = 5,
-                        },                HeadingDecimals = {
+                        },
+                        HeadingDecimals = {
                             type = "range",
                             order = 10,
                             name = "Decimal points",
@@ -1769,7 +1773,7 @@ Addon.Options = {
                                     type = "toggle",
                                     order = 40,
                                     name = "Custom font",
-                                    width = 1/2,
+                                    width = 3/4,
                                     disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
                                 },
                                 GroupPartyNameFont = {
@@ -1795,7 +1799,7 @@ Addon.Options = {
                                     type = "select",
                                     order = 70,
                                     name = "Outline",
-                                    width = 1/2,
+                                    width = 3/4,
                                     values = {
                                         [""] = "None",
                                         ["OUTLINE"] = "Normal",
@@ -1803,11 +1807,17 @@ Addon.Options = {
                                     },
                                     disabled = function() return not Addon.db.profile.GroupPartyNameShow or not Addon.db.profile.GroupPartyNameCustomFont end,
                                 },
+                                BlankGroupPartyNameClassColor = { type = "description", order = 79, fontSize = "small",name = "",width = "full", },
+                                GroupPartyNameClassColor = {
+                                    type = "toggle",
+                                    order = 80,
+                                    name = "Use class color",
+                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                                },
                                 GroupPartyNameFontColor = {
                                     type = "color",
-                                    order = 80,
-                                    name = "Color",
-                                    width = 1/2,
+                                    order = 90,
+                                    name = "Custom color",
                                     hasAlpha = true,
                                     get = function(info)
                                         local color = Addon.db.profile[info[#info]]
@@ -1821,7 +1831,7 @@ Addon.Options = {
                                         color.a = a
                                         Addon:UpdateHUDSettings()
                                     end,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow or not Addon.db.profile.GroupPartyNameCustomFont end,
+                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow or Addon.db.profile.GroupPartyNameClassColor end,
                                 },
                                 HeaderGroupRaidNameShow = { type = "header", order = 110, name = "Player names in raid", },
                                 GroupRaidNameShow = {
@@ -1843,7 +1853,7 @@ Addon.Options = {
                                     type = "toggle",
                                     order = 140,
                                     name = "Custom font",
-                                    width = 1/2,
+                                    width = 3/4,
                                     disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
                                 },
                                 GroupRaidNameFont = {
@@ -1869,7 +1879,7 @@ Addon.Options = {
                                     type = "select",
                                     order = 170,
                                     name = "Outline",
-                                    width = 1/2,
+                                    width = 3/4,
                                     values = {
                                         [""] = "None",
                                         ["OUTLINE"] = "Normal",
@@ -1877,11 +1887,17 @@ Addon.Options = {
                                     },
                                     disabled = function() return not Addon.db.profile.GroupRaidNameShow or not Addon.db.profile.GroupRaidNameCustomFont end,
                                 },
+                                BlankGroupRaidNameClassColor = { type = "description", order = 179, fontSize = "small",name = "",width = "full", },
+                                GroupRaidNameClassColor = {
+                                    type = "toggle",
+                                    order = 180,
+                                    name = "Use class color",
+                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                                },
                                 GroupRaidNameFontColor = {
                                     type = "color",
-                                    order = 180,
-                                    name = "Color",
-                                    width = 1/2,
+                                    order = 190,
+                                    name = "Custom color",
                                     hasAlpha = true,
                                     get = function(info)
                                         local color = Addon.db.profile[info[#info]]
@@ -1895,7 +1911,7 @@ Addon.Options = {
                                         color.a = a
                                         Addon:UpdateHUDSettings()
                                     end,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow or not Addon.db.profile.GroupRaidNameCustomFont end,
+                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow or Addon.db.profile.GroupRaidNameClassColor end,
                                 },
                             },
                         },
@@ -2412,13 +2428,11 @@ local function createGroupMemberIcon(unit)
 end
 
 local function updateGroupMemberTexts(unit)
-    Debug:Info("Update text", unit)
     if not groupPointsTable or not groupPointsTable[unit] then return end
     local v = groupPointsTable[unit]
     local scale = Options.Scale * Options.VerticalScale
     local differentZone = player.instance ~= v.instance
     local flipped = (differentZone and Options.GroupZoneOffset > 0) or (not differentZone and Options.GroupOffset > 0)
-    Debug:Info("scale, zone, flipped, type, party, raid", scale, differentZone, flipped, v.type, Options.GroupPartyNameCustomFont, Options.GroupRaidNameCustomFont)
     v.frame.Name:ClearAllPoints()
     v.frame.Name:SetPoint(flipped and "BOTTOM" or "TOP", v.frame, flipped and "TOP" or "BOTTOM", 0, v.type == "party" and Options.GroupPartyNameOffset or Options.GroupRaidNameOffset)
     local gameFontNormal = { fontColor = {}}
@@ -2426,16 +2440,20 @@ local function updateGroupMemberTexts(unit)
     gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
 
     v.frame.Name:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-    v.frame.Name:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
     if v.type == "party" and Options.GroupPartyNameCustomFont then
         local font = LSM:Fetch("font", Options.GroupPartyNameFont)
         v.frame.Name:SetFont(font, Options.GroupPartyNameFontSize * scale, Options.GroupPartyNameFontFlags)
-        v.frame.Name:SetTextColor(Options.GroupPartyNameFontColor.r, Options.GroupPartyNameFontColor.g, Options.GroupPartyNameFontColor.b, Options.GroupPartyNameFontColor.a)
     end
     if v.type == "raid" and Options.GroupRaidNameCustomFont then
         local font = LSM:Fetch("font", Options.GroupRaidNameFont)
         v.frame.Name:SetFont(font, Options.GroupRaidNameFontSize * scale, Options.GroupRaidNameFontFlags)
+    end
+    if ((v.type == "party" and Options.GroupPartyNameClassColor) or (v.type == "raid" and Options.GroupRaidNameClassColor)) and v.classColor then
+        v.frame.Name:SetTextColor(v.classColor.r, v.classColor.g, v.classColor.b, 1)
+    elseif v.type == "raid" then
         v.frame.Name:SetTextColor(Options.GroupRaidNameFontColor.r, Options.GroupRaidNameFontColor.g, Options.GroupRaidNameFontColor.b, Options.GroupRaidNameFontColor.a)
+    else --party (defaul?)
+        v.frame.Name:SetTextColor(Options.GroupPartyNameFontColor.r, Options.GroupPartyNameFontColor.g, Options.GroupPartyNameFontColor.b, Options.GroupPartyNameFontColor.a)
     end
 end
 
@@ -2444,13 +2462,23 @@ local function updateGroupMember(unit)
         groupPointsTable[unit] = { type = string.gsub(unit, "%d+$", "")}
     end
     local wasActive = groupPointsTable[unit].active
+    local wasClass = groupPointsTable[unit].className
     groupPointsTable[unit].active = false
     if not groupPointsTable[unit].frame then
         groupPointsTable[unit].frame = createGroupMemberIcon(unit)
-        updateGroupMemberTexts(unit)
+        wasClass = "NONE"
     end
     if UnitExists(unit) then
         local x, y, instance = HBD:GetUnitWorldPosition(unit)
+        local className, classFile = UnitClass(unit)
+
+        if className then
+            groupPointsTable[unit].className = className
+            groupPointsTable[unit].classColor = GetClassColor(classFile)
+        else
+            groupPointsTable[unit].className = nil
+            groupPointsTable[unit].classColor = type == "party" and Options.GroupPartyNameFontColor or Options.GroupRaidNameFontColor
+        end
         if x and y and instance then
             groupPointsTable[unit].x = x
             groupPointsTable[unit].y = y
@@ -2466,9 +2494,13 @@ local function updateGroupMember(unit)
     if groupPointsTable[unit].name == player.name and groupPointsTable[unit].realm == player.realm then
         groupPointsTable[unit].active = false
     end
+    if not wasClass or wasClass ~= groupPointsTable[unit].className then
+        updateGroupMemberTexts(unit)
+    end
     if wasActive and not groupPointsTable[unit].active then
         groupPointsTable[unit].frame:Hide()
     end
+    Debug:Table("Group", groupPointsTable)
 end
 
 local function updateGroupTexts()
