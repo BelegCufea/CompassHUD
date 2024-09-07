@@ -2716,7 +2716,7 @@ local function setGroupStrataLevels()
         return a.distance > b.distance
     end)
     for rank, item in ipairs(activeUnits) do
-        groupPointsTable[item.unit].strataLevel = rank
+        groupPointsTable[item.unit].strataLevel = rank+1
     end
 end
 
