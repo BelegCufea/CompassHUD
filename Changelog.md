@@ -1,3 +1,22 @@
+## New
+
+### **Markers for group members**
+**Idea, help, and testing by [raptormama](https://github.com/raptormama)**
+
+For those who like to quest in a group or for the masochists doing overworld raids and wanting to see every single one of their groupmates displayed as a marker on the compass, we now introduce the brand-new Group Markers feature.
+
+![Heading](https://i.imgur.com/SRvscsO.png)
+
+You can change several options on the `Group tab` in the addon's settings. Primarily, you can decide whether you want to use this feature only in Party or also in Raid (it might get a bit cluttered, so it's off by default), and you can modify the markers.
+
+![Heading](https://i.imgur.com/iEfYw9x.png)
+
+There's also a whole section dedicated to group members' names on `Texts tab` in the `Group` settings. Only the Party section is shown below, but there's also one for Raids.
+
+![Heading](https://i.imgur.com/19hiPvu.png)
+
+We (both [raptormama](https://github.com/raptormama) and I) hope you like it and that there are as few errors as possible.
+
 # v1.2.3 (1.9.2024)
 
 ## New
