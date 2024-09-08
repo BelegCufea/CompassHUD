@@ -1,3 +1,5 @@
+# v1.3.0 (8.9.2024)
+
 ## New
 
 ### **Markers for group members**
@@ -16,6 +18,10 @@ There's also a whole section dedicated to group members' names on `Texts tab` in
 ![Heading](https://i.imgur.com/19hiPvu.png)
 
 We (both [raptormama](https://github.com/raptormama) and I) hope you like it and that there are as few errors as possible.
+
+## Fix
+
+- Fix for TomTom (reported and tested by [yoshimo](https://github.com/yoshimo))
 
 # v1.2.3 (1.9.2024)
 
