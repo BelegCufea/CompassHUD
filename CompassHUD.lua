@@ -44,10 +44,12 @@ local Options
 local HUD
 local timer = 0
 local groupThrottle = 0
+local gatherMateThrottle = 0
 local player = {x = 0, y = 0, angle = 0}
 local tomTomActive
 local questPointsTable = {}
 local groupPointsTable = {}
+local gatherMatePointTable = {}
 local HBDmaps = {}
 local directions = {
     [0] = {letter = "N" , main = true },
@@ -624,11 +626,36 @@ Addon.Defaults = {
         GroupPartyNameBackgroundColor = {r = 1, g = 1, b = 1, a = 1},
         GroupRaidNameBorder           = 'Blizzard Dialog Gold',
         GroupRaidNameBorderThickness  = 2.5,
-        GroupRaidNameBorderClass     = false,
+        GroupRaidNameBorderClass      = false,
         GroupRaidNameBorderColor      = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         GroupRaidNameBackground       = 'Blizzard Tooltip',
         GroupRaidNameBackgroundClass  = false,
         GroupRaidNameBackgroundColor  = {r = 1, g = 1, b = 1, a = 1},
+        GatherMateEnabled            = false,
+        GatherMateRadius             = 100,
+        GatherMateInterval           = 6,
+        GatherMateOffset             = 20,
+        GatherMateShowDistance       = true,
+        GatherMateShowTTA            = true,
+        GatherMateShowTitle          = true,
+        GatherMateDistanceOffset     = 0,
+        GatherMateTtaOffset          =  0,
+        GatherMateTitleOffset        = 0,
+        GatherMateDistanceCustomFont = false,
+        GatherMateDistanceFont       = "Friz Quadrata TT",
+        GatherMateDistanceFontSize   = 12,
+        GatherMateDistanceFontColor  = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        GatherMateDistanceFontFlags  = "",
+        GatherMateTtaCustomFont      = false,
+        GatherMateTtaFont            = "Friz Quadrata TT",
+        GatherMateTtaFontSize        = 12,
+        GatherMateTtaFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        GatherMateTtaFontFlags       = "",
+        GatherMateTitleCustomFont    = false,
+        GatherMateTotleFont          = "Friz Quadrata TT",
+        GatherMateTitleFontSize      = 12,
+        GatherMateTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        GatherMateTitleFontFlags     = "",
     },
 }
 
@@ -2372,7 +2399,7 @@ end
 local function questPointerSetTexts(frame, dt)
     if player.inInstance then return end
 
-    frame.distance = HBD:GetWorldDistance(questPointsTable[frame.questID].instance, player.x, player.y, questPointsTable[frame.questID].x, questPointsTable[frame.questID].y)
+    frame.distance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
     if not frame.distance then
         frame:Hide()
         return
@@ -2386,7 +2413,7 @@ local function questPointerSetTexts(frame, dt)
         if not speed or speed == 0 then -- delta
             frame.oldDistance = frame.distance
             C_Timer.After(1, function()
-                local currentDistance = HBD:GetWorldDistance(questPointsTable[frame.questID].instance, player.x, player.y, questPointsTable[frame.questID].x, questPointsTable[frame.questID].y)
+                local currentDistance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
                 if currentDistance then
                     speed = math.abs(currentDistance - frame.oldDistance)
                 else
@@ -2489,7 +2516,7 @@ local function updateQuestIcon(questPointer)
     questPointer.QuestText:SetShown(options.showQuest)
 end
 
-local function createQuestIcon(questID, questType)
+local function createQuestIcon(questID, questType, table)
     local pointerType = getPointerType(questID, questType)
     if not Options.Pointers[pointerType] then
         Debug:Info("Quest type not found", pointerType)
@@ -2536,6 +2563,10 @@ local function createQuestIcon(questID, questType)
 
     updateQuestIcon(questPointer)
 
+    questPointer.type = "Quest"
+    questPointer.instance = table.instance
+    questPointer.x = table.x
+    questPointer.y = table.y
     questPointer.elapsed = 0
     questPointer:SetScript("OnUpdate", questPointerSetTexts)
 	return questPointer
@@ -2731,6 +2762,7 @@ local function setGroupIcons()
             updateGroupMember(player.groupType..i)
         end
     end
+
     for _, v in pairs(groupPointsTable) do
         if v and v.frame then
             local shown = false
@@ -2781,6 +2813,85 @@ local function setGroupIcons()
     setGroupStrataLevels()
 end
 
+local function createGatherMateNode(nodeID, nodeType, table)
+    local gatherMateNode =  table.frame or CreateFrame("FRAME", nil, HUD)
+	gatherMateNode:SetSize(textureHeight, textureHeight)
+	gatherMateNode:SetPoint("CENTER");
+	gatherMateNode.texture = gatherMateNode:CreateTexture(nil, "ARTWORK")
+	gatherMateNode.texture:SetAllPoints(gatherMateNode)
+	gatherMateNode.texture:SetTexture(GatherMate2.nodeTextures[nodeType][nodeID])
+	gatherMateNode:Hide()
+    gatherMateNode.DistanceText = gatherMateNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    gatherMateNode.DistanceText:SetJustifyV("TOP")
+    gatherMateNode.DistanceText:SetSize(0, 16)
+    gatherMateNode.DistanceText:SetParent(gatherMateNode)
+    gatherMateNode.TimeText = gatherMateNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    gatherMateNode.TimeText:SetJustifyV("TOP")
+    gatherMateNode.TimeText:SetSize(0, 16)
+    gatherMateNode.TimeText:SetParent(gatherMateNode)
+    gatherMateNode.QuestText = gatherMateNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    gatherMateNode.QuestText:SetJustifyV("TOP")
+    gatherMateNode.QuestText:SetSize(0, 16)
+    gatherMateNode.QuestText:SetParent(gatherMateNode)
+    gatherMateNode.QuestText:SetText(GatherMate2:GetNameForNode(nodeType, nodeID))
+    gatherMateNode.type = "GatherMate"
+    gatherMateNode.instance = table.instance
+    gatherMateNode.x = table.x
+    gatherMateNode.y = table.y
+    gatherMateNode.elapsed = 0
+    gatherMateNode:SetScript("OnUpdate", questPointerSetTexts)
+	return gatherMateNode
+end
+
+local function setGatherMateNodes()
+    if not Options.GatherMateEnabled or not GatherMate2 then return end
+    if gatherMateThrottle and gatherMateThrottle >= Options.GatherMateInterval then
+        local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.mapId, false)
+        gatherMateThrottle = 0
+        for map, nodes in pairs(gatherMatePointTable) do
+            for coord, node in pairs(nodes) do
+                gatherMatePointTable[map][coord].visible = false
+            end
+        end
+		for _, db_type in pairs(GatherMate2.db_types) do
+			if GatherMate2.Visible[db_type] then
+				for coord, nodeID in GatherMate2:FindNearbyNode(player.mapId, x, y, db_type, Options.GatherMateRadius) do
+					if not gatherMatePointTable[player.mapId] then
+                        gatherMatePointTable[player.mapId] = {}
+                    end
+                    if not gatherMatePointTable[player.mapId][coord] then
+                        local xZone, yZone = GatherMate2:DecodeLoc(coord)
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.mapId)
+                        gatherMatePointTable[player.mapId][coord] = { visible = true, instance = player.mapId, x = xWorld, y = yWorld }
+                        gatherMatePointTable[player.mapId][coord].frame = createGatherMateNode(nodeID, db_type, gatherMatePointTable[player.mapId][coord])
+                    end
+                    gatherMatePointTable[player.mapId][coord].visible = true
+   				end
+			end
+		end
+    end
+    for _, nodes in pairs(gatherMatePointTable) do
+        for _, node in pairs(nodes) do
+            local shown = false
+            if node.visible and player.angle then
+                if node.x and node.y and node.instance then
+                    local angle = player.angle - HBD:GetWorldVector(node.instance, player.x, player.y, node.x, node.y)
+                    if angle < 0 then angle = angle + (2 * PI) end
+                    if angle > PI then angle = angle - (2 * PI) end
+                    if angle then
+                        local visible = math.rad(Options.Degrees)/2
+                        if angle < visible and angle > -visible then
+                            node.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.GatherMateOffset)
+                            shown = true
+                        end
+                    end
+                end
+            end
+            node.frame:SetShown(shown)
+        end
+    end
+end
+
 local function updateHeading()
     if HUD.heading and HUD.heading.text and player.angle then
         local heading = (360 - (player.angle * (180 / math.pi))) % 360
@@ -2816,6 +2927,7 @@ local function updateHUD(force)
     updateHeading()
     setQuestsIcons()
     setGroupIcons()
+    setGatherMateNodes()
 end
 
 local function updatePointerTextures()
@@ -2832,6 +2944,7 @@ local function onUpdate(_, elapsed)
     if timer < (1 / Options.Interval) then return end
     timer = 0
     groupThrottle = groupThrottle + 1
+    gatherMateThrottle = gatherMateThrottle + 1
     updateHUD(false)
 end
 
@@ -2865,7 +2978,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed)
     questPointsTable[questID].text = title
     questPointsTable[questID].completed = completed
     if not questPointsTable[questID].frame then
-        questPointsTable[questID].frame = createQuestIcon(questID, questType)
+        questPointsTable[questID].frame = createQuestIcon(questID, questType, questPointsTable[questID])
     end
     questPointsTable[questID].frame.QuestText:SetText(title)
     local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
