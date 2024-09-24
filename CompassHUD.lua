@@ -639,7 +639,7 @@ Addon.Defaults = {
         GatherMateShowTTA            = true,
         GatherMateShowTitle          = true,
         GatherMateDistanceOffset     = 0,
-        GatherMateTtaOffset          =  0,
+        GatherMateTtaOffset          = 0,
         GatherMateTitleOffset        = 0,
         GatherMateDistanceCustomFont = false,
         GatherMateDistanceFont       = "Friz Quadrata TT",
@@ -652,7 +652,7 @@ Addon.Defaults = {
         GatherMateTtaFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         GatherMateTtaFontFlags       = "",
         GatherMateTitleCustomFont    = false,
-        GatherMateTotleFont          = "Friz Quadrata TT",
+        GatherMateTitleFont          = "Friz Quadrata TT",
         GatherMateTitleFontSize      = 12,
         GatherMateTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         GatherMateTitleFontFlags     = "",
@@ -2125,6 +2125,38 @@ Addon.Options = {
     },
 }
 
+local GatherMateOptions = {
+    type = "group",
+    order = 10,
+    name = "GatherMate",
+    get = function(info)
+        return Addon.db.profile[info[#info]]
+    end,
+    set = function(info, value)
+        Addon.db.profile[info[#info]] = value
+        Addon:UpdateHUDSettings()
+    end,
+    args = {
+        GatherMateEnabled = {
+            type = "toggle",
+            name = "Enabled",
+            width = "full",
+            order = 10,
+        },
+        GatherMateRadius = {
+            type = "range",
+            order = 20,
+            name = "Scaning radius",
+            min = 1,
+            max = 2000,
+            softMin = 50,
+            softMax = 1000,
+            step = 1,
+            bigStep = 5,
+        },
+    },
+}
+
 local function GetQuestPOIInfo(questID)
     local completed = IsComplete(questID)
 
@@ -2443,6 +2475,13 @@ local function getPointerType(questID, questType)
     return questPointerIdent .. (questPointers[questClassification] and questClassification or questUnknown)
 end
 
+local function isTask(questID)
+    local classification = GetQuestClassification(questID)
+    return
+        (classification == Enum.QuestClassification.BonusObjective)
+        or (classification == Enum.QuestClassification.WorldQuest)
+end
+
 local function updateQuestIcon(questPointer)
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
@@ -2575,6 +2614,9 @@ end
 local function setQuestsIcons()
     local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() and GetUserWaypoint()
     local trackedQuest = GetSuperTrackedQuestID()
+    if trackedQuest and isTask(trackedQuest) and not C_TaskQuest.IsActive(trackedQuest) then
+        trackedQuest = 0
+    end
 	for questID, quest in pairs(questPointsTable) do
 		if (questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track) then
 			local angle = getPlayerFacingAngle(questID)
@@ -2813,6 +2855,60 @@ local function setGroupIcons()
     setGroupStrataLevels()
 end
 
+local function updateGatherMateNodeText(node)
+    local scale = Options.Scale * Options.VerticalScale
+    local gameFontNormal = { fontColor = {}}
+    gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
+    gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
+
+    node.frame.DistanceText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
+    node.frame.DistanceText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
+    node.frame.TimeText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
+    node.frame.TimeText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
+    node.frame.Title:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
+    node.frame.Title:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
+
+    local point = "TOP"
+    local relativePoint = "BOTTOM"
+    local distanceTextPosition = Options.GatherMateDistanceOffset + 2
+    local timeTextPosition = - ((Options.GatherMateShowDistance and (Options.GatherMateDistanceFontSize * 1.2 * scale)) or 0) - Options.GatherMateTtaOffset + 2
+    local titlePosition = - ((Options.GatherMateShowDistance and (Options.GatherMateDistanceFontSize * 1.2 * scale)) or 0) - ((Options.GatherMateShowTTA and (Options.GatherMateTtaFontSize * 1.2 * scale)) or 0) - Options.GatherMateTitleOffset + 4
+    node.flipped = false
+    if Options.GatherMateOffset > 0 then
+        node.flipped = true
+        point = "BOTTOM"
+        relativePoint = "TOP"
+        distanceTextPosition = ((Options.GatherMateShowTTA and (Options.GatherMateTtaFontSize * 1.2 * scale)) or 0) + Options.GatherMateDistanceOffset - 12
+        timeTextPosition = Options.GatherMateTtaOffset - 12
+        if Options.GatherMateShowTitle then
+            titlePosition = Options.GatherMateTitleOffset - 6
+            timeTextPosition = timeTextPosition + (Options.GatherMateTitleFontSize * 1.2 * scale)
+            distanceTextPosition = distanceTextPosition + (Options.GatherMateTitleFontSize * 1.2 * scale)
+        end
+    end
+
+    node.frame.DistanceText:ClearAllPoints()
+    node.frame.DistanceText:SetPoint(point, node.frame, relativePoint, 0, distanceTextPosition)
+    node.frame.TimeText:ClearAllPoints()
+    node.frame.TimeText:SetPoint(point, node.frame, relativePoint, 0, timeTextPosition)
+    node.frame.Title:ClearAllPoints()
+    node.frame.Title:SetPoint(point, node.frame, relativePoint, 0, titlePosition)
+
+    node.frame.DistanceText:SetShown(Options.GatherMateShowDistance)
+    node.frame.TimeText:SetShown(Options.GatherMateShowTTA)
+    node.frame.Title:SetShown(Options.GatherMateShowTitle)
+end
+
+local function updateGatherMateTexts()
+    for _, nodes in pairs(gatherMatePointTable) do
+        for _, node in pairs(nodes) do
+            if node.frame and node.visible then
+                updateGatherMateNodeText(node)
+            end
+        end
+    end
+end
+
 local function createGatherMateNode(nodeID, nodeType, table)
     local gatherMateNode =  table.frame or CreateFrame("FRAME", nil, HUD)
 	gatherMateNode:SetSize(textureHeight, textureHeight)
@@ -2829,11 +2925,11 @@ local function createGatherMateNode(nodeID, nodeType, table)
     gatherMateNode.TimeText:SetJustifyV("TOP")
     gatherMateNode.TimeText:SetSize(0, 16)
     gatherMateNode.TimeText:SetParent(gatherMateNode)
-    gatherMateNode.QuestText = gatherMateNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    gatherMateNode.QuestText:SetJustifyV("TOP")
-    gatherMateNode.QuestText:SetSize(0, 16)
-    gatherMateNode.QuestText:SetParent(gatherMateNode)
-    gatherMateNode.QuestText:SetText(GatherMate2:GetNameForNode(nodeType, nodeID))
+    gatherMateNode.Title = gatherMateNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    gatherMateNode.Title:SetJustifyV("TOP")
+    gatherMateNode.Title:SetSize(0, 16)
+    gatherMateNode.Title:SetParent(gatherMateNode)
+    gatherMateNode.Title:SetText(GatherMate2:GetNameForNode(nodeType, nodeID))
     gatherMateNode.type = "GatherMate"
     gatherMateNode.instance = table.instance
     gatherMateNode.x = table.x
@@ -2864,6 +2960,7 @@ local function setGatherMateNodes()
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.mapId)
                         gatherMatePointTable[player.mapId][coord] = { visible = true, instance = player.mapId, x = xWorld, y = yWorld }
                         gatherMatePointTable[player.mapId][coord].frame = createGatherMateNode(nodeID, db_type, gatherMatePointTable[player.mapId][coord])
+                        updateGatherMateNodeText(gatherMatePointTable[player.mapId][coord])
                     end
                     gatherMatePointTable[player.mapId][coord].visible = true
    				end
@@ -3008,13 +3105,6 @@ local function tomtomClearWaypoint(self, uid)
     if tomTomActive == tomTomRemoved then
         questPointsTable[tomTom].track = false
     end
-end
-
-local function isTask(questID)
-    local classification = GetQuestClassification(questID)
-    return
-        (classification == Enum.QuestClassification.BonusObjective)
-        or (classification == Enum.QuestClassification.WorldQuest)
 end
 
 local function OnEvent(event,...)
@@ -3204,6 +3294,7 @@ function Addon:UpdateHUDSettings()
     updateHUD(true)
     updatePointerTextures()
     updateGroupTexts()
+    updateGatherMateTexts()
     UnregisterAttributeDriver(HUD, 'state-hudvisibility')
     RegisterAttributeDriver(HUD, "state-hudvisibility", Options.Visibility)
 end
@@ -3866,10 +3957,12 @@ function Addon:ConstructDefaultsAndOptions()
     self.Defaults.profile.Pointers = pointersDefaults
     self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
     self.Options.args.Tabs.args.Pointers.args = pointersOptionsArgs
+    self.Options.args.GatherMate = GatherMateOptions
     self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
     self.Options.args.Profiles.order = 80
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
     _, Addon.categoryID = AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, nil, nil, "Tabs")
+    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "GatherMate", Const.METADATA.NAME, "GatherMate")
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Profiles", Const.METADATA.NAME, "Profiles")
 end
 
@@ -3896,6 +3989,7 @@ function Addon:OnEnable()
     self:RegisterEvent("QUEST_ACCEPTED", OnEvent)
     self:RegisterEvent("QUEST_LOG_UPDATE", OnEvent)
     self:RegisterEvent("QUEST_POI_UPDATE", OnEvent)
+    self:RegisterEvent("QUEST_TURNED_IN", OnEvent)
     self:RegisterEvent("USER_WAYPOINT_UPDATED", OnEvent)
     self:RegisterEvent("WAYPOINT_UPDATE", OnEvent)
     self:RegisterEvent("SUPER_TRACKING_CHANGED", OnEvent)
