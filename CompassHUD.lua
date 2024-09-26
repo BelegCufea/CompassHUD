@@ -3357,6 +3357,8 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed)
     questPointsTable[questID].frame.QuestText:SetText(title)
     local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
     questPointsTable[questID].frame.texture:SetAtlas(completed and options.atlasAltID or options.atlasID)
+    questPointsTable[questID].frame.x = questPointsTable[questID].x
+    questPointsTable[questID].frame.y = questPointsTable[questID].y
     updateQuestIcon(questPointsTable[questID].frame)
 end
 
