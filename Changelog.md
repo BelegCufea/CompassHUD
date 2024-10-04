@@ -1,3 +1,8 @@
+# v1.3.0 (4.10.2024)
+
+## Fix
+- Fix for world quest pointer stay visible even after world quest is finished
+
 # v1.3.0 (8.9.2024)
 
 ## New

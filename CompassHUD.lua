@@ -2416,6 +2416,13 @@ local function getPointerType(questID, questType)
     return questPointerIdent .. (questPointers[questClassification] and questClassification or questUnknown)
 end
 
+local function isTask(questID)
+    local classification = GetQuestClassification(questID)
+    return
+        (classification == Enum.QuestClassification.BonusObjective)
+        or (classification == Enum.QuestClassification.WorldQuest)
+end
+
 local function updateQuestIcon(questPointer)
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
@@ -2544,6 +2551,9 @@ end
 local function setQuestsIcons()
     local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() and GetUserWaypoint()
     local trackedQuest = GetSuperTrackedQuestID()
+    if trackedQuest and isTask(trackedQuest) and not C_TaskQuest.IsActive(trackedQuest) then
+        trackedQuest = 0
+    end
 	for questID, quest in pairs(questPointsTable) do
 		if (questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track) then
 			local angle = getPlayerFacingAngle(questID)
@@ -2895,13 +2905,6 @@ local function tomtomClearWaypoint(self, uid)
     if tomTomActive == tomTomRemoved then
         questPointsTable[tomTom].track = false
     end
-end
-
-local function isTask(questID)
-    local classification = GetQuestClassification(questID)
-    return
-        (classification == Enum.QuestClassification.BonusObjective)
-        or (classification == Enum.QuestClassification.WorldQuest)
 end
 
 local function OnEvent(event,...)
@@ -3783,6 +3786,7 @@ function Addon:OnEnable()
     self:RegisterEvent("QUEST_ACCEPTED", OnEvent)
     self:RegisterEvent("QUEST_LOG_UPDATE", OnEvent)
     self:RegisterEvent("QUEST_POI_UPDATE", OnEvent)
+    self:RegisterEvent("QUEST_TURNED_IN", OnEvent)
     self:RegisterEvent("USER_WAYPOINT_UPDATED", OnEvent)
     self:RegisterEvent("WAYPOINT_UPDATE", OnEvent)
     self:RegisterEvent("SUPER_TRACKING_CHANGED", OnEvent)
