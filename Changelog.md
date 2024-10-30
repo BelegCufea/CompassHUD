@@ -1,4 +1,12 @@
-# v1.3.0 (4.10.2024)
+# v1.3.1 (4.10.2024)
+
+## Fix
+- Some small fixes for TomTom integration
+
+## Misc
+- TOC 11.0.5
+
+# v1.3.0a (4.10.2024)
 
 ## Fix
 - Fix for world quest pointer stay visible even after world quest is finished

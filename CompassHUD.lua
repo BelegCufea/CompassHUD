@@ -2909,7 +2909,7 @@ end
 
 local function OnEvent(event,...)
     Debug:Info(event)
-    if TomTom and TomTom:IsCrazyArrowEmpty() and questPointsTable[tomTom] then
+    if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
     end
     local questID = GetSuperTrackedQuestID()
@@ -3795,6 +3795,7 @@ function Addon:OnEnable()
     if TomTom then
         self:SecureHook(TomTom, "SetCrazyArrow", tomtomSetCrazyArrow)
         self:SecureHook(TomTom, "ClearWaypoint", tomtomClearWaypoint)
+        self:SecureHook(TomTom, "HideWaypoint", tomtomClearWaypoint)
     end
 
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
