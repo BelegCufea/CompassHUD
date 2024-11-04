@@ -92,7 +92,9 @@
         "Meta",
         "MenuUtil",
         "UNKNOWN",
-        "TEXT_TO_SPEECH_SAMPLE_TEXT"
+        "TEXT_TO_SPEECH_SAMPLE_TEXT",
+        "SuperTrackedFrame",
+        "WorldFrame"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {

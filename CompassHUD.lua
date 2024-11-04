@@ -2549,7 +2549,7 @@ local function createQuestIcon(questID, questType)
 end
 
 local function setQuestsIcons()
-    local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() and GetUserWaypoint()
+    local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() or C_SuperTrack.IsSuperTrackingMapPin()
     local trackedQuest = GetSuperTrackedQuestID()
     if trackedQuest and isTask(trackedQuest) and not C_TaskQuest.IsActive(trackedQuest) then
         trackedQuest = 0
@@ -2917,6 +2917,7 @@ local function OnEvent(event,...)
     Debug:Info("questID", questID)
     -- figure how to track Quest offers
     local STtype, STtypeID = C_SuperTrack.GetSuperTrackedMapPin()
+    local uiMapID = WorldMapFrame:GetMapID()
     if STtype then Debug:Info("ST type", STtype) end
     if STtypeID then Debug:Info("ST type ID", STtypeID) end
     if questID and questID > 0 then
@@ -2939,6 +2940,21 @@ local function OnEvent(event,...)
         local point = GetUserWaypoint()
         if IsSuperTrackingUserWaypoint() and point then
             updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, nil, completed)
+        elseif C_SuperTrack.IsSuperTrackingMapPin() then
+            if STtype == 0 then
+                local poiInfo = C_AreaPoiInfo.GetAreaPOIInfo(uiMapID, STtypeID)
+                if poiInfo then
+                    Debug:Info("ST", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
+                    Debug:Table("poiInfo", poiInfo)
+                    updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, mapPin, poiInfo.name, completed)
+                end
+            else
+                local x, y = WorldMapFrame:GetNormalizedCursorPosition()
+                if uiMapID and x and y then
+                    Debug:Info("AQ", uiMapID, x, y)
+                    updateQuest(mapPin, x, y, uiMapID, mapPin, nil, completed)
+                end
+            end
         end
     end
     setQuestsIcons()

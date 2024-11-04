@@ -1,4 +1,9 @@
-# v1.3.1 (4.10.2024)
+# 1.4.0-beta1 ()
+
+## New
+- Ability to track POI on worldmap (delves, quest offers, taxis ...)
+
+# v1.3.1 (30.10.2024)
 
 ## Fix
 - Some small fixes for TomTom integration
