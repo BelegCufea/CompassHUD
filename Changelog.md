@@ -1,7 +1,8 @@
-# 1.4.0-beta1 ()
+# 1.4.0 (6.11.2024)
 
 ## New
-- Ability to track POI on worldmap (delves, quest offers, taxis ...)
+- Ability to track POI on Worldmap (delves, quest offers, taxis ...)
+  - For some map pins (delves, cities ...) I was able to get precise coordinates. If I can't do that, I aproximate coordinates from cursor position in the moment of clicking the POI on WorldMap so they may be bit off.
 
 # v1.3.1 (30.10.2024)
 

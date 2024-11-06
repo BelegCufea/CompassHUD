@@ -30,15 +30,20 @@ local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
 local GetNextWaypoint = C_QuestLog.GetNextWaypoint
 local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
 local GetQuestAdditionalHighlights = C_QuestLog.GetQuestAdditionalHighlights
-local IsComplete = C_QuestLog.IsComplete
+local IsQuestComplete = C_QuestLog.IsComplete
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
+local IsTaskQuestActive = C_TaskQuest.IsActive
 local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
+local IsSuperTrackingMapPin = C_SuperTrack.IsSuperTrackingMapPin
+local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
+local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetClassColor = C_ClassColor.GetClassColor
+local GetAtlasInfo = C_Texture.GetAtlasInfo
 
 local Options
 local HUD
@@ -674,13 +679,13 @@ local function getPointerTextureByAtlasID(atlasID)
 end
 
 local function getAtlasTexture(atlasID)
-    local atlasInfo = C_Texture.GetAtlasInfo(atlasID)
+    local atlasInfo = GetAtlasInfo(atlasID)
     if not atlasInfo then return nil end
     return atlasInfo.file
 end
 
 local function getAtlasCoords(atlasID)
-    local atlasInfo = C_Texture.GetAtlasInfo(atlasID)
+    local atlasInfo = GetAtlasInfo(atlasID)
     if not atlasInfo then return {0,0,0,1,1,0,1,1} end
     return {
         atlasInfo.leftTexCoord,
@@ -2099,7 +2104,7 @@ Addon.Options = {
 }
 
 local function GetQuestPOIInfo(questID)
-    local completed = IsComplete(questID)
+    local completed = IsQuestComplete(questID)
 
     -- try to get waypoint
     local uiMapID, x, y = GetNextWaypoint(questID)
@@ -2549,9 +2554,9 @@ local function createQuestIcon(questID, questType)
 end
 
 local function setQuestsIcons()
-    local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() or C_SuperTrack.IsSuperTrackingMapPin()
+    local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() or IsSuperTrackingMapPin()
     local trackedQuest = GetSuperTrackedQuestID()
-    if trackedQuest and isTask(trackedQuest) and not C_TaskQuest.IsActive(trackedQuest) then
+    if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
         trackedQuest = 0
     end
 	for questID, quest in pairs(questPointsTable) do
@@ -2915,11 +2920,6 @@ local function OnEvent(event,...)
     local questID = GetSuperTrackedQuestID()
     local completed = false
     Debug:Info("questID", questID)
-    -- figure how to track Quest offers
-    local STtype, STtypeID = C_SuperTrack.GetSuperTrackedMapPin()
-    local uiMapID = WorldMapFrame:GetMapID()
-    if STtype then Debug:Info("ST type", STtype) end
-    if STtypeID then Debug:Info("ST type ID", STtypeID) end
     if questID and questID > 0 then
         local x, y, uiMapID
     	if isTask(questID)  then
@@ -2936,22 +2936,29 @@ local function OnEvent(event,...)
         if x and y and uiMapID then
             updateQuest(questID, x, y, uiMapID, 0, nil, completed)
         end
-    else
-        local point = GetUserWaypoint()
-        if IsSuperTrackingUserWaypoint() and point then
-            updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, nil, completed)
-        elseif C_SuperTrack.IsSuperTrackingMapPin() then
+    elseif event == "SUPER_TRACKING_CHANGED" then
+        if IsSuperTrackingUserWaypoint() then
+            local point = GetUserWaypoint()
+            if point then
+                updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, nil, completed)
+            end
+        end
+        if IsSuperTrackingMapPin() and WorldMapFrame:IsVisible() then
+            local uiMapID = WorldMapFrame:GetMapID()
+            local STtype, STtypeID = GetSuperTrackedMapPin()
+            local poiInfo
+
             if STtype == 0 then
-                local poiInfo = C_AreaPoiInfo.GetAreaPOIInfo(uiMapID, STtypeID)
-                if poiInfo then
-                    Debug:Info("ST", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
-                    Debug:Table("poiInfo", poiInfo)
-                    updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, mapPin, poiInfo.name, completed)
-                end
+                poiInfo = GetAreaPOIInfo(uiMapID, STtypeID)
+            end
+            if poiInfo then
+                Debug:Info("ST", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
+                Debug:Table("poiInfo", poiInfo)
+                updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, mapPin, poiInfo.name, completed)
             else
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
-                    Debug:Info("AQ", uiMapID, x, y)
+                    Debug:Info("AQ", uiMapID, x, y, STtypeID, STtype)
                     updateQuest(mapPin, x, y, uiMapID, mapPin, nil, completed)
                 end
             end
