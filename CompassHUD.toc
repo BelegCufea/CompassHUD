@@ -1,9 +1,21 @@
-## Interface: 110005
+## Interface: 110100
 ## Title: CompassHUD
 ## IconTexture: Interface\AddOns\CompassHUD\textures\icon
 ## Notes: Simple compass HUD
-## Version: 1.4.0
+## Version: 1.4.1
 ## Author: Cufea
+## Category: User Interface
+## Category-enUS: User Interface
+## Category-deDE: Benutzerinterface
+## Category-esES: Interfaz de usuario
+## Category-esMX: Interfaz de usuario
+## Category-frFR: Interface utilisateur
+## Category-itIT: Interfaccia utente
+## Category-koKR: 사용자 인터페이스
+## Category-ptBR: Interface do usuário
+## Category-ruRU: Интерфейс пользователя
+## Category-zhCN: 用户界面
+## Category-zhTW: 使用者介面
 ## SavedVariables: CompassHUDDB
 ## DefaultState: enabled
 ## X-Curse-Project-ID: 861865

@@ -1,8 +1,16 @@
+# 1.4.1 (21.3.2025)
+
+## New
+- Options to hide pointers to other continents (General tab, default true)
+
+## Misc
+- Added catrgory (User Interface) to TOC
+
 # 1.4.0 (6.11.2024)
 
 ## New
 - Ability to track POI on Worldmap (delves, quest offers, taxis ...)
-  - For some map pins (delves, cities ...) I was able to get precise coordinates. If I can't do that, I aproximate coordinates from cursor position in the moment of clicking the POI on WorldMap so they may be bit off.
+  - For some map pins (delves, cities ...) I was able to get precise coordinates. If I can't do that, I approximate coordinates from cursor position in the moment of clicking the POI on WorldMap so they may be bit off.
 
 # v1.3.1 (30.10.2024)
 

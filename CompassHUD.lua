@@ -547,6 +547,7 @@ Addon.Defaults = {
         LinePosition    = 0,
         LineColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         Visibility      = "[petbattle] hide; show",
+        HideFar         = true,
         HeadingEnabled         = false,
         HeadingDecimals        = 0,
         HeadingTrueNorth       = true,
@@ -817,6 +818,13 @@ Addon.Options = {
                             width = 1.5,
                             order = 60,
                             disabled = function() return not Addon.db.profile.PointerStay end,
+                        },
+                        HideFar = {
+                            type = "toggle",
+                            name = "Hide pointer to other continent",
+                            desc = "Hide pointers that are on other continents.",
+                            width = 1.5,
+                            order = 65,
                         },
                         BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
                         Scale = {
@@ -2556,11 +2564,12 @@ end
 local function setQuestsIcons()
     local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() or IsSuperTrackingMapPin()
     local trackedQuest = GetSuperTrackedQuestID()
+    local _, _, playerInstance = HBD:GetPlayerWorldPosition()
     if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
         trackedQuest = 0
     end
 	for questID, quest in pairs(questPointsTable) do
-		if (questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track) then
+		if (not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track)) then
 			local angle = getPlayerFacingAngle(questID)
 			if quest.frame and angle then
                 if Options.Pointers[quest.frame.pointerType].enabled then
