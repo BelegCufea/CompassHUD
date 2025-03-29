@@ -75,6 +75,7 @@ local adjCoord, currentFacing
 local questUnknown = -999
 local tomTom = -200
 local mapPin = -100
+local selectedPin = -110
 
 local defaultTexturePreset = "Classic"
 local texturePreset = defaultTexturePreset
@@ -197,6 +198,7 @@ local questPointers = {
 	[tomTom] =  "TomTom",
 	[questUnknown] = "Unknown pointer",
     [mapPin] = "User map pin",
+    [selectedPin] = "POI map pin",
 	[Enum.QuestClassification.Important] = "Important",
 	[Enum.QuestClassification.Legendary] = "Legendary",
 	[Enum.QuestClassification.Campaign] = "Campaign",
@@ -235,6 +237,10 @@ local texturePresets = {
             textureScaleAvailable = 0.8,
         },
         [mapPin] = {
+            atlasIDavailable = "Waypoint-MapPin-Minimap-Tracked",
+            atlasNameAvailable = "User pin",
+        },
+        [selectedPin] = {
             atlasIDavailable = "Waypoint-MapPin-Minimap-Tracked",
             atlasNameAvailable = "User pin",
         },
@@ -2845,7 +2851,7 @@ end
 local function updatePointerTextures()
     for _, v in pairs(questPointsTable) do
         local options = Options.Pointers[v.frame.pointerType]
-        v.frame.texture:SetAtlas(v.completed and options.atlasAltID or options.atlasID)
+        v.frame.texture:SetAtlas(options.worldmapTexture and v.atlasName and v.atlasName or v.completed and options.atlasAltID or options.atlasID)
     end
 end
 
@@ -2876,7 +2882,7 @@ local function createHUD()
     end)
 end
 
-local function updateQuest(questID, x, y, uiMapID, questType, title, completed)
+local function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName)
     if type(questPointsTable[questID]) ~= "table" then
         questPointsTable[questID] = {}
     end
@@ -2888,12 +2894,13 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed)
     questPointsTable[questID].instance = instance
     questPointsTable[questID].text = title
     questPointsTable[questID].completed = completed
+    questPointsTable[questID].atlasName = atlasName
     if not questPointsTable[questID].frame then
         questPointsTable[questID].frame = createQuestIcon(questID, questType)
     end
     questPointsTable[questID].frame.QuestText:SetText(title)
     local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
-    questPointsTable[questID].frame.texture:SetAtlas(completed and options.atlasAltID or options.atlasID)
+    questPointsTable[questID].frame.texture:SetAtlas(options.worldmapTexture and atlasName and atlasName or completed and options.atlasAltID or options.atlasID)
     updateQuestIcon(questPointsTable[questID].frame)
 end
 
@@ -2963,12 +2970,12 @@ local function OnEvent(event,...)
             if poiInfo then
                 Debug:Info("ST", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
                 Debug:Table("poiInfo", poiInfo)
-                updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, mapPin, poiInfo.name, completed)
+                updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName)
             else
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
                     Debug:Info("AQ", uiMapID, x, y, STtypeID, STtype)
-                    updateQuest(mapPin, x, y, uiMapID, mapPin, nil, completed)
+                    updateQuest(mapPin, x, y, uiMapID, selectedPin, nil, completed)
                 end
             end
         end
@@ -3028,7 +3035,7 @@ function Addon:CopyPointerSettings(from, to, what)
     local dialog = StaticPopupDialogs[copyPointersDialogName]
     dialog.OnAccept =  function ()
         for k, v in pairs(Addon.db.profile.Pointers[from]) do
-            if k ~= "name" and k ~= "value" and k ~= "enabled" and optionNames[k] then
+            if k ~= "name" and k ~= "value" and k ~= "enabled" and k ~= "worldmapTexture" and optionNames[k] then
                 Addon.db.profile.Pointers[to][k] = v
             end
         end
@@ -3309,6 +3316,9 @@ function Addon:ConstructDefaultsAndOptions()
         pointersDefaults[questPointerIdent .. k].textureAltRotate = (preset.textureRotateTurnin and 1) or (reference and reference.textureRoteteTurnin and 1) or (reference and reference.textureRotateAvailable and 1) or (preset.textureRotateAvailable and 1) or 0
         pointersDefaults[questPointerIdent .. k].pointerOffset = (v == "TomTom") and -1.1 or 1
         pointersDefaults[questPointerIdent .. k].enabled = true
+        if k == selectedPin then
+            pointersDefaults[questPointerIdent .. k].worldmapTexture = true
+        end
         pointersDefaults[questPointerIdent .. k].showDistance = true
         pointersDefaults[questPointerIdent .. k].showTTA = true
         pointersDefaults[questPointerIdent .. k].showQuest = true
@@ -3371,6 +3381,13 @@ function Addon:ConstructDefaultsAndOptions()
             order = 0,
             name = "Enable pointer",
         }
+        if k == selectedPin then
+            pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
+                type = "toggle",
+                order = 5,
+                name = "Use worldmap texture",
+            }
+        end
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.copyFrom = {
             type = "select",
             order = 10,

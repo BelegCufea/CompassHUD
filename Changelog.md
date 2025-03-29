@@ -1,10 +1,19 @@
+# 1.4.2 (29.3.2025)
+
+## New
+- World map POIs (delves, cities, etc.) now have their own preset category, `POI map pin` on the `Pointers` tab. By default, the pointer texture matches the world map texture. If no texture is found, it will fall back to the selected default.
+
+  If you prefer a unified pointer for all POIs, you can disable the `Use worldmap texture` option in the `POI map pin` category.
+
+  ![POI texture](https://i.imgur.com/yef5Ziy.png)
+
 # 1.4.1 (21.3.2025)
 
 ## New
 - Options to hide pointers to other continents (General tab, default true)
 
 ## Misc
-- Added catrgory (User Interface) to TOC
+- Added category (User Interface) to TOC
 
 # 1.4.0 (6.11.2024)
 
