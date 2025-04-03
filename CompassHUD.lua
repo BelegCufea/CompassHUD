@@ -44,6 +44,7 @@ local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
+local GetTaxiNodesForMap = C_TaxiMap.GetTaxiNodesForMap
 
 local Options
 local HUD
@@ -2964,8 +2965,22 @@ local function OnEvent(event,...)
             local STtype, STtypeID = GetSuperTrackedMapPin()
             local poiInfo
 
+            -- POI
             if STtype == 0 then
                 poiInfo = GetAreaPOIInfo(uiMapID, STtypeID)
+            end
+
+            -- Taxi
+            if STtype == 2 then
+                local taxis = GetTaxiNodesForMap(uiMapID)
+                if taxis then
+                    for _,v in pairs(taxis) do
+                        if v.nodeID == STtypeID then
+                            poiInfo = v
+                            break
+                        end
+                    end
+                end
             end
             if poiInfo then
                 Debug:Info("ST", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
