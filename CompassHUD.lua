@@ -2964,10 +2964,16 @@ local function OnEvent(event,...)
             local uiMapID = WorldMapFrame:GetMapID()
             local STtype, STtypeID = GetSuperTrackedMapPin()
             local poiInfo
+            local title
 
             -- POI
             if STtype == 0 then
                 poiInfo = GetAreaPOIInfo(uiMapID, STtypeID)
+            end
+
+            -- Offer
+            if STtype == 1 then
+                title = GetTitleForQuestID(STtypeID)
             end
 
             -- Taxi
@@ -2990,7 +2996,7 @@ local function OnEvent(event,...)
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
                     Debug:Info("AQ", uiMapID, x, y, STtypeID, STtype)
-                    updateQuest(mapPin, x, y, uiMapID, selectedPin, nil, completed)
+                    updateQuest(mapPin, x, y, uiMapID, selectedPin, title, completed)
                 end
             end
         end
