@@ -41,6 +41,7 @@ local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
 local IsSuperTrackingMapPin = C_SuperTrack.IsSuperTrackingMapPin
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
+local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
@@ -2569,7 +2570,7 @@ local function createQuestIcon(questID, questType)
 end
 
 local function setQuestsIcons()
-    local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() or IsSuperTrackingMapPin()
+    local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() or IsSuperTrackingMapPin() or GetSuperTrackedVignette() ~= nil
     local trackedQuest = GetSuperTrackedQuestID()
     local _, _, playerInstance = HBD:GetPlayerWorldPosition()
     if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
@@ -2989,14 +2990,30 @@ local function OnEvent(event,...)
                 end
             end
             if poiInfo then
-                Debug:Info("ST", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
+                Debug:Info("POI", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
                 Debug:Table("poiInfo", poiInfo)
                 updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName)
             else
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
-                    Debug:Info("AQ", uiMapID, x, y, STtypeID, STtype)
+                    Debug:Info("Unknown POI", uiMapID, x, y, STtypeID, STtype)
                     updateQuest(mapPin, x, y, uiMapID, selectedPin, title, completed)
+                end
+            end
+        end
+        local vignetteGUID = GetSuperTrackedVignette()
+        if vignetteGUID and WorldMapFrame:IsVisible() then
+            if vignetteGUID then
+                local uiMapID = WorldMapFrame:GetMapID()
+                local vignettePosition = C_VignetteInfo.GetVignettePosition(vignetteGUID, uiMapID)
+                local vignetteInfo = C_VignetteInfo.GetVignetteInfo(vignetteGUID)
+                if vignettePosition and vignetteInfo then
+                    Debug:Table("vignetteInfo", vignetteInfo)
+                    local x, y = vignettePosition:GetXY()
+                    Debug:Info("Vignette", uiMapID, x, y, vignetteInfo.name)
+                    if x and y then
+                        updateQuest(mapPin, x, y, uiMapID, selectedPin, vignetteInfo.name, false, vignetteInfo.atlasName)
+                    end
                 end
             end
         end

@@ -3,6 +3,7 @@
 ## New
 - World map POIs for Taxi locations are now recognized, with proper coordinates, titles, and textures applied.
 - World map POIs for Quest offers now display their titles if available (still working on finding the correct coordinates).
+- World map vignettes (scrap piles, world bosses ...) are not trackable as POIs.
 
 # 1.4.2 (29.3.2025)
 
