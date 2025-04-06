@@ -2,8 +2,10 @@
 
 ## New
 - World map POIs for Taxi locations are now recognized, with proper coordinates, titles, and textures applied.
-- World map POIs for Quest offers now display their titles if available (still working on finding the correct coordinates).
-- World map vignettes (scrap piles, world bosses ...) are not trackable as POIs.
+- World map POIs for Quest offers now display their titles if available (still working on retrieving accurate coordinates).
+- World map vignettes (e.g., scrap piles, world bosses, etc.) are now trackable as POIs.
+- World Quests now support textures from the [World Quest Tracker](https://www.curseforge.com/wow/addons/world-quest-tracker) addon.
+If you prefer a unified pointer for all world quests, you can disable the `Use WQT texture` option in the `WorldQuests` category on the `Pointers` tab.
 
 # 1.4.2 (29.3.2025)
 

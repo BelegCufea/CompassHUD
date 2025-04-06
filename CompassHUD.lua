@@ -2853,7 +2853,11 @@ end
 local function updatePointerTextures()
     for _, v in pairs(questPointsTable) do
         local options = Options.Pointers[v.frame.pointerType]
-        v.frame.texture:SetAtlas(options.worldmapTexture and v.atlasName and v.atlasName or v.completed and options.atlasAltID or options.atlasID)
+        if v.texture and options.worldmapTexture then
+            v.frame.texture:SetTexture(v.texture)
+        else
+            v.frame.texture:SetAtlas(options.worldmapTexture and v.atlasName and v.atlasName or v.completed and options.atlasAltID or options.atlasID)
+        end
     end
 end
 
@@ -2897,12 +2901,25 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     questPointsTable[questID].text = title
     questPointsTable[questID].completed = completed
     questPointsTable[questID].atlasName = atlasName
+    questPointsTable[questID].texture = nil
+    if WorldQuestTrackerAddon and WorldQuestTrackerAddon.QuestData_World then
+        local _, _, _, _, _, _, _, _, _, gold, _, _, rewardTexture, _, _, itemTexture = WorldQuestTrackerAddon.GetOrLoadQuestData(questID, false)
+        if gold > 0 then
+            questPointsTable[questID].texture = WorldQuestTrackerAddon.GetGoldIcon()
+        else
+            questPointsTable[questID].texture = itemTexture or rewardTexture
+        end
+     end
     if not questPointsTable[questID].frame then
         questPointsTable[questID].frame = createQuestIcon(questID, questType)
     end
     questPointsTable[questID].frame.QuestText:SetText(title)
     local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
-    questPointsTable[questID].frame.texture:SetAtlas(options.worldmapTexture and atlasName and atlasName or completed and options.atlasAltID or options.atlasID)
+    if questPointsTable[questID].texture and options.worldmapTexture then
+        questPointsTable[questID].frame.texture:SetTexture(questPointsTable[questID].texture)
+    else
+        questPointsTable[questID].frame.texture:SetAtlas(options.worldmapTexture and atlasName and atlasName or completed and options.atlasAltID or options.atlasID)
+    end
     updateQuestIcon(questPointsTable[questID].frame)
 end
 
@@ -3357,6 +3374,9 @@ function Addon:ConstructDefaultsAndOptions()
         if k == selectedPin then
             pointersDefaults[questPointerIdent .. k].worldmapTexture = true
         end
+        if k == Enum.QuestClassification.WorldQuest then
+            pointersDefaults[questPointerIdent .. k].worldmapTexture = true
+        end
         pointersDefaults[questPointerIdent .. k].showDistance = true
         pointersDefaults[questPointerIdent .. k].showTTA = true
         pointersDefaults[questPointerIdent .. k].showQuest = true
@@ -3424,6 +3444,14 @@ function Addon:ConstructDefaultsAndOptions()
                 type = "toggle",
                 order = 5,
                 name = "Use worldmap texture",
+            }
+        end
+        if k == Enum.QuestClassification.WorldQuest and WorldQuestTrackerAddon then
+            pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
+                type = "toggle",
+                order = 5,
+                name = "Use WQT texture",
+                desc = "Try to use texture from World Quest Tracker addon"
             }
         end
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.copyFrom = {
