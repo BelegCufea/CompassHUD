@@ -57,13 +57,8 @@ Locate the `CompassHUD` section within the `Options` -> `Addon` section.
 *picking from texture presets*
 ![PointerPresets](https://i.imgur.com/SghnLjp.png)
 
-## Known bugs
-
-*None as far as I know*
-
 ### TODO (maybe, if there is a demand)
 
-- Marker for "Quest Offers" (if it is even possible)
 - More textures
     - *You can use your own. It has to be 2048x16, has 720 degrees starting from N and be in BLP or TGA fromat (look at `CompassHUD.tga` at Media folder). Just put it somewhere in Interface\Addons folder (don't put it in any addon folder as it may be deleted when updating that addon) in SavedVariables put* `CompassTextureTexture = [[Interface\Addons\]] .. {your texture name},` *just after line* `["PositionX"]` ... *of your profile.*
 

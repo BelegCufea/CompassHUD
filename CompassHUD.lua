@@ -245,6 +245,7 @@ local texturePresets = {
         [selectedPin] = {
             atlasIDavailable = "Waypoint-MapPin-Minimap-Tracked",
             atlasNameAvailable = "User pin",
+            textureScaleAvailable = 1.20,
         },
         [Enum.QuestClassification.Important] = {
             reference = Enum.QuestClassification.Normal,
@@ -2449,7 +2450,7 @@ local function updateQuestIcon(questPointer)
     local options = Options.Pointers[questPointer.pointerType]
     local completed = questPointsTable[questPointer.questID].completed
     questPointer.position = options.pointerOffset * textureHeight * -1
-    local size = textureHeight * 1.5 * (completed and options.textureAltScale or options.textureScale)
+    local size = textureHeight * (completed and options.textureAltScale or options.textureScale) * (questPointer.scaleMultiplier or 1.5)
     questPointer:SetSize(size, size)
 
     local gameFontNormal = { fontColor = {}}
@@ -2590,9 +2591,9 @@ local function setQuestsIcons()
                     elseif Options.PointerStay then
                         local side = math.abs(angle)/angle
                         local option = Options.Pointers[quest.frame.pointerType]
-                        if (quest.completed and (option.textureAltRotate == 1)) or (not quest.completed and (option.textureRotate == 1)) then
-                            pointerRotate = PI/2 * side * ((quest.frame.flipped and 1) or -1)
-                        elseif (quest.completed and (option.textureAltRotate ~= 1)) or (not quest.completed and (option.textureRotate ~= 1)) and Options.StayArrow then
+                        if (quest.completed and (option.textureAltRotate == 1)) or (not quest.completed and (option.textureRotate == 1)) and not quest.overrideRotation then
+                            pointerRotate = (PI/2 * side * ((quest.frame.flipped and 1) or -1))
+                        elseif ((quest.completed and (option.textureAltRotate ~= 1)) or (not quest.completed and (option.textureRotate ~= 1)) or quest.overrideRotation) and Options.StayArrow then
                             local width, height = quest.frame.texture:GetSize()
                             quest.frame.arrowTexture:ClearAllPoints()
                             quest.frame.arrowTexture:SetPoint("CENTER", quest.frame, "CENTER", side * width * 0.75, 0)
@@ -2888,7 +2889,7 @@ local function createHUD()
     end)
 end
 
-local function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName)
+local function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName, texture)
     if type(questPointsTable[questID]) ~= "table" then
         questPointsTable[questID] = {}
     end
@@ -2901,7 +2902,8 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     questPointsTable[questID].text = title
     questPointsTable[questID].completed = completed
     questPointsTable[questID].atlasName = atlasName
-    questPointsTable[questID].texture = nil
+    questPointsTable[questID].texture = texture
+    questPointsTable[questID].overrideRotation = false
     if WorldQuestTrackerAddon and WorldQuestTrackerAddon.QuestData_World then
         local _, _, _, _, _, _, _, _, _, gold, _, _, rewardTexture, _, _, itemTexture = WorldQuestTrackerAddon.GetOrLoadQuestData(questID, false)
         if gold > 0 then
@@ -2909,16 +2911,23 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
         else
             questPointsTable[questID].texture = itemTexture or rewardTexture
         end
-     end
+    end
     if not questPointsTable[questID].frame then
         questPointsTable[questID].frame = createQuestIcon(questID, questType)
     end
+    questPointsTable[questID].frame.scaleMultiplier = 1.5
     questPointsTable[questID].frame.QuestText:SetText(title)
     local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
     if questPointsTable[questID].texture and options.worldmapTexture then
         questPointsTable[questID].frame.texture:SetTexture(questPointsTable[questID].texture)
+        questPointsTable[questID].overrideRotation = true
+        questPointsTable[questID].frame.scaleMultiplier = 1
+    elseif questPointsTable[questID].atlasName and options.worldmapTexture then
+        questPointsTable[questID].frame.texture:SetAtlas(questPointsTable[questID].atlasName)
+        questPointsTable[questID].overrideRotation = true
+        questPointsTable[questID].frame.scaleMultiplier = 1
     else
-        questPointsTable[questID].frame.texture:SetAtlas(options.worldmapTexture and atlasName and atlasName or completed and options.atlasAltID or options.atlasID)
+        questPointsTable[questID].frame.texture:SetAtlas(completed and options.atlasAltID or options.atlasID)
     end
     updateQuestIcon(questPointsTable[questID].frame)
 end
