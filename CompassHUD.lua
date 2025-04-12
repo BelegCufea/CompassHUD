@@ -2451,7 +2451,8 @@ end
 local function updateQuestIcon(questPointer)
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
-    local completed = questPointsTable[questPointer.questID].completed
+    local pointer = questPointsTable[questPointer.questID]
+    local completed = pointer.completed
     questPointer.position = options.pointerOffset * textureHeight * -1
     local size = textureHeight * (completed and options.textureAltScale or options.textureScale) * (questPointer.scaleMultiplier or 1.5)
     questPointer:SetSize(size, size)
@@ -2490,18 +2491,19 @@ local function updateQuestIcon(questPointer)
     local distanceTextPosition = -options.distanceOffset + 2
     local timeTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2 * scale)) or 0) - options.ttaOffset + 2
     local questTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2 * scale)) or 0) - ((options.showTTA and (options.ttaFontSize * 1.2 * scale)) or 0) - options.questOffset + 4
-    questPointer.texture:SetTexCoord(0, 1, 0, 1)
+    local cropX, cropY = pointer.crop / textureHeight, pointer.crop / textureHeight
+    questPointer.texture:SetTexCoord(cropX, 1 - cropX, cropY, 1 - cropY)
     questPointer.flipped = false
     if questPointer.position > 0 then
         questPointer.flipped = true
         if (completed and (options.textureAltRotate == 1)) or (not completed and (options.textureRotate == 1)) then
-            questPointer.texture:SetTexCoord(0, 1, 1, 0)
+            questPointer.texture:SetTexCoord(cropX, 1 - cropX, 1 - cropY, cropY)
         end
         point = "BOTTOM"
         relativePoint = "TOP"
         distanceTextPosition = ((options.showTTA and (options.ttaFontSize * 1.2 * scale)) or 0) + options.distanceOffset - 12
         timeTextPosition = options.ttaOffset - 12
-        local questText = questPointsTable[questPointer.questID].text
+        local questText = pointer.text
         if questText and questText:match("%S") and options.showQuest then
             questTextPosition = options.questOffset - 6
             timeTextPosition = timeTextPosition + (options.questFontSize * 1.2 * scale)
@@ -2586,7 +2588,6 @@ local function setQuestsIcons()
         if quest.moreArgs and quest.moreArgs.vignetteGUID and quest.moreArgs.vignetteGUID == vignetteGUID and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
             questHide = true
         end
-        Debug:Table("setQuestIcons", quest)
 		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track))) then
 			local angle = getPlayerFacingAngle(questID)
 			if quest.frame and angle then
@@ -2914,12 +2915,14 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     questPointsTable[questID].texture = texture
     questPointsTable[questID].moreArgs = moreArgs
     questPointsTable[questID].overrideRotation = false
+    questPointsTable[questID].crop = 0
     if WorldQuestTrackerAddon and WorldQuestTrackerAddon.QuestData_World then
         local _, _, _, _, _, _, _, _, _, gold, _, _, rewardTexture, _, _, itemTexture = WorldQuestTrackerAddon.GetOrLoadQuestData(questID, false)
         if gold > 0 then
             questPointsTable[questID].texture = WorldQuestTrackerAddon.GetGoldIcon()
         else
             questPointsTable[questID].texture = itemTexture or rewardTexture
+            questPointsTable[questID].crop = 2
         end
     end
     if not questPointsTable[questID].frame then
