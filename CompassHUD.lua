@@ -2399,6 +2399,9 @@ local function questPointerSetTexts(frame, dt)
         frame:Hide()
         return
     end
+    if not frame.minDistance or frame.minDistance > frame.distance then
+        frame.minDistance = frame.distance
+    end
     frame:Show()
     frame.DistanceText:SetText(BreakUpLargeNumbers(frame.distance))
     frame.elapsed = frame.elapsed + dt
@@ -2571,6 +2574,7 @@ local function createQuestIcon(questID, questType)
 end
 
 local function setQuestsIcons()
+    local vignetteGUID = GetSuperTrackedVignette()
     local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() or IsSuperTrackingMapPin() or GetSuperTrackedVignette() ~= nil
     local trackedQuest = GetSuperTrackedQuestID()
     local _, _, playerInstance = HBD:GetPlayerWorldPosition()
@@ -2578,7 +2582,12 @@ local function setQuestsIcons()
         trackedQuest = 0
     end
 	for questID, quest in pairs(questPointsTable) do
-		if (not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track)) then
+        local questHide = false
+        if quest.moreArgs and quest.moreArgs.vignetteGUID and quest.moreArgs.vignetteGUID == vignetteGUID and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
+            questHide = true
+        end
+        Debug:Table("setQuestIcons", quest)
+		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track))) then
 			local angle = getPlayerFacingAngle(questID)
 			if quest.frame and angle then
                 if Options.Pointers[quest.frame.pointerType].enabled then
@@ -2889,7 +2898,7 @@ local function createHUD()
     end)
 end
 
-local function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName, texture)
+local function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName, texture, moreArgs)
     if type(questPointsTable[questID]) ~= "table" then
         questPointsTable[questID] = {}
     end
@@ -2903,6 +2912,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     questPointsTable[questID].completed = completed
     questPointsTable[questID].atlasName = atlasName
     questPointsTable[questID].texture = texture
+    questPointsTable[questID].moreArgs = moreArgs
     questPointsTable[questID].overrideRotation = false
     if WorldQuestTrackerAddon and WorldQuestTrackerAddon.QuestData_World then
         local _, _, _, _, _, _, _, _, _, gold, _, _, rewardTexture, _, _, itemTexture = WorldQuestTrackerAddon.GetOrLoadQuestData(questID, false)
@@ -3038,7 +3048,7 @@ local function OnEvent(event,...)
                     local x, y = vignettePosition:GetXY()
                     Debug:Info("Vignette", uiMapID, x, y, vignetteInfo.name)
                     if x and y then
-                        updateQuest(mapPin, x, y, uiMapID, selectedPin, vignetteInfo.name, false, vignetteInfo.atlasName)
+                        updateQuest(mapPin, x, y, uiMapID, selectedPin, vignetteInfo.name, false, vignetteInfo.atlasName, nil, vignetteInfo)
                     end
                 end
             end

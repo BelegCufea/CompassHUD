@@ -1,3 +1,8 @@
+# 1.4.3a ()
+
+## Fix
+- Hide pointers for world map vignettes when you arive at destination
+
 # 1.4.3 (8.4.2025)
 
 ## New
