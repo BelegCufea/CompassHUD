@@ -2425,18 +2425,23 @@ local function questPointerSetTexts(frame, dt)
     end
 end
 
-local function getPointerType(questID, questType)
-    local index = questType or questUnknown
+local function getPointerCategory(questID, questType)
+    local category = questType or questUnknown
     if questType < 0 then
-        return questPointerIdent .. index
+        return questPointers[category] and category or questUnknown
     end
-    local questClassification = GetQuestClassification(questID) or questUnknown
-    if questClassification == Enum.QuestClassification.Recurring then
+    category = GetQuestClassification(questID) or questUnknown
+    if category == Enum.QuestClassification.Recurring then
         local questIndex = GetLogIndexForQuestID(questID)
-        if not questIndex then return questPointerIdent .. questUnknown end
+        if not questIndex then return questUnknown end
         local questInfo = GetQuestInfo(questIndex)
-        questClassification = (questInfo and questInfo.frequency + 100) or questClassification
+        category = (questInfo and questInfo.frequency + 100) or category
     end
+    return category
+end
+
+local function getPointerType(questID, questType)
+    local questClassification = getPointerCategory(questID, questType)
     Debug:Info("Classification", questPointers[questClassification] and questClassification or "Unknown")
     return questPointerIdent .. (questPointers[questClassification] and questClassification or questUnknown)
 end
@@ -2607,8 +2612,9 @@ local function setQuestsIcons()
                             pointerRotate = (PI/2 * side * ((quest.frame.flipped and 1) or -1))
                         elseif ((quest.completed and (option.textureAltRotate ~= 1)) or (not quest.completed and (option.textureRotate ~= 1)) or quest.overrideRotation) and Options.StayArrow then
                             local width, height = quest.frame.texture:GetSize()
+                            local offsetX = side * (width * 0.75 + 3)
                             quest.frame.arrowTexture:ClearAllPoints()
-                            quest.frame.arrowTexture:SetPoint("CENTER", quest.frame, "CENTER", side * width * 0.75, 0)
+                            quest.frame.arrowTexture:SetPoint("CENTER", quest.frame, "CENTER", offsetX, 0)
                             quest.frame.arrowTexture:SetSize(width, height)
                             quest.frame.arrowTexture:SetScale(0.75)
                             quest.frame.arrowTexture:SetRotation(PI/2 * side * -1)
@@ -2918,15 +2924,22 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     questPointsTable[questID].moreArgs = moreArgs
     questPointsTable[questID].overrideRotation = false
     questPointsTable[questID].crop = 0
-    if WorldQuestTrackerAddon and WorldQuestTrackerAddon.QuestData_World then
-        local _, _, _, _, _, _, _, _, _, gold, _, _, rewardTexture, _, _, itemTexture = WorldQuestTrackerAddon.GetOrLoadQuestData(questID, false)
+    questPointsTable[questID].category = getPointerCategory(questID, questType)
+
+
+    if questPointsTable[questID].category == Enum.QuestClassification.WorldQuest then
+        C_TaskQuest.RequestPreloadRewardData(questID)
+        local reward = C_QuestLog.GetQuestRewardCurrencyInfo(questID, 1, false)
+        local _, itemTexture = GetQuestLogRewardInfo(1, questID)
+        local gold = GetQuestLogRewardMoney(questID)
         if gold > 0 then
-            questPointsTable[questID].texture = WorldQuestTrackerAddon.GetGoldIcon()
+            questPointsTable[questID].texture = [[Interface\Icons\INV_Misc_Coin_02]]
         else
-            questPointsTable[questID].texture = itemTexture or rewardTexture
-            questPointsTable[questID].crop = 2
+            questPointsTable[questID].texture = itemTexture or (reward and reward.texture)
         end
+        questPointsTable[questID].crop = 2
     end
+
     if not questPointsTable[questID].frame then
         questPointsTable[questID].frame = createQuestIcon(questID, questType)
     end
@@ -3472,12 +3485,11 @@ function Addon:ConstructDefaultsAndOptions()
                 name = "Use worldmap texture",
             }
         end
-        if k == Enum.QuestClassification.WorldQuest and WorldQuestTrackerAddon then
+        if k == Enum.QuestClassification.WorldQuest then
             pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
                 type = "toggle",
                 order = 5,
-                name = "Use WQT texture",
-                desc = "Try to use texture from World Quest Tracker addon"
+                name = "Use reward texture"
             }
         end
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.copyFrom = {

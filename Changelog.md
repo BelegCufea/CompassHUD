@@ -1,8 +1,11 @@
-# 1.4.3a ()
+# 1.4.4 ()
+
+## New
+- World quest textures no longer require the [World Quest Tracker](https://www.curseforge.com/wow/addons/world-quest-tracker) addon. The `Use WQT texture` option has been renamed to `Use reward texture` and it can be toggled in the `WorldQuests` category under the `Pointers` tab (enabled by default). The textures used should match or closely resemble those from WQT.
 
 ## Fix
 - Hide pointers for world map vignettes when you arive at destination
-- Cleaned [World Quest Tracker](https://www.curseforge.com/wow/addons/world-quest-tracker) textures for world quests
+- Nudged pointing arrows (left/right) a bit when not using `Edge rotation`
 
 # 1.4.3 (8.4.2025)
 
