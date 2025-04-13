@@ -38,10 +38,10 @@ local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
-local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
-local IsSuperTrackingMapPin = C_SuperTrack.IsSuperTrackingMapPin
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
+local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
+local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
@@ -2577,7 +2577,8 @@ end
 
 local function setQuestsIcons()
     local vignetteGUID = GetSuperTrackedVignette()
-    local isTrackingUserWaypoint = IsSuperTrackingUserWaypoint() or IsSuperTrackingMapPin() or GetSuperTrackedVignette() ~= nil
+    local trackingTypes = {[Enum.SuperTrackingType.UserWaypoint] = true, [Enum.SuperTrackingType.MapPin] = true, [Enum.SuperTrackingType.Vignette] = true}
+    local isTrackingUserWaypoint = trackingTypes[GetHighestPrioritySuperTrackingType()]
     local trackedQuest = GetSuperTrackedQuestID()
     local _, _, playerInstance = HBD:GetPlayerWorldPosition()
     if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
@@ -2587,6 +2588,7 @@ local function setQuestsIcons()
         local questHide = false
         if quest.moreArgs and quest.moreArgs.vignetteGUID and quest.moreArgs.vignetteGUID == vignetteGUID and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
             questHide = true
+            ClearAllSuperTracked()
         end
 		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track))) then
 			local angle = getPlayerFacingAngle(questID)
@@ -2929,6 +2931,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
         questPointsTable[questID].frame = createQuestIcon(questID, questType)
     end
     questPointsTable[questID].frame.scaleMultiplier = 1.5
+    questPointsTable[questID].frame.minDistance = nil
     questPointsTable[questID].frame.QuestText:SetText(title)
     local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
     if questPointsTable[questID].texture and options.worldmapTexture then
@@ -2994,13 +2997,14 @@ local function OnEvent(event,...)
             updateQuest(questID, x, y, uiMapID, 0, nil, completed)
         end
     elseif event == "SUPER_TRACKING_CHANGED" then
-        if IsSuperTrackingUserWaypoint() then
+        local superTrackingType = GetHighestPrioritySuperTrackingType()
+        if superTrackingType == Enum.SuperTrackingType.UserWaypoint then
             local point = GetUserWaypoint()
             if point then
                 updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, nil, completed)
             end
         end
-        if IsSuperTrackingMapPin() and WorldMapFrame:IsVisible() then
+        if superTrackingType == Enum.SuperTrackingType.MapPin and WorldMapFrame:IsVisible() then
             local uiMapID = WorldMapFrame:GetMapID()
             local STtype, STtypeID = GetSuperTrackedMapPin()
             local poiInfo
@@ -3040,8 +3044,8 @@ local function OnEvent(event,...)
                 end
             end
         end
-        local vignetteGUID = GetSuperTrackedVignette()
-        if vignetteGUID and WorldMapFrame:IsVisible() then
+        if superTrackingType == Enum.SuperTrackingType.Vignette and WorldMapFrame:IsVisible() then
+            local vignetteGUID = GetSuperTrackedVignette()
             if vignetteGUID then
                 local uiMapID = WorldMapFrame:GetMapID()
                 local vignettePosition = C_VignetteInfo.GetVignettePosition(vignetteGUID, uiMapID)

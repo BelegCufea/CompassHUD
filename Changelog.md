@@ -2,6 +2,7 @@
 
 ## Fix
 - Hide pointers for world map vignettes when you arive at destination
+- Cleaned [World Quest Tracker](https://www.curseforge.com/wow/addons/world-quest-tracker) textures for world quests
 
 # 1.4.3 (8.4.2025)
 
