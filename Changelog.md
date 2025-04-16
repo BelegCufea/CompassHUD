@@ -1,4 +1,4 @@
-# 1.4.4 ()
+# 1.4.4 (16.4.2025)
 
 ## New
 - World quest textures no longer require the [World Quest Tracker](https://www.curseforge.com/wow/addons/world-quest-tracker) addon. The `Use WQT texture` option has been renamed to `Use reward texture` and it can be toggled in the `WorldQuests` category under the `Pointers` tab (enabled by default). The textures used should match or closely resemble those from WQT.
