@@ -94,7 +94,8 @@
         "UNKNOWN",
         "TEXT_TO_SPEECH_SAMPLE_TEXT",
         "SuperTrackedFrame",
-        "WorldFrame"
+        "WorldFrame",
+        "Lerp"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
@@ -109,10 +110,7 @@
         "utf8": "disable"
     },
     "Lua.workspace.library": [
-        "~\\.vscode\\extensions\\ketho.wow-api-0.20.1\\Annotations\\Core",
-        "~\\.vscode\\extensions\\ketho.wow-api-0.20.1\\Annotations\\Libraries",
-        "~\\.vscode\\extensions\\ketho.wow-api-0.20.1\\Annotations\\Lua",
-        "~\\.vscode\\extensions\\ketho.wow-api-0.20.1\\Annotations\\FrameXML\\Manual"
+        "~\\.vscode\\extensions\\ketho.wow-api-0.20.6\\Annotations\\Core"
     ],
     "Lua.type.weakUnionCheck": true
 }

@@ -1,3 +1,10 @@
+# v1.4.5 ()
+
+## New
+- Added a new option (disabled by default) to use map-suggested transitions (such as portals or entrances) when the tracked quest or map pin is located on a different map. Enable this feature via the `Use map transition for pointers` checkbox on the `General` tab.
+
+  ![Map transition](https://i.imgur.com/3k87nBR.png)
+
 # 1.4.4 (16.4.2025)
 
 ## New

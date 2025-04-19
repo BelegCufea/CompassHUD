@@ -31,21 +31,27 @@ local GetNextWaypoint = C_QuestLog.GetNextWaypoint
 local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
 local GetQuestAdditionalHighlights = C_QuestLog.GetQuestAdditionalHighlights
 local IsQuestComplete = C_QuestLog.IsComplete
+local GetQuestRewardCurrencyInfo = C_QuestLog.GetQuestRewardCurrencyInfo
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
 local IsTaskQuestActive = C_TaskQuest.IsActive
+local RequestPreloadRewardData = C_TaskQuest.RequestPreloadRewardData
 local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
+local GetBestMapForUnit = C_Map.GetBestMapForUnit
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
 local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
 local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
+local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
 local GetTaxiNodesForMap = C_TaxiMap.GetTaxiNodesForMap
+local GetVignettePosition = C_VignetteInfo.GetVignettePosition
+local GetVignetteInfo = C_VignetteInfo.GetVignetteInfo
 
 local Options
 local HUD
@@ -557,6 +563,7 @@ Addon.Defaults = {
         LineColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         Visibility      = "[petbattle] hide; show",
         HideFar         = true,
+        UseCurrentMap   = false,
         HeadingEnabled         = false,
         HeadingDecimals        = 0,
         HeadingTrueNorth       = true,
@@ -834,6 +841,13 @@ Addon.Options = {
                             desc = "Hide pointers that are on other continents.",
                             width = 1.5,
                             order = 65,
+                        },
+                        UseCurrentMap = {
+                            type = "toggle",
+                            name = "Use map transition for pointers",
+                            desc = "If the tracked quest or map pin is located on a different map, the pointer will attempt to use map-suggested transitions (e.g., portals, entrances) instead of pointing directly to the marker.",
+                            width = 1.5,
+                            order = 66,
                         },
                         BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
                         Scale = {
@@ -2911,8 +2925,22 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     if type(questPointsTable[questID]) ~= "table" then
         questPointsTable[questID] = {}
     end
-    local lx, ly, instance = HBD:GetWorldCoordinatesFromZone(x, y, uiMapID)
     title = title or GetTitleForQuestID(questID) or ""
+    local HBDuiMapID = uiMapID
+
+    -- Use map transitions
+    if Options.UseCurrentMap then
+        local playerUiMapId = GetBestMapForUnit("player")
+        if uiMapID ~= playerUiMapId then
+            local mx, my, waypointDescription = GetNextWaypointForMapTracker(playerUiMapId)
+            x, y, HBDuiMapID = mx or x, my or y, playerUiMapId or HBDuiMapID
+            if waypointDescription then
+                title = title .. " (" .. waypointDescription .. ")"
+            end
+        end
+    end
+
+    local lx, ly, instance = HBD:GetWorldCoordinatesFromZone(x, y, HBDuiMapID)
     questPointsTable[questID].x = lx
     questPointsTable[questID].y = ly
     questPointsTable[questID].mapId = uiMapID
@@ -2928,8 +2956,8 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
 
 
     if questPointsTable[questID].category == Enum.QuestClassification.WorldQuest then
-        C_TaskQuest.RequestPreloadRewardData(questID)
-        local reward = C_QuestLog.GetQuestRewardCurrencyInfo(questID, 1, false)
+        RequestPreloadRewardData(questID)
+        local reward = GetQuestRewardCurrencyInfo(questID, 1, false)
         local _, itemTexture = GetQuestLogRewardInfo(1, questID)
         local gold = GetQuestLogRewardMoney(questID)
         if gold > 0 then
@@ -3009,7 +3037,7 @@ local function OnEvent(event,...)
         if x and y and uiMapID then
             updateQuest(questID, x, y, uiMapID, 0, nil, completed)
         end
-    elseif event == "SUPER_TRACKING_CHANGED" then
+    else
         local superTrackingType = GetHighestPrioritySuperTrackingType()
         if superTrackingType == Enum.SuperTrackingType.UserWaypoint then
             local point = GetUserWaypoint()
@@ -3017,11 +3045,21 @@ local function OnEvent(event,...)
                 updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, nil, completed)
             end
         end
-        if superTrackingType == Enum.SuperTrackingType.MapPin and WorldMapFrame:IsVisible() then
-            local uiMapID = WorldMapFrame:GetMapID()
+        local uiMapID = WorldMapFrame:GetMapID()
+        if superTrackingType == Enum.SuperTrackingType.MapPin then
             local STtype, STtypeID = GetSuperTrackedMapPin()
             local poiInfo
             local title
+
+            local moreArgs = {
+                ["STtype"] = STtype,
+                ["STtypeID"] = STtypeID
+            }
+
+            -- try to get corrent uiMapID
+            if questPointsTable[mapPin] and questPointsTable[mapPin].moreArgs and questPointsTable[mapPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[mapPin].moreArgs.STtypeID == moreArgs.STtypeID then
+                uiMapID = questPointsTable[mapPin].mapId
+            end
 
             -- POI
             if STtype == 0 then
@@ -3048,8 +3086,8 @@ local function OnEvent(event,...)
             if poiInfo then
                 Debug:Info("POI", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
                 Debug:Table("poiInfo", poiInfo)
-                updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName)
-            else
+                updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName, nil, moreArgs)
+            elseif WorldMapFrame:IsVisible() then
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
                     Debug:Info("Unknown POI", uiMapID, x, y, STtypeID, STtype)
@@ -3060,9 +3098,8 @@ local function OnEvent(event,...)
         if superTrackingType == Enum.SuperTrackingType.Vignette and WorldMapFrame:IsVisible() then
             local vignetteGUID = GetSuperTrackedVignette()
             if vignetteGUID then
-                local uiMapID = WorldMapFrame:GetMapID()
-                local vignettePosition = C_VignetteInfo.GetVignettePosition(vignetteGUID, uiMapID)
-                local vignetteInfo = C_VignetteInfo.GetVignetteInfo(vignetteGUID)
+                local vignettePosition = GetVignettePosition(vignetteGUID, uiMapID)
+                local vignetteInfo = GetVignetteInfo(vignetteGUID)
                 if vignettePosition and vignetteInfo then
                     Debug:Table("vignetteInfo", vignetteInfo)
                     local x, y = vignettePosition:GetXY()
@@ -3943,6 +3980,7 @@ function Addon:OnEnable()
     self:RegisterEvent("USER_WAYPOINT_UPDATED", OnEvent)
     self:RegisterEvent("WAYPOINT_UPDATE", OnEvent)
     self:RegisterEvent("SUPER_TRACKING_CHANGED", OnEvent)
+    self:RegisterEvent("SUPER_TRACKING_PATH_UPDATED", OnEvent)
 
 
     if TomTom then
