@@ -562,8 +562,8 @@ Addon.Defaults = {
         LinePosition    = 0,
         LineColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         Visibility      = "[petbattle] hide; show",
-        HideFar         = true,
-        UseCurrentMap   = false,
+        HideFar         = false,
+        UseCurrentMap   = true,
         HeadingEnabled         = false,
         HeadingDecimals        = 0,
         HeadingTrueNorth       = true,
@@ -837,15 +837,15 @@ Addon.Options = {
                         },
                         HideFar = {
                             type = "toggle",
-                            name = "Hide pointer to other continent",
-                            desc = "Hide pointers that are on other continents.",
+                            name = "Hide pointers to other continents",
+                            desc = "Hide pointers that are located on other continents or in zones that require map transitions.",
                             width = 1.5,
                             order = 65,
                         },
                         UseCurrentMap = {
                             type = "toggle",
                             name = "Use map transition for pointers",
-                            desc = "If the tracked quest or map pin is located on a different map, the pointer will attempt to use map-suggested transitions (e.g., portals, entrances) instead of pointing directly to the marker.",
+                            desc = "If the tracked quest or map pin is located in a different zone, the pointer will attempt to use map-suggested transitions (e.g., portals, entrances) instead of pointing directly to the marker.",
                             width = 1.5,
                             order = 66,
                         },
@@ -2140,7 +2140,6 @@ local function GetQuestPOIInfo(questID)
     -- try to get waypoint
     local uiMapID, x, y = GetNextWaypoint(questID)
     if uiMapID and x and y then
-        Debug:Info("portal", uiMapID, x, y, completed)
         return uiMapID, x, y, completed
     end
 
@@ -2150,14 +2149,12 @@ local function GetQuestPOIInfo(questID)
         -- try to get waypoint when clicked on mapPin
         x, y = GetNextWaypointForMap(questID, uiMapID)
         if x and y then
-            Debug:Info("waypoint", uiMapID, x, y, completed)
             return uiMapID, x, y, completed
         end
         -- try to parse all quests on current Map
         local quests = GetQuestsOnMap(uiMapID)
         for _, quest in pairs(quests) do
             if quest.questID == questID then
-                Debug:Info("map", uiMapID, quest.x, quest.y, completed)
                 return uiMapID, quest.x, quest.y, completed
             end
        end
@@ -2167,13 +2164,13 @@ end
 local function getMapId(questID)
     local uiMapID = GetMapForQuestPOIs()
     if uiMapID and uiMapID > 0 then return uiMapID end
-    for _, mapId in ipairs(HBDmaps) do
-        local quests = GetQuestsOnMap(mapId)
+    for _, uiMapID in ipairs(HBDmaps) do
+        local quests = GetQuestsOnMap(uiMapID)
         for _, quest in pairs(quests) do
            if quest.questID == questID then
-              local mapInfo = GetMapInfo(mapId)
+              local mapInfo = GetMapInfo(uiMapID)
               if mapInfo.mapType == 3 then
-                 return mapId
+                 return uiMapID
               end
            end
         end
@@ -2184,7 +2181,7 @@ local function updatePlayerCoords()
     if player.inInstance then return end
 
     player.x, player.y, player.instance = HBD:GetPlayerWorldPosition()
-    player.mapId = HBD:GetPlayerZone()
+    player.uiMapID = HBD:GetPlayerZone()
     player.angle = GetPlayerFacing()
 end
 
@@ -2456,7 +2453,6 @@ end
 
 local function getPointerType(questID, questType)
     local questClassification = getPointerCategory(questID, questType)
-    Debug:Info("Classification", questPointers[questClassification] and questClassification or "Unknown")
     return questPointerIdent .. (questPointers[questClassification] and questClassification or questUnknown)
 end
 
@@ -2545,7 +2541,6 @@ end
 local function createQuestIcon(questID, questType)
     local pointerType = getPointerType(questID, questType)
     if not Options.Pointers[pointerType] then
-        Debug:Info("Quest type not found", pointerType)
         return
     end
     if not Options.Pointers[pointerType].enabled then return end
@@ -2931,9 +2926,11 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     -- Use map transitions
     if Options.UseCurrentMap then
         local playerUiMapId = GetBestMapForUnit("player")
-        if uiMapID ~= playerUiMapId then
+        if playerUiMapId and uiMapID ~= playerUiMapId then
             local mx, my, waypointDescription = GetNextWaypointForMapTracker(playerUiMapId)
-            x, y, HBDuiMapID = mx or x, my or y, playerUiMapId or HBDuiMapID
+            if mx and my then
+                x, y, HBDuiMapID = mx, my, playerUiMapId
+            end
             if waypointDescription then
                 title = title .. " (" .. waypointDescription .. ")"
             end
@@ -2943,7 +2940,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     local lx, ly, instance = HBD:GetWorldCoordinatesFromZone(x, y, HBDuiMapID)
     questPointsTable[questID].x = lx
     questPointsTable[questID].y = ly
-    questPointsTable[questID].mapId = uiMapID
+    questPointsTable[questID].uiMapID = uiMapID
     questPointsTable[questID].instance = instance
     questPointsTable[questID].text = title
     questPointsTable[questID].completed = completed
@@ -3014,13 +3011,11 @@ local function tomtomClearWaypoint(self, uid)
 end
 
 local function OnEvent(event,...)
-    Debug:Info(event)
     if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
     end
     local questID = GetSuperTrackedQuestID()
     local completed = false
-    Debug:Info("questID", questID)
     if questID and questID > 0 then
         local x, y, uiMapID
     	if isTask(questID)  then
@@ -3058,7 +3053,7 @@ local function OnEvent(event,...)
 
             -- try to get corrent uiMapID
             if questPointsTable[mapPin] and questPointsTable[mapPin].moreArgs and questPointsTable[mapPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[mapPin].moreArgs.STtypeID == moreArgs.STtypeID then
-                uiMapID = questPointsTable[mapPin].mapId
+                uiMapID = questPointsTable[mapPin].uiMapID
             end
 
             -- POI
@@ -3084,13 +3079,10 @@ local function OnEvent(event,...)
                 end
             end
             if poiInfo then
-                Debug:Info("POI", uiMapID, poiInfo.position.x, poiInfo.position.y, poiInfo.name)
-                Debug:Table("poiInfo", poiInfo)
                 updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName, nil, moreArgs)
             elseif WorldMapFrame:IsVisible() then
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
-                    Debug:Info("Unknown POI", uiMapID, x, y, STtypeID, STtype)
                     updateQuest(mapPin, x, y, uiMapID, selectedPin, title, completed)
                 end
             end
@@ -3101,9 +3093,7 @@ local function OnEvent(event,...)
                 local vignettePosition = GetVignettePosition(vignetteGUID, uiMapID)
                 local vignetteInfo = GetVignetteInfo(vignetteGUID)
                 if vignettePosition and vignetteInfo then
-                    Debug:Table("vignetteInfo", vignetteInfo)
                     local x, y = vignettePosition:GetXY()
-                    Debug:Info("Vignette", uiMapID, x, y, vignetteInfo.name)
                     if x and y then
                         updateQuest(mapPin, x, y, uiMapID, selectedPin, vignetteInfo.name, false, vignetteInfo.atlasName, nil, vignetteInfo)
                     end

@@ -1,7 +1,9 @@
 # v1.4.5 ()
 
 ## New
-- Added a new option (disabled by default) to use map-suggested transitions (such as portals or entrances) when the tracked quest or map pin is located on a different map. Enable this feature via the `Use map transition for pointers` checkbox on the `General` tab.
+- Added a new option (enabled by default) to use map-suggested transitions (such as portals or entrances) when the tracked quest or map pin is located in a different zone. You can toggle this feature using the `Use map transition for pointers` checkbox found on the `General` tab.
+
+  **Tip:** For better results, consider disabling the `Hide pointers to other continents` option (also found on the`General` tab). This setting is now disabled by default for new profiles and fresh installations.
 
   ![Map transition](https://i.imgur.com/3k87nBR.png)
 
