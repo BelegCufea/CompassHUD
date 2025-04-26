@@ -2216,13 +2216,13 @@ local function updateCompassHUD()
     HUD.compassTexture:SetPoint('BOTTOMRIGHT', HUD, 'BOTTOMRIGHT', -Options.BorderThickness - 1, Options.BorderThickness + 1)
 
     -- static frame to display compass leters and numbers with clipchildren
-    HUD.compassCustom = HUD.compassCustom or CreateFrame('Frame', ADDON_NAME .. '_directions', HUD)
+    HUD.compassCustom = HUD.compassCustom or CreateFrame('Frame', nil, HUD)
     HUD.compassCustom:SetSize(textureWidth / 2, textureHeight)
     HUD.compassCustom:SetPoint('TOP', HUD, 'TOP', 0, 0)
     HUD.compassCustom:SetClipsChildren(true)
 
     -- movable frame to reflect player facing
-    HUD.compassCustom.mask = HUD.compassCustom.mask or CreateFrame('Frame', ADDON_NAME .. '_directions', HUD.compassCustom)
+    HUD.compassCustom.mask = HUD.compassCustom.mask or CreateFrame('Frame', nil, HUD.compassCustom)
     HUD.compassCustom.mask:SetSize(textureWidth, textureHeight)
     HUD.compassCustom.mask:SetPoint('TOP', HUD.compassCustom, 'TOP', 0, 0)
 
@@ -2259,7 +2259,7 @@ local function updateCompassHUD()
 
     for _, side in ipairs({ 1, -1}) do
         for k, v in pairs(directions) do
-            letters[k*side] = letters[k*side] or HUD.compassCustom.mask:CreateFontString(ADDON_NAME .. '_directions_' .. k*side, "OVERLAY", "GameFontNormal")
+            letters[k*side] = letters[k*side] or HUD.compassCustom.mask:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             letters[k*side]:SetText(v.letter)
             letters[k*side]:SetJustifyV("TOP")
             letters[k*side]:SetSize(0, 16)
@@ -2293,7 +2293,7 @@ local function updateCompassHUD()
 
     for i = -360, 360, Options.CompassCustomDegreesSpan do
         if math.abs(i) ~= 360 then
-            degrees[i] = degrees[i] or HUD.compassCustom.mask:CreateFontString(ADDON_NAME .. '_degrees_' .. i, "OVERLAY", "GameFontNormal")
+            degrees[i] = degrees[i] or HUD.compassCustom.mask:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             degrees[i]:SetText(((i > 0) and i) or (360 + i))
             degrees[i]:SetJustifyV("TOP")
             degrees[i]:SetSize(0, 16)
@@ -2321,7 +2321,7 @@ local function updateCompassHUD()
 
     for _, tickPosition in ipairs({"TOP", "BOTTOM"}) do
         for i, v in pairs(letters) do
-            ticks[tickPosition .. i] = ticks[tickPosition .. i] or HUD.compassCustom.mask:CreateTexture(ADDON_NAME .. "_ticks_" ..  tickPosition .. "_" .. i, "OVERLAY")
+            ticks[tickPosition .. i] = ticks[tickPosition .. i] or HUD.compassCustom.mask:CreateTexture(nil, "OVERLAY")
             ticks[tickPosition .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
             if v:IsShown() then
                 if v.data.main then
@@ -2340,7 +2340,7 @@ local function updateCompassHUD()
         end
 
         for i, v in pairs(degrees) do
-            ticks[tickPosition .. i] = ticks[tickPosition .. i] or HUD.compassCustom.mask:CreateTexture(ADDON_NAME .. "_ticks_" ..  tickPosition .. "_" .. i, "OVERLAY")
+            ticks[tickPosition .. i] = ticks[tickPosition .. i] or HUD.compassCustom.mask:CreateTexture(nil, "OVERLAY")
             ticks[tickPosition .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
             if not letters[i] or not letters[i]:IsShown() then
                 ticks[tickPosition .. i]:SetVertexColor(Options.CompassCustomDegreesColor.r, Options.CompassCustomDegreesColor.g, Options.CompassCustomDegreesColor.b, Options.CompassCustomDegreesColor.a)
@@ -2356,7 +2356,7 @@ local function updateCompassHUD()
     end
 
     -- heading frame
-    HUD.heading = HUD.heading or CreateFrame('Frame', ADDON_NAME .. '_heading', HUD, "BackdropTemplate")
+    HUD.heading = HUD.heading or CreateFrame('Frame', nil, HUD, "BackdropTemplate")
     HUD.heading:SetSize(textureHeight * 2 * Options.HeadingWidth, textureHeight)
     HUD.heading:SetPoint('CENTER', HUD, 'CENTER', 0, Options.HeadingPosition)
     HUD.heading:SetClipsChildren(true)
@@ -2376,7 +2376,7 @@ local function updateCompassHUD()
 	HUD.heading:SetBackdropBorderColor(Options.HeadingBorderColor.r,Options.HeadingBorderColor.g, Options.HeadingBorderColor.b, Options.HeadingBorderColor.a)
 
     local headingFont = LSM:Fetch("font", Options.HeadingFont)
-    HUD.heading.text = HUD.heading.text or HUD.heading:CreateFontString(ADDON_NAME .. '_headingtext', "OVERLAY", "GameFontNormal")
+    HUD.heading.text = HUD.heading.text or HUD.heading:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     HUD.heading.text:SetJustifyV("MIDDLE")
     HUD.heading.text:SetJustifyH("CENTER")
     HUD.heading.text:SetParent(HUD.heading)
@@ -2388,6 +2388,12 @@ local function updateCompassHUD()
     HUD.compassTexture:SetShown(not Options.UseCustomCompass)
     HUD.compassCustom:SetShown(Options.UseCustomCompass)
     HUD.heading:SetShown(Options.HeadingEnabled)
+
+    -- pointers
+    HUD.pointers = HUD.pointers or {}
+
+    -- groups
+    HUD.groups = HUD.groups or {}
 end
 
 local function setTime(frame, distance, speed)
@@ -2464,6 +2470,7 @@ local function isTask(questID)
 end
 
 local function updateQuestIcon(questPointer)
+
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
     local pointer = questPointsTable[questPointer.questID]
@@ -2536,6 +2543,16 @@ local function updateQuestIcon(questPointer)
     questPointer.DistanceText:SetShown(options.showDistance)
     questPointer.TimeText:SetShown(options.showTTA)
     questPointer.QuestText:SetShown(options.showQuest)
+
+    if pointer.circle then
+        questPointer.texture:AddMaskTexture(questPointer.mask)
+        questPointer.mask:Show()
+        questPointer.border:Show()
+    else
+        questPointer.texture:RemoveMaskTexture(questPointer.mask)
+        questPointer.mask:Hide()
+        questPointer.border:Hide()
+    end
 end
 
 local function createQuestIcon(questID, questType)
@@ -2544,20 +2561,14 @@ local function createQuestIcon(questID, questType)
         return
     end
     if not Options.Pointers[pointerType].enabled then return end
-
-    local questPointer = CreateFrame("FRAME", ADDON_NAME..questID, HUD)
+    local questPointer = CreateFrame("FRAME", nil, HUD)
+    HUD.pointers[questID] = questPointer
 	questPointer.questID = questID
     questPointer.pointerType = pointerType
 	questPointer:SetSize(textureHeight, textureHeight)
 	questPointer:SetPoint("CENTER");
-	questPointer.texture = questPointer:CreateTexture(ADDON_NAME..questID.."Texture", "ARTWORK")
-	questPointer.texture:SetAllPoints(questPointer)
-	questPointer.texture:SetAtlas(Options.Pointers[pointerType].atlasID)
 	questPointer:Hide()
-    questPointer.arrowTexture = questPointer:CreateTexture(ADDON_NAME..questID.."ArrowTexture", "BACKGROUND")
-    questPointer.arrowTexture:SetAllPoints(questPointer)
-	questPointer.arrowTexture:SetAtlas(Options.StayAtlasID)
-    questPointer.arrowTexture:Hide()
+
     if questID > 0 then
         questPointer:SetScript("OnEvent", function(self, event)
             if event == "QUEST_LOG_UPDATE" then
@@ -2569,14 +2580,33 @@ local function createQuestIcon(questID, questType)
         questPointer:RegisterEvent("QUEST_LOG_UPDATE")
     end
 
+    questPointer.texture = questPointer:CreateTexture(nil, "ARTWORK")
+    questPointer.texture:SetAllPoints(questPointer)
+    questPointer.texture:SetAtlas(Options.Pointers[pointerType].atlasID)
+    questPointer.mask = questPointer:CreateMaskTexture()
+    questPointer.mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    questPointer.mask:SetAllPoints(questPointer.texture)
+    questPointer.mask:Hide()
+    questPointer.border = questPointer:CreateTexture(nil, "OVERLAY", nil, 1)
+    questPointer.border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
+    questPointer.border:SetAllPoints(questPointer.texture)
+    questPointer.border:Hide()
+
+    questPointer.arrowTexture = questPointer:CreateTexture(nil, "BACKGROUND")
+    questPointer.arrowTexture:SetAllPoints(questPointer)
+	questPointer.arrowTexture:SetAtlas(Options.StayAtlasID)
+    questPointer.arrowTexture:Hide()
+
     questPointer.DistanceText = questPointer:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
     questPointer.DistanceText:SetJustifyV("TOP")
     questPointer.DistanceText:SetSize(0, 16)
     questPointer.DistanceText:SetParent(questPointer)
+
     questPointer.TimeText = questPointer:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
     questPointer.TimeText:SetJustifyV("TOP")
     questPointer.TimeText:SetSize(0, 16)
     questPointer.TimeText:SetParent(questPointer)
+
     questPointer.QuestText = questPointer:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
     questPointer.QuestText:SetJustifyV("TOP")
     questPointer.QuestText:SetSize(0, 16)
@@ -2649,14 +2679,15 @@ local function setQuestsIcons()
 end
 
 local function createGroupMemberIcon(unit)
-    local groupPointer = CreateFrame("FRAME", ADDON_NAME..unit, HUD)
+    local groupPointer = CreateFrame("FRAME", nil, HUD)
+    HUD.groups[unit] = groupPointer
 	groupPointer:SetSize(textureHeight, textureHeight)
 	groupPointer:SetPoint("CENTER");
-	groupPointer.texture = groupPointer:CreateTexture(ADDON_NAME..unit.."Texture", "ARTWORK")
+	groupPointer.texture = groupPointer:CreateTexture(nil, "ARTWORK")
 	groupPointer.texture:SetAllPoints(groupPointer)
 	groupPointer.texture:SetAtlas(Options.GroupTexture)
 	groupPointer:Hide()
-    groupPointer.Name = CreateFrame('Frame', ADDON_NAME..unit..'Name', HUD, "BackdropTemplate")
+    groupPointer.Name = CreateFrame('Frame', nil, HUD, "BackdropTemplate")
     groupPointer.Name:SetParent(groupPointer)
     groupPointer.Name.text = groupPointer.Name:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     groupPointer.Name.text:SetJustifyV("MIDDLE")
@@ -2950,6 +2981,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     questPointsTable[questID].overrideRotation = false
     questPointsTable[questID].crop = 0
     questPointsTable[questID].category = getPointerCategory(questID, questType)
+    questPointsTable[questID].circle = false
 
 
     if questPointsTable[questID].category == Enum.QuestClassification.WorldQuest then
@@ -2962,7 +2994,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
         else
             questPointsTable[questID].texture = itemTexture or (reward and reward.texture)
         end
-        questPointsTable[questID].crop = 2
+        questPointsTable[questID].circle = true
     end
 
     if not questPointsTable[questID].frame then

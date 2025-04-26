@@ -1,3 +1,11 @@
+# v1.4.6 (26.4.2025)
+
+## Misc
+- Textures used for world quests (when `Use reward texture` is enabled in the `WorldQuests` category under the `Pointers` tab) are now circular with a subtle border to better match the game's visual style.
+- Updated TOC to 11.1.5
+
+- *Lua (for programming purposes only):* Cleaned up the code to avoid creating unnecessary global frames. All elements can now be accessed through the main `CompassHUD` frame.
+
 # v1.4.5 (21.4.2025)
 
 ## New
