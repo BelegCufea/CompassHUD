@@ -536,8 +536,8 @@ Addon.Defaults = {
         Debug           = false,
         Minimap         = { hide = true, minimapPos = 220, radius = 80, },
         Compartment     = { hide = false},
-        PositionX       = -1,
-        PositionY       = -1,
+        PositionX       = -101,
+        PositionY       = -101,
 		Degrees         = 180,
 	    Interval        = 60,
 		Level           = 500,
@@ -3232,7 +3232,7 @@ function Addon:UpdateHUDSettings()
         end)
 	end
 
-    if Options.PositionX < 0 then
+    if (Options.PositionX+100) < 0 then
         self:ResetPosition(true, true)
     else
         local currentScale = HUD:GetScale()
