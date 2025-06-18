@@ -536,8 +536,8 @@ Addon.Defaults = {
         Debug           = false,
         Minimap         = { hide = true, minimapPos = 220, radius = 80, },
         Compartment     = { hide = false},
-        PositionX       = -101,
-        PositionY       = -101,
+        PositionX       = -1,
+        PositionY       = -1,
 		Degrees         = 180,
 	    Interval        = 60,
 		Level           = 500,
@@ -664,6 +664,12 @@ local strataLevels = {
     "FULLSCREEN_DIALOG",
     "TOOLTIP",
 }
+
+local function round(n, decimals)
+    local power = 10 ^ (decimals or 0)
+    return math.floor(n * power + 0.5) / power
+end
+
 
 local function getPointerAtlasIDs()
     local atlasIDs = {}
@@ -2896,7 +2902,7 @@ local function updateHUD(force)
     local facing = GetPlayerFacing() or 0
     if force or facing ~= currentFacing then
         local coord = (facing < PI and 0.5 or 1) - (facing * ADJ_FACTOR)
-        --rotate texture
+        -- rotate texture
         HUD.compassTexture:SetTexCoord(coord - adjCoord, coord + adjCoord, 0, 1)
         -- rotate letters
         HUD.compassCustom.mask:ClearAllPoints()
@@ -3014,6 +3020,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
         questPointsTable[questID].frame.scaleMultiplier = 1
     else
         questPointsTable[questID].frame.texture:SetAtlas(completed and options.atlasAltID or options.atlasID)
+        questPointsTable[questID].circle = false
     end
     updateQuestIcon(questPointsTable[questID].frame)
 end
@@ -3232,11 +3239,11 @@ function Addon:UpdateHUDSettings()
         end)
 	end
 
-    if (Options.PositionX+100) < 0 then
+    if Options.PositionX < 0 then
         self:ResetPosition(true, true)
     else
-        local currentScale = HUD:GetScale()
-        local currentWidth = HUD:GetWidth()
+        local currentScale = round(HUD:GetScale(), 2)
+        local currentWidth = round(HUD:GetWidth(), 2)
         if  currentWidth ~= 0 then
 
             if currentScale ~= Options.Scale then

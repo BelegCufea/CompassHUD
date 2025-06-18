@@ -1,3 +1,11 @@
+# v1.4.7 (18.6.2025)
+
+## Fix
+- Removed circular background around `WorldQuests` pointers when not using `Use reward texture` option (thanks [Snagle69](https://legacy.curseforge.com/members/snagle69))
+
+## Misc
+- Bumped TOC to 11.1.7
+
 # v1.4.6 (26.4.2025)
 
 ## Misc
