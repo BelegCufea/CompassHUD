@@ -1,3 +1,15 @@
+# v1.5.0 ()
+
+## New
+- [GatherMate2](https://www.curseforge.com/wow/addons/gathermate2) integration (disabled by default)
+![GatherMate2](https://i.imgur.com/kJGB9hg.png)
+  - Allows you to display icons for gathering nodes from the GatherMate2 database. These are potential spawn points, so there’s no guarantee a material will always be there.
+  - Only shows nodes that are enabled in your GatherMate2 settings. There’s no need to toggle their visibility on the world map or minimap.
+  - Options can be found under `CompassHUD` -> `Addon integrations`. These include `Scaning radius` option, which sets the minimum distance at which a node will appear on the HUD (default is 150). Be aware that setting this too high can clutter your CompassHUD!
+    - 100 max zoomed in minimap
+    - 300 max zoomed out minimap
+  ![GatherMate2 Options](https://i.imgur.com/JGXEgbj.png)
+
 # v1.4.7 (18.6.2025)
 
 ## Fix
