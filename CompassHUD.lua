@@ -46,6 +46,7 @@ local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
 local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
 local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
 local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
+local IsSuperTrackingAnything = C_SuperTrack.IsSuperTrackingAnything
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
@@ -64,6 +65,7 @@ local questPointsTable = {}
 local groupPointsTable = {}
 local gatherMatePointTable = {}
 local HBDmaps = {}
+local STtexture = {}
 local directions = {
     [0] = {letter = "N" , main = true },
     [45] = {letter = "NE" , main = false },
@@ -2196,7 +2198,7 @@ local GatherMateOptions = {
         GatherMateRadius = {
             type = "range",
             order = 20,
-            name = "Scaning radius",
+            name = "Scanning radius",
             min = 1,
             max = 2000,
             softMin = 50,
@@ -2797,6 +2799,69 @@ local function isTask(questID)
         or (classification == Enum.QuestClassification.WorldQuest)
 end
 
+local function retextureSuperTrackedFrame(questPointer)
+    local options
+    STtexture.questID = questPointer.questID
+    if questPointsTable[STtexture.questID] and questPointsTable[STtexture.questID].frame then
+        options = Options.Pointers[questPointsTable[STtexture.questID].frame.pointerType]
+    end
+    if options and options.stRetexture and IsSuperTrackingAnything() then
+
+        STtexture.pointer = nil
+        STtexture.atlas = nil
+        if not STtexture.icon then
+            STtexture.icon = SuperTrackedFrame.Icon:GetTexture()
+            STtexture.iconHeight = SuperTrackedFrame.Icon:GetHeight()
+            STtexture.iconWidth = SuperTrackedFrame.Icon:GetWidth()
+        end
+        if not SuperTrackedFrame.Mask then
+            SuperTrackedFrame.Mask = SuperTrackedFrame:CreateMaskTexture()
+            SuperTrackedFrame.Mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            SuperTrackedFrame.Mask:SetAllPoints(SuperTrackedFrame.Icon)
+            SuperTrackedFrame.Mask:Hide()
+        end
+        if not SuperTrackedFrame.Border then
+            SuperTrackedFrame.Border = SuperTrackedFrame:CreateTexture(nil, "OVERLAY", nil, 1)
+            SuperTrackedFrame.Border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
+            SuperTrackedFrame.Border:SetAllPoints(SuperTrackedFrame.Icon)
+            SuperTrackedFrame.Border:Hide()
+        end
+
+        if questPointsTable[STtexture.questID].texture and options.worldmapTexture then
+            STtexture.pointer = questPointsTable[STtexture.questID].texture
+        elseif questPointsTable[STtexture.questID].atlasName and options.worldmapTexture then
+            STtexture.atlas = questPointsTable[STtexture.questID].atlasName
+        else
+            STtexture.atlas = questPointsTable[STtexture.questID].completed and options.atlasAltID or options.atlasID
+        end
+
+        if STtexture.pointer then
+            SuperTrackedFrame.Icon:SetTexture(STtexture.pointer)
+        elseif STtexture.atlas then
+            SuperTrackedFrame.Icon:SetAtlas(STtexture.atlas)
+        end
+        SuperTrackedFrame.Icon:SetSize(STtexture.iconWidth, STtexture.iconWidth)
+
+        if questPointsTable[STtexture.questID].circle then
+            SuperTrackedFrame.Icon:AddMaskTexture(SuperTrackedFrame.Mask)
+            SuperTrackedFrame.Mask:Show()
+            SuperTrackedFrame.Border:Show()
+        else
+            SuperTrackedFrame.Icon:RemoveMaskTexture(SuperTrackedFrame.Mask)
+            SuperTrackedFrame.Mask:Hide()
+            SuperTrackedFrame.Border:Hide()
+        end
+    else
+        if SuperTrackedFrame.Mask then
+            SuperTrackedFrame.Icon:RemoveMaskTexture(SuperTrackedFrame.Mask)
+            SuperTrackedFrame.Mask:Hide()
+        end
+        if SuperTrackedFrame.Border then
+            SuperTrackedFrame.Border:Hide()
+        end
+    end
+end
+
 local function updateQuestIcon(questPointer)
 
     local scale = Options.Scale * Options.VerticalScale
@@ -2881,6 +2946,8 @@ local function updateQuestIcon(questPointer)
         questPointer.mask:Hide()
         questPointer.border:Hide()
     end
+
+    retextureSuperTrackedFrame(questPointer)
 end
 
 local function createQuestIcon(questID, questType)
@@ -3312,30 +3379,32 @@ end
 local function setGatherMateNodes()
     if not Options.GatherMateEnabled or not GatherMate2 then return end
     if gatherMateThrottle and gatherMateThrottle >= Options.GatherMateInterval then
-        local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
         gatherMateThrottle = 0
-        for map, nodes in pairs(gatherMatePointTable) do
-            for coord, node in pairs(nodes) do
-                gatherMatePointTable[map][coord].visible = false
+        local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
+        if x and y then
+            for map, nodes in pairs(gatherMatePointTable) do
+                for coord, node in pairs(nodes) do
+                    gatherMatePointTable[map][coord].visible = false
+                end
+            end
+            for _, db_type in pairs(GatherMate2.db_types) do
+                if GatherMate2.Visible[db_type] then
+                    for coord, nodeID in GatherMate2:FindNearbyNode(player.uiMapID, x, y, db_type, Options.GatherMateRadius) do
+                        if not gatherMatePointTable[player.uiMapID] then
+                            gatherMatePointTable[player.uiMapID] = {}
+                        end
+                        if not gatherMatePointTable[player.uiMapID][coord] then
+                            local xZone, yZone = GatherMate2:DecodeLoc(coord)
+                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                            gatherMatePointTable[player.uiMapID][coord] = { visible = true, instance = player.uiMapID, x = xWorld, y = yWorld }
+                            gatherMatePointTable[player.uiMapID][coord].frame = createGatherMateNode(nodeID, db_type, gatherMatePointTable[player.uiMapID][coord])
+                            updateGatherMateNode(gatherMatePointTable[player.uiMapID][coord])
+                        end
+                        gatherMatePointTable[player.uiMapID][coord].visible = true
+                    end
+                end
             end
         end
-		for _, db_type in pairs(GatherMate2.db_types) do
-			if GatherMate2.Visible[db_type] then
-				for coord, nodeID in GatherMate2:FindNearbyNode(player.uiMapID, x, y, db_type, Options.GatherMateRadius) do
-					if not gatherMatePointTable[player.uiMapID] then
-                        gatherMatePointTable[player.uiMapID] = {}
-                    end
-                    if not gatherMatePointTable[player.uiMapID][coord] then
-                        local xZone, yZone = GatherMate2:DecodeLoc(coord)
-                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        gatherMatePointTable[player.uiMapID][coord] = { visible = true, instance = player.uiMapID, x = xWorld, y = yWorld }
-                        gatherMatePointTable[player.uiMapID][coord].frame = createGatherMateNode(nodeID, db_type, gatherMatePointTable[player.uiMapID][coord])
-                        updateGatherMateNode(gatherMatePointTable[player.uiMapID][coord])
-                    end
-                    gatherMatePointTable[player.uiMapID][coord].visible = true
-   				end
-			end
-		end
     end
     for _, nodes in pairs(gatherMatePointTable) do
         for _, node in pairs(nodes) do
@@ -3358,7 +3427,6 @@ local function setGatherMateNodes()
         end
     end
 end
-
 
 local function updateHeading()
     if HUD.heading and HUD.heading.text and player.angle then
@@ -3965,11 +4033,14 @@ function Addon:ConstructDefaultsAndOptions()
         pointersDefaults[questPointerIdent .. k].textureAltRotate = (preset.textureRotateTurnin and 1) or (reference and reference.textureRoteteTurnin and 1) or (reference and reference.textureRotateAvailable and 1) or (preset.textureRotateAvailable and 1) or 0
         pointersDefaults[questPointerIdent .. k].pointerOffset = (v == "TomTom") and -1.1 or 1
         pointersDefaults[questPointerIdent .. k].enabled = true
+        pointersDefaults[questPointerIdent .. k].stRetexture = false
         if k == selectedPin then
             pointersDefaults[questPointerIdent .. k].worldmapTexture = true
+            pointersDefaults[questPointerIdent .. k].stRetexture = true
         end
         if k == Enum.QuestClassification.WorldQuest then
             pointersDefaults[questPointerIdent .. k].worldmapTexture = true
+            pointersDefaults[questPointerIdent .. k].stRetexture = true
         end
         pointersDefaults[questPointerIdent .. k].showDistance = true
         pointersDefaults[questPointerIdent .. k].showTTA = true
@@ -4033,23 +4104,9 @@ function Addon:ConstructDefaultsAndOptions()
             order = 0,
             name = "Enable pointer",
         }
-        if k == selectedPin then
-            pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
-                type = "toggle",
-                order = 5,
-                name = "Use worldmap texture",
-            }
-        end
-        if k == Enum.QuestClassification.WorldQuest then
-            pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
-                type = "toggle",
-                order = 5,
-                name = "Use reward texture"
-            }
-        end
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.copyFrom = {
             type = "select",
-            order = 10,
+            order = 5,
             name = "Copy texture setting from",
             values = function() return Addon:GetPointerTypes() end,
             get = function(info)
@@ -4061,9 +4118,29 @@ function Addon:ConstructDefaultsAndOptions()
         }
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.headerCombined = {
             type = "header",
-            order = 20,
+            order = 10,
             name = "Combined options"
         }
+        pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.stRetexture = {
+            type = "toggle",
+            order = 15,
+            name = "Re-texture SuperTracker",
+            desc = "When enabled, the SuperTracker diamond will use the same texture as the pointer.",
+        }
+        if k == selectedPin then
+            pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
+                type = "toggle",
+                order = 20,
+                name = "Use worldmap texture",
+            }
+        end
+        if k == Enum.QuestClassification.WorldQuest then
+            pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
+                type = "toggle",
+                order = 20,
+                name = "Use reward texture"
+            }
+        end
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.pointerOffset = {
             type = "range",
             order = 30,
@@ -4072,6 +4149,7 @@ function Addon:ConstructDefaultsAndOptions()
             max = 5,
             step = 0.01,
             isPercent = true,
+            width = "full",
         }
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.headerProgress = {
             type = "header",

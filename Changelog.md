@@ -1,13 +1,20 @@
 # v1.5.0 ()
 
 ## New
+- In-world SuperTracker texture replacer
+  ![SuperTracker texture](https://i.imgur.com/VlWUldp.png)
+  - Lets you replace the default golden diamond of the in-world SuperTracker with a CompassHUD pointer texture.
+  - Options to enable this behavior for each type of pointer can be found under `CompassHUD` -> `Pointers` as `Re-texture SuperTracker`. This is enabled by default for World Quests and POIs.
+  ![SuperTracker texture options](https://i.imgur.com/brzS5GT.png)
+
+
 - [GatherMate2](https://www.curseforge.com/wow/addons/gathermate2) integration (disabled by default)
-![GatherMate2](https://i.imgur.com/kJGB9hg.png)
-  - Allows you to display icons for gathering nodes from the GatherMate2 database. These are potential spawn points, so there’s no guarantee a material will always be there.
+  ![GatherMate2](https://i.imgur.com/kJGB9hg.png)
+  - Allows you to display icons for gathering nodes from the GatherMate2 database. These mark potential spawn points — so there’s no guarantee a material will always be present.
   - Only shows nodes that are enabled in your GatherMate2 settings. There’s no need to toggle their visibility on the world map or minimap.
-  - Options can be found under `CompassHUD` -> `Addon integrations`. These include `Scaning radius` option, which sets the minimum distance at which a node will appear on the HUD (default is 150). Be aware that setting this too high can clutter your CompassHUD!
-    - 100 max zoomed in minimap
-    - 300 max zoomed out minimap
+  - Options can be found under `CompassHUD` -> `Addon integrations`. These include `Scanning radius` option, which sets the minimum distance at which a node will appear on the HUD (default is 150). Be aware that setting this too high can clutter your CompassHUD!
+    - 100 = max zoomed in minimap
+    - 300 = max zoomed out minimap
   ![GatherMate2 Options](https://i.imgur.com/JGXEgbj.png)
 
 # v1.4.7 (18.6.2025)
