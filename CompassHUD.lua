@@ -2800,65 +2800,72 @@ local function isTask(questID)
 end
 
 local function retextureSuperTrackedFrame(questPointer)
-    local options
     STtexture.questID = questPointer.questID
-    if questPointsTable[STtexture.questID] and questPointsTable[STtexture.questID].frame then
-        options = Options.Pointers[questPointsTable[STtexture.questID].frame.pointerType]
+
+    local questPoint = questPointsTable[STtexture.questID]
+    if not questPoint or not questPoint.frame then return end
+
+    local options = Options.Pointers[questPoint.frame.pointerType]
+    if not (options and options.stRetexture and IsSuperTrackingAnything()) then
+        -- Clean up if not retexturing
+        if STtexture.mask then
+            SuperTrackedFrame.Icon:RemoveMaskTexture(STtexture.mask)
+            STtexture.mask:Hide()
+        end
+        if STtexture.border then
+            STtexture.border:Hide()
+        end
+        return
     end
-    if options and options.stRetexture and IsSuperTrackingAnything() then
 
-        STtexture.pointer = nil
-        STtexture.atlas = nil
-        if not STtexture.icon then
-            STtexture.icon = SuperTrackedFrame.Icon:GetTexture()
-            STtexture.iconHeight = SuperTrackedFrame.Icon:GetHeight()
-            STtexture.iconWidth = SuperTrackedFrame.Icon:GetWidth()
-        end
-        if not SuperTrackedFrame.Mask then
-            SuperTrackedFrame.Mask = SuperTrackedFrame:CreateMaskTexture()
-            SuperTrackedFrame.Mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-            SuperTrackedFrame.Mask:SetAllPoints(SuperTrackedFrame.Icon)
-            SuperTrackedFrame.Mask:Hide()
-        end
-        if not SuperTrackedFrame.Border then
-            SuperTrackedFrame.Border = SuperTrackedFrame:CreateTexture(nil, "OVERLAY", nil, 1)
-            SuperTrackedFrame.Border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
-            SuperTrackedFrame.Border:SetAllPoints(SuperTrackedFrame.Icon)
-            SuperTrackedFrame.Border:Hide()
-        end
+    -- === Ensure mask and border exist ===
+    if not STtexture.iconSize then
+        STtexture.iconSize = SuperTrackedFrame.Icon:GetWidth()
+    end
 
-        if questPointsTable[STtexture.questID].texture and options.worldmapTexture then
-            STtexture.pointer = questPointsTable[STtexture.questID].texture
-        elseif questPointsTable[STtexture.questID].atlasName and options.worldmapTexture then
-            STtexture.atlas = questPointsTable[STtexture.questID].atlasName
-        else
-            STtexture.atlas = questPointsTable[STtexture.questID].completed and options.atlasAltID or options.atlasID
-        end
+    if not STtexture.mask then
+        STtexture.mask = SuperTrackedFrame:CreateMaskTexture()
+        STtexture.mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        STtexture.mask:SetAllPoints(SuperTrackedFrame.Icon)
+        STtexture.mask:Hide()
+    end
 
-        if STtexture.pointer then
-            SuperTrackedFrame.Icon:SetTexture(STtexture.pointer)
-        elseif STtexture.atlas then
-            SuperTrackedFrame.Icon:SetAtlas(STtexture.atlas)
-        end
-        SuperTrackedFrame.Icon:SetSize(STtexture.iconWidth, STtexture.iconWidth)
+    if not STtexture.border then
+        STtexture.border = SuperTrackedFrame:CreateTexture(nil, "OVERLAY", nil, 1)
+        STtexture.border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
+        STtexture.border:SetAllPoints(SuperTrackedFrame.Icon)
+        STtexture.border:Hide()
+    end
 
-        if questPointsTable[STtexture.questID].circle then
-            SuperTrackedFrame.Icon:AddMaskTexture(SuperTrackedFrame.Mask)
-            SuperTrackedFrame.Mask:Show()
-            SuperTrackedFrame.Border:Show()
-        else
-            SuperTrackedFrame.Icon:RemoveMaskTexture(SuperTrackedFrame.Mask)
-            SuperTrackedFrame.Mask:Hide()
-            SuperTrackedFrame.Border:Hide()
-        end
+    -- === Determine texture or atlas ===
+    STtexture.pointer = nil
+    STtexture.atlas = nil
+
+    if questPoint.texture and options.worldmapTexture then
+        STtexture.pointer = questPoint.texture
+    elseif questPoint.atlasName and options.worldmapTexture then
+        STtexture.atlas = questPoint.atlasName
     else
-        if SuperTrackedFrame.Mask then
-            SuperTrackedFrame.Icon:RemoveMaskTexture(SuperTrackedFrame.Mask)
-            SuperTrackedFrame.Mask:Hide()
-        end
-        if SuperTrackedFrame.Border then
-            SuperTrackedFrame.Border:Hide()
-        end
+        STtexture.atlas = questPoint.completed and options.atlasAltID or options.atlasID
+    end
+
+    if STtexture.pointer then
+        SuperTrackedFrame.Icon:SetTexture(STtexture.pointer)
+    elseif STtexture.atlas then
+        SuperTrackedFrame.Icon:SetAtlas(STtexture.atlas)
+    end
+
+    SuperTrackedFrame.Icon:SetSize(STtexture.iconSize, STtexture.iconSize)
+
+    -- === Apply or remove mask/border ===
+    if questPoint.circle then
+        SuperTrackedFrame.Icon:AddMaskTexture(STtexture.mask)
+        STtexture.mask:Show()
+        STtexture.border:Show()
+    else
+        SuperTrackedFrame.Icon:RemoveMaskTexture(STtexture.mask)
+        STtexture.mask:Hide()
+        STtexture.border:Hide()
     end
 end
 

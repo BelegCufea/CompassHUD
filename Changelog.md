@@ -1,4 +1,4 @@
-# v1.5.0 ()
+# v1.5.0 (4.7.2025)
 
 ## New
 - In-world SuperTracker texture replacer
