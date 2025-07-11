@@ -2801,6 +2801,8 @@ end
 
 local function retextureSuperTrackedFrame(questPointer)
     STtexture.questID = questPointer.questID
+    STtexture.pointer = nil
+    STtexture.atlas = nil
 
     local questPoint = questPointsTable[STtexture.questID]
     if not questPoint or not questPoint.frame then return end
@@ -2838,9 +2840,6 @@ local function retextureSuperTrackedFrame(questPointer)
     end
 
     -- === Determine texture or atlas ===
-    STtexture.pointer = nil
-    STtexture.atlas = nil
-
     if questPoint.texture and options.worldmapTexture then
         STtexture.pointer = questPoint.texture
     elseif questPoint.atlasName and options.worldmapTexture then
@@ -2849,17 +2848,12 @@ local function retextureSuperTrackedFrame(questPointer)
         STtexture.atlas = questPoint.completed and options.atlasAltID or options.atlasID
     end
 
-    if STtexture.pointer then
-        SuperTrackedFrame.Icon:SetTexture(STtexture.pointer)
-    elseif STtexture.atlas then
-        SuperTrackedFrame.Icon:SetAtlas(STtexture.atlas)
-    end
-
-    SuperTrackedFrame.Icon:SetSize(STtexture.iconSize, STtexture.iconSize)
-
     -- === Apply or remove mask/border ===
+    STtexture.scale = (questPoint.completed and options.textureAltScale or options.textureScale) * (questPointer.scaleMultiplier or 1)
     if questPoint.circle then
         SuperTrackedFrame.Icon:AddMaskTexture(STtexture.mask)
+        STtexture.mask:SetScale(STtexture.scale or 1)
+        STtexture.border:SetScale(STtexture.scale or 1)
         STtexture.mask:Show()
         STtexture.border:Show()
     else
@@ -3078,6 +3072,19 @@ local function setQuestsIcons()
             end
 		end
 	end
+
+    if STtexture.pointer or STtexture.atlas then
+        if STtexture.pointer then
+            SuperTrackedFrame.Icon:SetTexture(STtexture.pointer)
+        elseif STtexture.atlas then
+            SuperTrackedFrame.Icon:SetAtlas(STtexture.atlas)
+        end
+
+        SuperTrackedFrame.Icon:SetSize(STtexture.iconSize, STtexture.iconSize)
+        SuperTrackedFrame.Icon:SetScale(STtexture.scale or 1)
+    end
+
+
 end
 
 local function createGroupMemberIcon(unit)
