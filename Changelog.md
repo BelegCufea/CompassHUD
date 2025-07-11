@@ -3,6 +3,9 @@
 ## Fix
 - Posible fix for In-world SuperTracker texture not always replacing default diamond
 
+## Misc
+- Updated libraries
+
 # v1.5.0 (4.7.2025)
 
 ## New
