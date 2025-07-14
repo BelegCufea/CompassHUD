@@ -1,3 +1,8 @@
+# v1.5.0b (14.7.2023)
+
+## Fix
+- Fix for `POI map pin` sometimes using `User map pin` textures
+
 # v1.5.0a (11.7.2025)
 
 ## Fix

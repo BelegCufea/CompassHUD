@@ -3017,8 +3017,10 @@ end
 
 local function setQuestsIcons()
     local vignetteGUID = GetSuperTrackedVignette()
-    local trackingTypes = {[Enum.SuperTrackingType.UserWaypoint] = true, [Enum.SuperTrackingType.MapPin] = true, [Enum.SuperTrackingType.Vignette] = true}
-    local isTrackingUserWaypoint = trackingTypes[GetHighestPrioritySuperTrackingType()]
+    local supertrackingType = GetHighestPrioritySuperTrackingType()
+    local isTrackingUserWaypoint = (supertrackingType == Enum.SuperTrackingType.UserWaypoint)
+    local trackingTypes = {[Enum.SuperTrackingType.MapPin] = true, [Enum.SuperTrackingType.Vignette] = true}
+    local isTrackingPOI = trackingTypes[supertrackingType]
     local trackedQuest = GetSuperTrackedQuestID()
     local _, _, playerInstance = HBD:GetPlayerWorldPosition()
     if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
@@ -3030,7 +3032,7 @@ local function setQuestsIcons()
             questHide = true
             ClearAllSuperTracked()
         end
-		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == tomTom and quest.track))) then
+		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == selectedPin and isTrackingPOI) or (questID == tomTom and quest.track))) then
 			local angle = getPlayerFacingAngle(questID)
 			if quest.frame and angle then
                 if Options.Pointers[quest.frame.pointerType].enabled then
@@ -3661,8 +3663,8 @@ local function OnEvent(event,...)
             }
 
             -- try to get corrent uiMapID
-            if questPointsTable[mapPin] and questPointsTable[mapPin].moreArgs and questPointsTable[mapPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[mapPin].moreArgs.STtypeID == moreArgs.STtypeID then
-                uiMapID = questPointsTable[mapPin].uiMapID
+            if questPointsTable[selectedPin] and questPointsTable[selectedPin].moreArgs and questPointsTable[selectedPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[selectedPin].moreArgs.STtypeID == moreArgs.STtypeID then
+                uiMapID = questPointsTable[selectedPin].uiMapID
             end
 
             -- POI
@@ -3688,11 +3690,11 @@ local function OnEvent(event,...)
                 end
             end
             if poiInfo then
-                updateQuest(mapPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName, nil, moreArgs)
+                updateQuest(selectedPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName, nil, moreArgs)
             elseif WorldMapFrame:IsVisible() then
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
-                    updateQuest(mapPin, x, y, uiMapID, selectedPin, title, completed)
+                    updateQuest(selectedPin, x, y, uiMapID, selectedPin, title, completed)
                 end
             end
         end
@@ -3704,7 +3706,7 @@ local function OnEvent(event,...)
                 if vignettePosition and vignetteInfo then
                     local x, y = vignettePosition:GetXY()
                     if x and y then
-                        updateQuest(mapPin, x, y, uiMapID, selectedPin, vignetteInfo.name, false, vignetteInfo.atlasName, nil, vignetteInfo)
+                        updateQuest(selectedPin, x, y, uiMapID, selectedPin, vignetteInfo.name, false, vignetteInfo.atlasName, nil, vignetteInfo)
                     end
                 end
             end
