@@ -48,7 +48,10 @@ local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuper
 local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
 local IsSuperTrackingAnything = C_SuperTrack.IsSuperTrackingAnything
 local GetAreaPOIForMap =  C_AreaPoiInfo.GetAreaPOIForMap
+local GetDelvesForMap =  C_AreaPoiInfo.GetDelvesForMap
+local GetEventsForMap =  C_AreaPoiInfo.GetEventsForMap
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
+local GetDungeonEntrancesForMap = C_EncounterJournal.GetDungeonEntrancesForMap
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
 local GetTaxiNodesForMap = C_TaxiMap.GetTaxiNodesForMap
@@ -3892,6 +3895,57 @@ local function setPOITrackNodes()
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
                     end
                     poiTrackPointTable[player.uiMapID]["POI_" .. poiID].visible = true
+                end
+            end
+
+            mapPOIs = GetDelvesForMap(player.uiMapID)
+            if mapPOIs then
+                for _, poiID in ipairs(mapPOIs) do
+                    if not poiTrackPointTable[player.uiMapID]["POI_" .. poiID] then
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.y
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                    end
+                    poiTrackPointTable[player.uiMapID]["POI_" .. poiID].visible = true
+                end
+            end
+
+            mapPOIs = GetEventsForMap(player.uiMapID)
+            if mapPOIs then
+                for _, poiID in ipairs(mapPOIs) do
+                    if not poiTrackPointTable[player.uiMapID]["POI_" .. poiID] then
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.y
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                    end
+                    poiTrackPointTable[player.uiMapID]["POI_" .. poiID].visible = true
+                end
+            end       
+            
+            local dungeonEntrances = GetDungeonEntrancesForMap(player.uiMapID)
+            if dungeonEntrances then
+                for _, entrance in ipairs(dungeonEntrances) do
+                    if not poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID] then
+                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID] = entrance
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].position.x, poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].position.y
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID])
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID])
+                    end
+                    poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].visible = true
                 end
             end
 
