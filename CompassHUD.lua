@@ -47,6 +47,7 @@ local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
 local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
 local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
 local IsSuperTrackingAnything = C_SuperTrack.IsSuperTrackingAnything
+local GetAreaPOIForMap =  C_AreaPoiInfo.GetAreaPOIForMap
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
@@ -59,11 +60,13 @@ local HUD
 local timer = 0
 local groupThrottle = 0
 local gatherMateThrottle = 0
+local poiTrackThrottle = 0
 local player = {x = 0, y = 0, angle = 0}
 local tomTomActive
 local questPointsTable = {}
 local groupPointsTable = {}
 local gatherMatePointTable = {}
+local poiTrackPointTable = {}
 local HBDmaps = {}
 local STtexture = {}
 local directions = {
@@ -681,6 +684,32 @@ Addon.Defaults = {
         GatherMateTitleFontSize      = 12,
         GatherMateTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         GatherMateTitleFontFlags     = "",
+        POITrackEnabled            = false,
+        POITrackRadius             = 600,
+        POITrackInterval           = 6,
+        POITrackOffset             = 20,
+        POITrackScale              = 0.8,
+        POITrackShowDistance       = false,
+        POITrackShowTTA            = false,
+        POITrackShowTitle          = false,
+        POITrackDistanceOffset     = 0,
+        POITrackTtaOffset          = 0,
+        POITrackTitleOffset        = 0,
+        POITrackDistanceCustomFont = false,
+        POITrackDistanceFont       = "Friz Quadrata TT",
+        POITrackDistanceFontSize   = 12,
+        POITrackDistanceFontColor  = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        POITrackDistanceFontFlags  = "",
+        POITrackTtaCustomFont      = false,
+        POITrackTtaFont            = "Friz Quadrata TT",
+        POITrackTtaFontSize        = 12,
+        POITrackTtaFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        POITrackTtaFontFlags       = "",
+        POITrackTitleCustomFont    = false,
+        POITrackTitleFont          = "Friz Quadrata TT",
+        POITrackTitleFontSize      = 12,
+        POITrackTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        POITrackTitleFontFlags     = "",        
     },
 }
 
@@ -2464,6 +2493,286 @@ local GatherMateOptions = {
     },
 }
 
+local POITrackOptions = {
+    type = "group",
+    order = 10,
+    name = "POITrack",
+    args = {
+        POITrackEnabled = {
+            type = "toggle",
+            name = "Enabled",
+            width = "full",
+            order = 10,
+        },
+        POITrackRadius = {
+            type = "range",
+            order = 20,
+            name = "Scanning radius",
+            min = 1,
+            max = 2000,
+            softMin = 50,
+            softMax = 1000,
+            step = 1,
+            bigStep = 5,
+        },
+        POITrackInterval = {
+            type = "range",
+            order = 30,
+            name = "Update throttle",
+            desc = "Interval between adding/removing nodes on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
+            min = 1,
+            max = 100,
+            softMin = 1,
+            softMax = 10,
+            step = 1,
+        },
+        HeaderPOITrackNode = {
+            type = "header",
+            order = 50,
+            name = "Node"
+        },
+        POITrackOffset = {
+            type = "range",
+            order = 60,
+            name = "Vertical adjustment",
+            min = -64,
+            max = 64,
+            step = 0.5,
+        },
+        POITrackScale = {
+            type = "range",
+            order = 70,
+            name = "Scale",
+            min = 0,
+            max = 3,
+            step = 0.01,
+            isPercent = true,
+        },
+        HeaderPOITrackDistance = {
+            type = "header",
+            order = 100,
+            name = "Distance text"
+        },
+        POITrackShowDistance = {
+            type = "toggle",
+            order = 110,
+            name = "Show",
+        },
+        POITrackDistanceOffset = {
+            type = "range",
+            order = 120,
+            name = "Vertical adjustment",
+            min = -20,
+            max = 20,
+            step = 0.5,
+        },
+        POITrackDistanceCustomFont = {
+            type = "toggle",
+            order = 130,
+            name = "Use custom font",
+        },
+        POITrackDistanceFont = {
+            type = "select",
+            order = 140,
+            name = "Font",
+            width = 1,
+            dialogControl = "LSM30_Font",
+            values = AceGUIWidgetLSMlists['font'],
+            disabled = function() return not Options.POITrackDistanceCustomFont end,
+        },
+        POITrackDistanceFontSize = {
+            type = "range",
+            order = 150,
+            name = "Size",
+            width = 3/4,
+            min = 2,
+            max = 36,
+            step = 0.5,
+            disabled = function() return not Options.POITrackDistanceCustomFont end,
+        },
+        POITrackDistanceFontFlags = {
+            type = "select",
+            order = 160,
+            name = "Outline",
+            width = 3/4,
+            values = {
+                [""] = "None",
+                ["OUTLINE"] = "Normal",
+                ["THICKOUTLINE"] = "Thick",
+            },
+            disabled = function() return not Options.POITrackDistanceCustomFont end,
+        },
+        POITrackDistanceFontColor = {
+            type = "color",
+            order = 170,
+            name = "Color",
+            width = 1/2,
+            hasAlpha = true,
+            get = function(info)
+                local color = Addon.db.profile[info[#info]]
+                return color.r, color.g, color.b, color.a
+            end,
+            set = function (info, r, g, b, a)
+                local color = Addon.db.profile[info[#info]]
+                color.r = r
+                color.g = g
+                color.b = b
+                color.a = a
+                Addon:UpdateHUDSettings()
+            end,
+            disabled = function() return not Options.POITrackDistanceCustomFont end,
+        },
+        HeaderPOITrackTTA = {
+            type = "header",
+            order = 200,
+            name = "Time to arrive"
+        },
+        POITrackShowTTA = {
+            type = "toggle",
+            order = 210,
+            name = "Show",
+        },
+        POITrackTtaOffset = {
+            type = "range",
+            order = 220,
+            name = "Vertical adjustment",
+            min = -20,
+            max = 20,
+            step = 0.5,
+        },
+        POITrackTtaCustomFont = {
+            type = "toggle",
+            order = 230,
+            name = "Use custom font",
+        },
+        POITrackTtaFont = {
+            type = "select",
+            order = 240,
+            name = "Font",
+            width = 1,
+            dialogControl = "LSM30_Font",
+            values = AceGUIWidgetLSMlists['font'],
+            disabled = function() return not Options.POITrackTtaCustomFont end,
+        },
+        POITrackTtaFontSize = {
+            type = "range",
+            order = 250,
+            name = "Size",
+            width = 3/4,
+            min = 2,
+            max = 36,
+            step = 0.5,
+            disabled = function() return not Options.POITrackTtaCustomFont end,
+        },
+        POITrackTtaFontFlags = {
+            type = "select",
+            order = 260,
+            name = "Outline",
+            width = 3/4,
+            values = {
+                [""] = "None",
+                ["OUTLINE"] = "Normal",
+                ["THICKOUTLINE"] = "Thick",
+            },
+            disabled = function() return not Options.POITrackTtaCustomFont end,
+        },
+        POITrackTtaFontColor = {
+            type = "color",
+            order = 270,
+            name = "Color",
+            width = 1/2,
+            hasAlpha = true,
+            get = function(info)
+                local color = Addon.db.profile[info[#info]]
+                return color.r, color.g, color.b, color.a
+            end,
+            set = function (info, r, g, b, a)
+                local color = Addon.db.profile[info[#info]]
+                color.r = r
+                color.g = g
+                color.b = b
+                color.a = a
+                Addon:UpdateHUDSettings()
+            end,
+            disabled = function() return not Options.POITrackTtaCustomFont end,
+        },
+        HeaderPOITrackTitle = {
+            type = "header",
+            order = 300,
+            name = "Node name"
+        },
+        POITrackShowTitle = {
+            type = "toggle",
+            order = 310,
+            name = "Show",
+        },
+        POITrackTitleOffset = {
+            type = "range",
+            order = 320,
+            name = "Vertical adjustment",
+            min = -20,
+            max = 20,
+            step = 0.5,
+        },
+        POITrackTitleCustomFont = {
+            type = "toggle",
+            order = 330,
+            name = "Use custom font",
+        },
+        POITrackTitleFont = {
+            type = "select",
+            order = 340,
+            name = "Font",
+            width = 1,
+            dialogControl = "LSM30_Font",
+            values = AceGUIWidgetLSMlists['font'],
+            disabled = function() return not Options.POITrackTitleCustomFont end,
+        },
+        POITrackTitleFontSize = {
+            type = "range",
+            order = 350,
+            name = "Size",
+            width = 3/4,
+            min = 2,
+            max = 36,
+            step = 0.5,
+            disabled = function() return not Options.POITrackTitleCustomFont end,
+        },
+        POITrackTitleFontFlags = {
+            type = "select",
+            order = 360,
+            name = "Outline",
+            width = 3/4,
+            values = {
+                [""] = "None",
+                ["OUTLINE"] = "Normal",
+                ["THICKOUTLINE"] = "Thick",
+            },
+            disabled = function() return not Options.POITrackTitleCustomFont end,
+        },
+        POITrackTitleFontColor = {
+            type = "color",
+            order = 370,
+            name = "Color",
+            width = 1/2,
+            hasAlpha = true,
+            get = function(info)
+                local color = Addon.db.profile[info[#info]]
+                return color.r, color.g, color.b, color.a
+            end,
+            set = function (info, r, g, b, a)
+                local color = Addon.db.profile[info[#info]]
+                color.r = r
+                color.g = g
+                color.b = b
+                color.a = a
+                Addon:UpdateHUDSettings()
+            end,
+            disabled = function() return not Options.POITrackTitleCustomFont end,
+        },
+    },
+}
+
 local function GetQuestPOIInfo(questID)
     local completed = IsQuestComplete(questID)
 
@@ -3444,6 +3753,188 @@ local function setGatherMateNodes()
     end
 end
 
+local function updatePOITrackNode(poi)
+    local scale = Options.Scale * Options.VerticalScale * Options.POITrackScale
+    poi.frame:SetSize(textureHeight * Options.POITrackScale, textureHeight * Options.POITrackScale)
+    local gameFontNormal = { fontColor = {}}
+    gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
+    gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
+
+    if Options.POITrackDistanceCustomFont then
+        local font = LSM:Fetch("font", Options.POITrackDistanceFont)
+        poi.frame.DistanceText:SetFont(font, Options.POITrackDistanceFontSize * scale, Options.POITrackDistanceFontFlags)
+        poi.frame.DistanceText:SetTextColor(Options.POITrackDistanceFontColor.r, Options.POITrackDistanceFontColor.g, Options.POITrackDistanceFontColor.b, Options.POITrackDistanceFontColor.a)
+    else
+        poi.frame.DistanceText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
+        poi.frame.DistanceText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
+    end
+    if Options.POITrackTtaCustomFont then
+        local font = LSM:Fetch("font", Options.POITrackTtaFont)
+        poi.frame.TimeText:SetFont(font, Options.POITrackTtaFontSize * scale, Options.POITrackTtaFontFlags)
+        poi.frame.TimeText:SetTextColor(Options.POITrackTtaFontColor.r, Options.POITrackTtaFontColor.g, Options.POITrackTtaFontColor.b, Options.POITrackTtaFontColor.a)
+    else
+        poi.frame.TimeText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
+        poi.frame.TimeText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
+    end
+    if Options.POITrackTitleCustomFont then
+        local font = LSM:Fetch("font", Options.POITrackTitleFont)
+        poi.frame.Title:SetFont(font, Options.POITrackTitleFontSize * scale, Options.POITrackTitleFontFlags)
+        poi.frame.Title:SetTextColor(Options.POITrackTitleFontColor.r, Options.POITrackTitleFontColor.g, Options.POITrackTitleFontColor.b, Options.POITrackTitleFontColor.a)
+    else
+        poi.frame.Title:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
+        poi.frame.Title:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
+    end
+
+    local point = "TOP"
+    local relativePoint = "BOTTOM"
+    local distanceTextPosition = Options.POITrackDistanceOffset
+    local timeTextPosition = - ((Options.POITrackShowDistance and (Options.POITrackDistanceFontSize * 1.2 * scale)) or 0) - Options.POITrackTtaOffset
+    local titlePosition = - ((Options.POITrackShowDistance and (Options.POITrackDistanceFontSize * 1.2 * scale)) or 0) - ((Options.POITrackShowTTA and (Options.POITrackTtaFontSize * 1.2 * scale)) or 0) - Options.POITrackTitleOffset
+    poi.flipped = false
+    if Options.POITrackOffset > 0 then
+        poi.flipped = true
+        point = "BOTTOM"
+        relativePoint = "TOP"
+        distanceTextPosition = ((Options.POITrackShowTTA and (Options.POITrackTtaFontSize * 1.2 * scale)) or 0) + Options.POITrackDistanceOffset - 4
+        timeTextPosition = Options.POITrackTtaOffset - 4
+        if Options.POITrackShowTitle then
+            titlePosition = Options.POITrackTitleOffset - 4
+            timeTextPosition = timeTextPosition + (Options.POITrackTitleFontSize * 1.2 * scale) - 4
+            distanceTextPosition = distanceTextPosition + (Options.POITrackTitleFontSize * 1.2 * scale) - 4
+        end
+    end
+
+    poi.frame.DistanceText:ClearAllPoints()
+    poi.frame.DistanceText:SetPoint(point, poi.frame, relativePoint, 0, distanceTextPosition)
+    poi.frame.TimeText:ClearAllPoints()
+    poi.frame.TimeText:SetPoint(point, poi.frame, relativePoint, 0, timeTextPosition)
+    poi.frame.Title:ClearAllPoints()
+    poi.frame.Title:SetPoint(point, poi.frame, relativePoint, 0, titlePosition)
+
+    poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
+    poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
+    poi.frame.Title:SetShown(Options.POITrackShowTitle)
+end
+
+local function updatePoiTrack()
+    for _, pois in pairs(poiTrackPointTable) do
+        for _, poi in pairs(pois) do
+            if not Options.POITrackEnabled then
+                poi.visible = false
+                if poi.frame then
+                    poi.frame:Hide()
+                end
+            end
+            if poi.frame then
+                updatePOITrackNode(poi)
+            end
+        end
+    end
+end
+
+local function createPOITrackNode(table)
+    local poiTrackNode =  table.frame or CreateFrame("FRAME", nil, HUD)
+	poiTrackNode:SetSize(textureHeight * 1.5, textureHeight * 1.5)
+	poiTrackNode:SetPoint("CENTER");
+	poiTrackNode.texture = poiTrackNode:CreateTexture(nil, "ARTWORK")
+	poiTrackNode.texture:SetAllPoints(poiTrackNode)
+	poiTrackNode.texture:SetAtlas(table.atlasName)
+	poiTrackNode:Hide()
+    poiTrackNode.DistanceText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    poiTrackNode.DistanceText:SetJustifyV("TOP")
+    poiTrackNode.DistanceText:SetSize(0, 16)
+    poiTrackNode.DistanceText:SetParent(poiTrackNode)
+    poiTrackNode.TimeText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    poiTrackNode.TimeText:SetJustifyV("TOP")
+    poiTrackNode.TimeText:SetSize(0, 16)
+    poiTrackNode.TimeText:SetParent(poiTrackNode)
+    poiTrackNode.Title = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    poiTrackNode.Title:SetJustifyV("TOP")
+    poiTrackNode.Title:SetSize(0, 16)
+    poiTrackNode.Title:SetParent(poiTrackNode)
+    poiTrackNode.Title:SetText(table.name)
+    poiTrackNode.type = "poiTrack"
+    poiTrackNode.instance = table.instance
+    poiTrackNode.x = table.x
+    poiTrackNode.y = table.y
+    poiTrackNode.elapsed = 0
+    poiTrackNode:SetScript("OnUpdate", questPointerSetTexts)
+	return poiTrackNode
+end
+
+local function setPOITrackNodes()
+    if not Options.POITrackEnabled then return end
+    if poiTrackThrottle and poiTrackThrottle >= Options.POITrackInterval then
+        poiTrackThrottle = 0
+        local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
+        if x and y then
+            for map, pois in pairs(poiTrackPointTable) do
+                for poi, node in pairs(pois) do
+                    poiTrackPointTable[map][poi].visible = false
+                end
+            end
+
+            if not poiTrackPointTable[player.uiMapID] then
+                poiTrackPointTable[player.uiMapID] = {}
+            end
+            
+            local mapPOIs = GetAreaPOIForMap(player.uiMapID)
+            if mapPOIs then
+                for _, poiID in ipairs(mapPOIs) do
+                    if not poiTrackPointTable[player.uiMapID]["POI_" .. poiID] then
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.y
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                    end
+                    poiTrackPointTable[player.uiMapID]["POI_" .. poiID].visible = true
+                end
+            end
+
+            local mapTaxis = GetTaxiNodesForMap(player.uiMapID)
+            if mapTaxis then
+                for _, taxi in ipairs(mapTaxis) do
+                    if not poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID] then
+                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID] = taxi
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].position.x, poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].position.y
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID])
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID])
+                    end
+                    poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].visible = true
+                end
+            end
+        end
+    end
+    for _, pois in pairs(poiTrackPointTable) do
+        for _, poi in pairs(pois) do
+            local shown = false
+            if poi.visible and player.angle then
+                if poi.x and poi.y and poi.instance then
+                    local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
+                    if angle < 0 then angle = angle + (2 * PI) end
+                    if angle > PI then angle = angle - (2 * PI) end
+                    if angle then
+                        local visible = math.rad(Options.Degrees)/2
+                        if angle < visible and angle > -visible then
+                            poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
+                            shown = true
+                        end
+                    end
+                end
+            end
+            poi.frame:SetShown(shown)
+        end
+    end
+end
+
 local function updateHeading()
     if HUD.heading and HUD.heading.text and player.angle then
         local heading = (360 - (player.angle * (180 / math.pi))) % 360
@@ -3480,6 +3971,7 @@ local function updateHUD(force)
     setQuestsIcons()
     setGroupIcons()
     setGatherMateNodes()
+    setPOITrackNodes()
 end
 
 local function updatePointerTextures()
@@ -3501,6 +3993,7 @@ local function onUpdate(_, elapsed)
     timer = 0
     groupThrottle = groupThrottle + 1
     gatherMateThrottle = gatherMateThrottle + 1
+    poiTrackThrottle = poiTrackThrottle + 1
     updateHUD(false)
 end
 
@@ -3866,6 +4359,7 @@ function Addon:UpdateHUDSettings()
     updatePointerTextures()
     updateGroupTexts()
     updateGatherMate()
+    updatePoiTrack()
     UnregisterAttributeDriver(HUD, 'state-hudvisibility')
     RegisterAttributeDriver(HUD, "state-hudvisibility", Options.Visibility)
 end
@@ -4561,6 +5055,7 @@ function Addon:ConstructDefaultsAndOptions()
     self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
     self.Options.args.Profiles.order = 80
     IntegrationsOptions.args.GatherMate = GatherMateOptions
+    IntegrationsOptions.args.POITrack = POITrackOptions
     self.Options.args.AddonIntegrations = IntegrationsOptions
 
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
