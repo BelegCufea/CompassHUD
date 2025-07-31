@@ -3758,7 +3758,7 @@ end
 
 local function updatePOITrackNode(poi)
     local scale = Options.Scale * Options.VerticalScale * Options.POITrackScale
-    poi.frame:SetSize(textureHeight * Options.POITrackScale, textureHeight * Options.POITrackScale)
+    poi.frame:SetSize(textureHeight * Options.POITrackScale * 1.3, textureHeight * Options.POITrackScale * 1.3)
     local gameFontNormal = { fontColor = {}}
     gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
     gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
@@ -3837,11 +3837,12 @@ end
 
 local function createPOITrackNode(table)
     local poiTrackNode =  table.frame or CreateFrame("FRAME", nil, HUD)
-	poiTrackNode:SetSize(textureHeight * 1.5, textureHeight * 1.5)
+	poiTrackNode:SetSize(textureHeight, textureHeight)
 	poiTrackNode:SetPoint("CENTER");
 	poiTrackNode.texture = poiTrackNode:CreateTexture(nil, "ARTWORK")
 	poiTrackNode.texture:SetAllPoints(poiTrackNode)
 	poiTrackNode.texture:SetAtlas(table.atlasName)
+    poiTrackNode.texture:SetSize(textureHeight, textureHeight)
 	poiTrackNode:Hide()
     poiTrackNode.DistanceText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
     poiTrackNode.DistanceText:SetJustifyV("TOP")
