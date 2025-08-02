@@ -692,6 +692,7 @@ Addon.Defaults = {
         POITrackInterval           = 6,
         POITrackOffset             = 20,
         POITrackScale              = 1,
+        POITrackTextsDegrees       = 5,
         POITrackShowDistance       = true,
         POITrackShowTTA            = true,
         POITrackShowTitle          = true,
@@ -1741,6 +1742,18 @@ local POITrackOptions = {
             order = 20,
             name = "Texts",
             args = {
+                POITrackTextsDegrees = {
+                    type = "range",
+                    order = 90,
+                    name = "Texts visibility angle",
+                    width = "full",
+                    desc = "Texts will be shown only if the angle to the icon is less than this value.\nOnly the closest icon to heading will show texts.\nIf set to 0, then all selected texts are shown for every visible icon.",
+                    min = 0,
+                    max = 360,
+                    softMin = 0,
+                    softMax = 30,
+                    step = 0.5,
+                },
                 HeaderPOITrackDistance = {
                     type = "header",
                     order = 100,
@@ -4085,10 +4098,9 @@ local function setPOITrackNodes()
                     poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].visible = true
                 end
             end
-
-            Debug:Table("POITrack", poiTrackPointTable[player.uiMapID])
         end
     end
+    local minAngle = 360
     for _, pois in pairs(poiTrackPointTable) do
         for _, poi in pairs(pois) do
             local shown = false
@@ -4097,6 +4109,10 @@ local function setPOITrackNodes()
                     local distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
                     if Options.POITrackRadius == 0 or (distance and distance <= Options.POITrackRadius) then
                         local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
+                        poi.angle = angle
+                        if abs(angle) < minAngle then
+                            minAngle = abs(angle)
+                        end
                         if angle < 0 then angle = angle + (2 * PI) end
                         if angle > PI then angle = angle - (2 * PI) end
                         if angle then
@@ -4110,6 +4126,22 @@ local function setPOITrackNodes()
                 end
             end
             poi.frame:SetShown(shown)
+            poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
+            poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
+            poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
+            poi.shown = shown
+        end
+    end
+    if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
+        for _, pois in pairs(poiTrackPointTable) do
+            for _, poi in pairs(pois) do
+                if poi.visible and poi.shown and poi.angle then
+                    local showTexts = abs(poi.angle) <= (minAngle + 0.001)
+                    poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and showTexts)
+                    poi.frame.TimeText:SetShown(Options.POITrackShowTTA and showTexts)
+                    poi.frame.Title:SetShown(Options.POITrackShowTitle and showTexts)
+                end
+            end
         end
     end
 end
