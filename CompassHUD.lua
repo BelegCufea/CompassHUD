@@ -712,7 +712,7 @@ Addon.Defaults = {
         POITrackTitleFont          = "Friz Quadrata TT",
         POITrackTitleFontSize      = 12,
         POITrackTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        POITrackTitleFontFlags     = "",        
+        POITrackTitleFontFlags     = "",
     },
 }
 
@@ -1611,598 +1611,12 @@ Addon.Options = {
                     end,
                     args = {},
                 },
-                Group = {
-                    type = "group",
-                    order = 60,
-                    name = "Group",
-                    childGroups = "tab",
-                    args = {
-                        GroupAlert = {
-                            type = "description",
-                            name = "|cnPURE_RED_COLOR:Be aware that the compass is hidden in instances (dungeons, raids, delves, etc.), so this functionality won't be available there either.|r",
-                            fontSize = "medium",
-                            image = "Interface/EncounterJournal/UI-EJ-WarningTextIcon",
-                            order = 1,
-                        },
-                        GroupShowParty = {
-                            type = "toggle",
-                            name = "Show markers for party members",
-                            width = 1.5,
-                            order = 10,
-                            set = function(info, value)
-                                Addon.db.profile[info[#info]] = value
-                                Addon:HideGroupIcons()
-                                Addon:UpdateHUDSettings()
-                            end,
-                        },
-                        GroupShowRaid = {
-                            type = "toggle",
-                            name = "Show markers for raid members",
-                            width = 1.5,
-                            order = 20,
-                            set = function(info, value)
-                                Addon.db.profile[info[#info]] = value
-                                Addon:HideGroupIcons()
-                                Addon:UpdateHUDSettings()
-                            end,
-                        },
-                        BlankGroupStayArrow = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
-                        GroupStay = {
-                            type = "toggle",
-                            name = "Group markers stay on HUD",
-                            desc = "Show markers on the edge of compass if they are out of the HUD bounderies. ",
-                            width = 1.5,
-                            order = 30,
-                        },
-                        GroupInterval = {
-                            type = "range",
-                            order = 40,
-                            name = "Update throttle",
-                            desc = "Interval between checking group members' positions relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then positions will be updated 60/6 = 10 times per second.",
-                            width = 1.5,
-                            min = 1,
-                            max = 100,
-                            softMin = 1,
-                            softMax = 10,
-                            step = 1,
-                        },
-                        GroupMarkers = {
-                            type = "group",
-                            order = 100,
-                            name = "Markers",
-                            args = {
-                                HeaderGroupTexture = { type = "header", order = 100, name = "Group member on the same map", },
-                                GroupTexturePreview = {
-                                    type = "description",
-                                    order = 110,
-                                    name = "",
-                                    width = 1/6,
-                                    image = function(info)
-                                        local atlasID = Addon.db.profile.GroupTexture
-                                        if atlasID then
-                                            return getAtlasTexture(atlasID)
-                                        end
-                                        return nil
-                                    end,
-                                    imageWidth = 24,
-                                    imageHeight = 24,
-                                    imageCoords = function(info)
-                                        local atlasID = Addon.db.profile.GroupTexture
-                                        if atlasID then
-                                            return getAtlasCoords(atlasID)
-                                        end
-                                    end
-                                },
-                                GroupTexture = {
-                                    type = "select",
-                                    order = 120,
-                                    name = "Texture",
-                                    values = function() return getPointerAtlasIDs() end,
-                                    sorting = function() return getSortedPointerAtlasIDKeys() end,
-                                    set = function(info, value)
-                                        Addon.db.profile[info[#info]] = value
-                                        local texture = getPointerTextureByAtlasID(value)
-                                        Addon.db.profile.GroupScale = texture and texture.textureScale or 1
-                                        Addon.db.profile.GroupRotate = (texture and texture.textureRotate) and 1 or -1
-                                        Addon:HideGroupIcons()
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                },
-                                GroupTextureCustom = {
-                                    type = "input",
-                                    order = 130,
-                                    name = "Custom atlas ID",
-                                    desc = "AtlasID of the texture. You can enter your own. Try WeakAuras' internal texture browser to pick one.",
-                                    width = 2,
-                                    get = function(info)
-                                        return Addon.db.profile.GroupTexture
-                                    end,
-                                    set = function(info, value)
-                                        Addon.db.profile.GroupTexture = value
-                                        Addon:HideGroupIcons()
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                },
-                                GroupRotate = {
-                                    type = "toggle",
-                                    order = 140,
-                                    name = "Edge rotation",
-                                    desc = "When enabled, the marker will flip when at the top side of the compass and rotate 90° when on the edge.",
-                                    get = function(info)
-                                        return Addon.db.profile[info[#info]] and Addon.db.profile[info[#info]] > 0
-                                    end,
-                                    set = function(info, value)
-                                        Addon.db.profile[info[#info]] = value and 1 or -1
-                                    end,
-                                },
-                                GroupScale = {
-                                    type = "range",
-                                    name = "Scale",
-                                    order = 150,
-                                    min = 0.01,
-                                    max = 5,
-                                    softMin = 0.2,
-                                    softMax = 3,
-                                    step = 0.01,
-                                    bigStep = 0.05,
-                                    isPercent = true,
-                                },
-                                GroupOffset = {
-                                    type = "range",
-                                    order = 160,
-                                    name = "Vertical adjustment",
-                                    min = -64,
-                                    max = 64,
-                                    step = 1,
-                                },
-                                HeaderGroupShowAllZones = { type = "header", order = 200, name = "Group member on different map", },
-                                DescGroupShowAllZone = {
-                                    type = "description",
-                                    order = 200.1,
-                                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Typically on different continet, zone behind portal, underground zone etc. These markers may not point to the right direction.|r"
-                                },
-                                GroupShowAllZones = {
-                                    type = "toggle",
-                                    name = "Show marker",
-                                    order = 201,
-                                },
-                                GroupZoneDesaturate = {
-                                    type = "toggle",
-                                    name = "Desaturate marker",
-                                    order = 202,
-                                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
-                                },
-                                GroupZoneTransparency = {
-                                    type = "range",
-                                    name = "Marker opacity",
-                                    order = 203,
-                                    min = 0.01,
-                                    max = 1,
-                                    softMin = 0.1,
-                                    softMax = 1,
-                                    step = 0.01,
-                                    bigStep = 0.05,
-                                    isPercent = true,
-                                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
-                                },
-                                BlankGroupZoneTexturePreview = { type = "description", order = 209, fontSize = "small",name = "",width = "full", },
-                                GroupZoneTexturePreview = {
-                                    type = "description",
-                                    order = 210,
-                                    name = "",
-                                    width = 1/6,
-                                    image = function(info)
-                                        local atlasID = Addon.db.profile.GroupZoneTexture
-                                        if atlasID then
-                                            return getAtlasTexture(atlasID)
-                                        end
-                                        return nil
-                                    end,
-                                    imageWidth = 24,
-                                    imageHeight = 24,
-                                    imageCoords = function(info)
-                                        local atlasID = Addon.db.profile.GroupZoneTexture
-                                        if atlasID then
-                                            return getAtlasCoords(atlasID)
-                                        end
-                                    end
-                                },
-                                GroupZoneTexture = {
-                                    type = "select",
-                                    order = 220,
-                                    name = "Texture",
-                                    values = function() return getPointerAtlasIDs() end,
-                                    sorting = function() return getSortedPointerAtlasIDKeys() end,
-                                    set = function(info, value)
-                                        Addon.db.profile[info[#info]] = value
-                                        local texture = getPointerTextureByAtlasID(value)
-                                        Addon.db.profile.GroupZoneScale = texture and texture.textureScale or 1
-                                        Addon.db.profile.GroupZoneRotate = (texture and texture.textureRotate) and 1 or -1
-                                        Addon:HideGroupIcons()
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
-                                },
-                                GroupZoneTextureCustom = {
-                                    type = "input",
-                                    order = 230,
-                                    name = "Custom atlas ID",
-                                    desc = "AtlasID of the texture. You can enter your own. Try WeakAuras' internal texture browser to pick one.",
-                                    width = 2,
-                                    get = function(info)
-                                        return Addon.db.profile.GroupZoneTexture
-                                    end,
-                                    set = function(info, value)
-                                        Addon.db.profile.GroupZoneTexture = value
-                                        Addon:HideGroupIcons()
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
-                                },
-                                GroupZoneRotate = {
-                                    type = "toggle",
-                                    order = 240,
-                                    name = "Edge rotation",
-                                    desc = "When enabled, the marker will flip when at the top side of the compass and rotate 90° when on the edge.",
-                                    get = function(info)
-                                        return Addon.db.profile[info[#info]] and Addon.db.profile[info[#info]] > 0
-                                    end,
-                                    set = function(info, value)
-                                        Addon.db.profile[info[#info]] = value and 1 or -1
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
-                                },
-                                GroupZoneScale = {
-                                    type = "range",
-                                    name = "Scale",
-                                    order = 250,
-                                    min = 0.01,
-                                    max = 5,
-                                    softMin = 0.2,
-                                    softMax = 3,
-                                    step = 0.01,
-                                    bigStep = 0.05,
-                                    isPercent = true,
-                                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
-                                },
-                                GroupZoneOffset = {
-                                    type = "range",
-                                    order = 260,
-                                    name = "Vertical adjustment",
-                                    min = -64,
-                                    max = 64,
-                                    step = 1,
-                                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
-                                },
-                            },
-                        },
-                        GroupTexts = {
-                            type = "group",
-                            order = 200,
-                            name = "Texts",
-                            args = {
-                                HeaderGroupPartyNameShow = { type = "header", order = 10, name = "Player names in party", },
-                                GroupPartyNameShow = {
-                                    type = "toggle",
-                                    order = 20,
-                                    name = "Show",
-                                },
-                                GroupPartyNameOffset = {
-                                    type = "range",
-                                    order = 30,
-                                    name = "Vertical adjustment",
-                                    min = -20,
-                                    max = 20,
-                                    step = 0.5,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
-                                },
-                                BlankGroupPartyNameBorder = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
-                                GroupPartyNameBorder = {
-                                    type = "select",
-                                    order = 40,
-                                    name = "Border",
-                                    dialogControl = "LSM30_Border",
-                                    values = AceGUIWidgetLSMlists.border,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
-                                },
-                                GroupPartyNameBorderClass = {
-                                    type = "toggle",
-                                    order = 45,
-                                    name = "Class color",
-                                    width = 3/4,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
-                                },
-                                GroupPartyNameBorderColor = {
-                                    type = "color",
-                                    order = 50,
-                                    name = "Custom color",
-                                    width = 3/4,
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        return Addon.db.profile[info[#info]].r, Addon.db.profile[info[#info]].g, Addon.db.profile[info[#info]].b, Addon.db.profile[info[#info]].a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        Addon.db.profile[info[#info]].r = r
-                                        Addon.db.profile[info[#info]].g = g
-                                        Addon.db.profile[info[#info]].b = b
-                                        Addon.db.profile[info[#info]].a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow or Addon.db.profile.GroupPartyNameBorderClass end,
-                                },
-                                GroupPartyNameBorderThickness = {
-                                    type = "range",
-                                    order = 60,
-                                    name = "Thickness",
-                                    width = 3/4,
-                                    min = 1,
-                                    max = 24,
-                                    step = 0.5,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
-                                },
-                                GroupPartyNameBackground = {
-                                    type = "select",
-                                    order = 70,
-                                    name = "Background",
-                                    dialogControl = "LSM30_Background",
-                                    values = AceGUIWidgetLSMlists['background'],
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
-                                },
-                                GroupPartyNameBackgroundClass = {
-                                    type = "toggle",
-                                    order = 75,
-                                    name = "Class color",
-                                    width = 3/4,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
-                                },
-                                GroupPartyNameBackgroundColor = {
-                                    type = "color",
-                                    order = 80,
-                                    name = "Custom color",
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        return Addon.db.profile[info[#info]].r, Addon.db.profile[info[#info]].g, Addon.db.profile[info[#info]].b, Addon.db.profile[info[#info]].a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        Addon.db.profile[info[#info]].r = r
-                                        Addon.db.profile[info[#info]].g = g
-                                        Addon.db.profile[info[#info]].b = b
-                                        Addon.db.profile[info[#info]].a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow or Addon.db.profile.GroupPartyNameBackgroundClass end,
-                                },
-                                BlankGroupPartyNameCustomFont = { type = "description", order = 89, fontSize = "small",name = "",width = "full", },
-                                GroupPartyNameCustomFont = {
-                                    type = "toggle",
-                                    order = 90,
-                                    name = "Custom font",
-                                    width = 3/4,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
-                                },
-                                GroupPartyNameFont = {
-                                    type = "select",
-                                    order = 100,
-                                    name = "Font",
-                                    width = 1,
-                                    dialogControl = "LSM30_Font",
-                                    values = AceGUIWidgetLSMlists['font'],
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow or not Addon.db.profile.GroupPartyNameCustomFont end,
-                                },
-                                GroupPartyNameFontSize = {
-                                    type = "range",
-                                    order = 110,
-                                    name = "Size",
-                                    width = 3/4,
-                                    min = 2,
-                                    max = 36,
-                                    step = 0.5,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow or not Addon.db.profile.GroupPartyNameCustomFont end,
-                                },
-                                GroupPartyNameFontFlags = {
-                                    type = "select",
-                                    order = 120,
-                                    name = "Outline",
-                                    width = 3/4,
-                                    values = {
-                                        [""] = "None",
-                                        ["OUTLINE"] = "Normal",
-                                        ["THICKOUTLINE"] = "Thick",
-                                    },
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow or not Addon.db.profile.GroupPartyNameCustomFont end,
-                                },
-                                BlankGroupPartyNameClassColor = { type = "description", order = 129, fontSize = "small",name = "",width = "full", },
-                                GroupPartyNameClassColor = {
-                                    type = "toggle",
-                                    order = 130,
-                                    name = "Use class color",
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
-                                },
-                                GroupPartyNameFontColor = {
-                                    type = "color",
-                                    order = 140,
-                                    name = "Custom color",
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        local color = Addon.db.profile[info[#info]]
-                                        return color.r, color.g, color.b, color.a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        local color = Addon.db.profile[info[#info]]
-                                        color.r = r
-                                        color.g = g
-                                        color.b = b
-                                        color.a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupPartyNameShow or Addon.db.profile.GroupPartyNameClassColor end,
-                                },
-                                HeaderGroupRaidNameShow = { type = "header", order = 210, name = "Player names in raid", },
-                                GroupRaidNameShow = {
-                                    type = "toggle",
-                                    order = 220,
-                                    name = "Show",
-                                },
-                                GroupRaidNameOffset = {
-                                    type = "range",
-                                    order = 230,
-                                    name = "Vertical adjustment",
-                                    min = -20,
-                                    max = 20,
-                                    step = 0.5,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
-                                },
-                                BlankGroupRaidNameBorder = { type = "description", order = 239, fontSize = "small",name = "",width = "full", },
-                                GroupRaidNameBorder = {
-                                    type = "select",
-                                    order = 240,
-                                    name = "Border",
-                                    dialogControl = "LSM30_Border",
-                                    values = AceGUIWidgetLSMlists.border,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
-                                },
-                                GroupRaidNameBorderClass = {
-                                    type = "toggle",
-                                    order = 245,
-                                    name = "Class color",
-                                    width = 3/4,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
-                                },
-                                GroupRaidNameBorderColor = {
-                                    type = "color",
-                                    order = 250,
-                                    name = "Custom color",
-                                    width = 3/4,
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        return Addon.db.profile[info[#info]].r, Addon.db.profile[info[#info]].g, Addon.db.profile[info[#info]].b, Addon.db.profile[info[#info]].a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        Addon.db.profile[info[#info]].r = r
-                                        Addon.db.profile[info[#info]].g = g
-                                        Addon.db.profile[info[#info]].b = b
-                                        Addon.db.profile[info[#info]].a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow or Addon.db.profile.GroupRaidNameBorderClass end,
-                                },
-                                GroupRaidNameBorderThickness = {
-                                    type = "range",
-                                    order = 260,
-                                    name = "Border thickness",
-                                    width = 3/4,
-                                    min = 1,
-                                    max = 24,
-                                    step = 0.5,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
-                                },
-                                GroupRaidNameBackground = {
-                                    type = "select",
-                                    order = 270,
-                                    name = "Background",
-                                    dialogControl = "LSM30_Background",
-                                    values = AceGUIWidgetLSMlists['background'],
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
-                                },
-                                GroupRaidNameBackgroundClass = {
-                                    type = "toggle",
-                                    order = 275,
-                                    name = "Class color",
-                                    width = 3/4,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
-                                },
-                                GroupRaidNameBackgroundColor = {
-                                    type = "color",
-                                    order = 280,
-                                    name = "Custom color",
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        return Addon.db.profile[info[#info]].r, Addon.db.profile[info[#info]].g, Addon.db.profile[info[#info]].b, Addon.db.profile[info[#info]].a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        Addon.db.profile[info[#info]].r = r
-                                        Addon.db.profile[info[#info]].g = g
-                                        Addon.db.profile[info[#info]].b = b
-                                        Addon.db.profile[info[#info]].a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow or Addon.db.profile.GroupRaidNameBackgroundClass end,
-                                },
-                                BlankGroupRaidNameCustomFont = { type = "description", order = 289, fontSize = "small",name = "",width = "full", },
-                                GroupRaidNameCustomFont = {
-                                    type = "toggle",
-                                    order = 290,
-                                    name = "Custom font",
-                                    width = 3/4,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
-                                },
-                                GroupRaidNameFont = {
-                                    type = "select",
-                                    order = 300,
-                                    name = "Font",
-                                    width = 1,
-                                    dialogControl = "LSM30_Font",
-                                    values = AceGUIWidgetLSMlists['font'],
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow or not Addon.db.profile.GroupRaidNameCustomFont end,
-                                },
-                                GroupRaidNameFontSize = {
-                                    type = "range",
-                                    order = 310,
-                                    name = "Size",
-                                    width = 3/4,
-                                    min = 2,
-                                    max = 36,
-                                    step = 0.5,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow or not Addon.db.profile.GroupRaidNameCustomFont end,
-                                },
-                                GroupRaidNameFontFlags = {
-                                    type = "select",
-                                    order = 320,
-                                    name = "Outline",
-                                    width = 3/4,
-                                    values = {
-                                        [""] = "None",
-                                        ["OUTLINE"] = "Normal",
-                                        ["THICKOUTLINE"] = "Thick",
-                                    },
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow or not Addon.db.profile.GroupRaidNameCustomFont end,
-                                },
-                                BlankGroupRaidNameClassColor = { type = "description", order = 329, fontSize = "small",name = "",width = "full", },
-                                GroupRaidNameClassColor = {
-                                    type = "toggle",
-                                    order = 330,
-                                    name = "Use class color",
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
-                                },
-                                GroupRaidNameFontColor = {
-                                    type = "color",
-                                    order = 340,
-                                    name = "Custom color",
-                                    hasAlpha = true,
-                                    get = function(info)
-                                        local color = Addon.db.profile[info[#info]]
-                                        return color.r, color.g, color.b, color.a
-                                    end,
-                                    set = function (info, r, g, b, a)
-                                        local color = Addon.db.profile[info[#info]]
-                                        color.r = r
-                                        color.g = g
-                                        color.b = b
-                                        color.a = a
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                    disabled = function() return not Addon.db.profile.GroupRaidNameShow or Addon.db.profile.GroupRaidNameClassColor end,
-                                },
-                            },
-                        },
-                    },
-                },
             },
         },
     },
 }
 
-local IntegrationsOptions = {
+local MinimapOptions = {
     type = "group",
     order = 10,
     name ="Integrations",
@@ -2216,562 +1630,1232 @@ local IntegrationsOptions = {
     args = {},
 }
 
-local GatherMateOptions = {
+local POITrackOptions = {
     type = "group",
     order = 10,
-    name = "GatherMate",
+    name = "Points of interest",
+    childGroups = "tab",
     args = {
-        GatherMateEnabled = {
-            type = "toggle",
-            name = "Enabled",
-            width = "full",
+        Settings = {
+            type = "group",
             order = 10,
+            name = "General",
+            args = {
+                ModuleDescription = {
+                    type = "description",
+                    order = 0,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This module will display location, name, distance and TTA of some minimap icons.|r",
+                    fontSize = "medium",
+                },
+                POITrackEnabled = {
+                    type = "toggle",
+                    name = "Enabled",
+                    width = "full",
+                    order = 10,
+                },
+                POITrackRadius = {
+                    type = "range",
+                    order = 20,
+                    name = "Scanning radius",
+                    desc = "Radius around the player in which nodes will be added to the HUD.\nIf set to 0, then all nodes in current zone will be added.",
+                    min = 0,
+                    max = 10000,
+                    softMin = 0,
+                    softMax = 5000,
+                    step = 1,
+                    bigStep = 10,
+                },
+                POITrackInterval = {
+                    type = "range",
+                    order = 30,
+                    name = "Update throttle",
+                    desc = "Interval between adding/removing nodes on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
+                    min = 1,
+                    max = 100,
+                    softMin = 1,
+                    softMax = 10,
+                    step = 1,
+                },
+                HeaderPOITrackNode = {
+                    type = "header",
+                    order = 50,
+                    name = "Node"
+                },
+                POITrackOffset = {
+                    type = "range",
+                    order = 60,
+                    name = "Vertical adjustment",
+                    min = -64,
+                    max = 64,
+                    step = 0.5,
+                },
+                POITrackScale = {
+                    type = "range",
+                    order = 70,
+                    name = "Scale",
+                    min = 0,
+                    max = 3,
+                    step = 0.01,
+                    isPercent = true,
+                },
+            },
         },
-        GatherMateRadius = {
-            type = "range",
+        Texts = {
+            type = "group",
             order = 20,
-            name = "Scanning radius",
-            min = 1,
-            max = 2000,
-            softMin = 50,
-            softMax = 1000,
-            step = 1,
-            bigStep = 5,
-        },
-        GatherMateInterval = {
-            type = "range",
-            order = 30,
-            name = "Update throttle",
-            desc = "Interval between adding/removing nodes on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
-            min = 1,
-            max = 100,
-            softMin = 1,
-            softMax = 10,
-            step = 1,
-        },
-        HeaderGatherMateNode = {
-            type = "header",
-            order = 50,
-            name = "Node"
-        },
-        GatherMateOffset = {
-            type = "range",
-            order = 60,
-            name = "Vertical adjustment",
-            min = -64,
-            max = 64,
-            step = 0.5,
-        },
-        GatherMateScale = {
-            type = "range",
-            order = 70,
-            name = "Scale",
-            min = 0,
-            max = 3,
-            step = 0.01,
-            isPercent = true,
-        },
-        HeaderGatherMateDistance = {
-            type = "header",
-            order = 100,
-            name = "Distance text"
-        },
-        GatherMateShowDistance = {
-            type = "toggle",
-            order = 110,
-            name = "Show",
-        },
-        GatherMateDistanceOffset = {
-            type = "range",
-            order = 120,
-            name = "Vertical adjustment",
-            min = -20,
-            max = 20,
-            step = 0.5,
-        },
-        GatherMateDistanceCustomFont = {
-            type = "toggle",
-            order = 130,
-            name = "Use custom font",
-        },
-        GatherMateDistanceFont = {
-            type = "select",
-            order = 140,
-            name = "Font",
-            width = 1,
-            dialogControl = "LSM30_Font",
-            values = AceGUIWidgetLSMlists['font'],
-            disabled = function() return not Options.GatherMateDistanceCustomFont end,
-        },
-        GatherMateDistanceFontSize = {
-            type = "range",
-            order = 150,
-            name = "Size",
-            width = 3/4,
-            min = 2,
-            max = 36,
-            step = 0.5,
-            disabled = function() return not Options.GatherMateDistanceCustomFont end,
-        },
-        GatherMateDistanceFontFlags = {
-            type = "select",
-            order = 160,
-            name = "Outline",
-            width = 3/4,
-            values = {
-                [""] = "None",
-                ["OUTLINE"] = "Normal",
-                ["THICKOUTLINE"] = "Thick",
+            name = "Texts",
+            args = {
+                HeaderPOITrackDistance = {
+                    type = "header",
+                    order = 100,
+                    name = "Distance text"
+                },
+                POITrackShowDistance = {
+                    type = "toggle",
+                    order = 110,
+                    name = "Show",
+                },
+                POITrackDistanceOffset = {
+                    type = "range",
+                    order = 120,
+                    name = "Vertical adjustment",
+                    min = -20,
+                    max = 20,
+                    step = 0.5,
+                },
+                POITrackDistanceCustomFont = {
+                    type = "toggle",
+                    order = 130,
+                    name = "Use custom font",
+                },
+                POITrackDistanceFont = {
+                    type = "select",
+                    order = 140,
+                    name = "Font",
+                    width = 1,
+                    dialogControl = "LSM30_Font",
+                    values = AceGUIWidgetLSMlists['font'],
+                    disabled = function() return not Options.POITrackDistanceCustomFont end,
+                },
+                POITrackDistanceFontSize = {
+                    type = "range",
+                    order = 150,
+                    name = "Size",
+                    width = 3/4,
+                    min = 2,
+                    max = 36,
+                    step = 0.5,
+                    disabled = function() return not Options.POITrackDistanceCustomFont end,
+                },
+                POITrackDistanceFontFlags = {
+                    type = "select",
+                    order = 160,
+                    name = "Outline",
+                    width = 3/4,
+                    values = {
+                        [""] = "None",
+                        ["OUTLINE"] = "Normal",
+                        ["THICKOUTLINE"] = "Thick",
+                    },
+                    disabled = function() return not Options.POITrackDistanceCustomFont end,
+                },
+                POITrackDistanceFontColor = {
+                    type = "color",
+                    order = 170,
+                    name = "Color",
+                    width = 1/2,
+                    hasAlpha = true,
+                    get = function(info)
+                        local color = Addon.db.profile[info[#info]]
+                        return color.r, color.g, color.b, color.a
+                    end,
+                    set = function (info, r, g, b, a)
+                        local color = Addon.db.profile[info[#info]]
+                        color.r = r
+                        color.g = g
+                        color.b = b
+                        color.a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                    disabled = function() return not Options.POITrackDistanceCustomFont end,
+                },
+                HeaderPOITrackTTA = {
+                    type = "header",
+                    order = 200,
+                    name = "Time to arrive"
+                },
+                POITrackShowTTA = {
+                    type = "toggle",
+                    order = 210,
+                    name = "Show",
+                },
+                POITrackTtaOffset = {
+                    type = "range",
+                    order = 220,
+                    name = "Vertical adjustment",
+                    min = -20,
+                    max = 20,
+                    step = 0.5,
+                },
+                POITrackTtaCustomFont = {
+                    type = "toggle",
+                    order = 230,
+                    name = "Use custom font",
+                },
+                POITrackTtaFont = {
+                    type = "select",
+                    order = 240,
+                    name = "Font",
+                    width = 1,
+                    dialogControl = "LSM30_Font",
+                    values = AceGUIWidgetLSMlists['font'],
+                    disabled = function() return not Options.POITrackTtaCustomFont end,
+                },
+                POITrackTtaFontSize = {
+                    type = "range",
+                    order = 250,
+                    name = "Size",
+                    width = 3/4,
+                    min = 2,
+                    max = 36,
+                    step = 0.5,
+                    disabled = function() return not Options.POITrackTtaCustomFont end,
+                },
+                POITrackTtaFontFlags = {
+                    type = "select",
+                    order = 260,
+                    name = "Outline",
+                    width = 3/4,
+                    values = {
+                        [""] = "None",
+                        ["OUTLINE"] = "Normal",
+                        ["THICKOUTLINE"] = "Thick",
+                    },
+                    disabled = function() return not Options.POITrackTtaCustomFont end,
+                },
+                POITrackTtaFontColor = {
+                    type = "color",
+                    order = 270,
+                    name = "Color",
+                    width = 1/2,
+                    hasAlpha = true,
+                    get = function(info)
+                        local color = Addon.db.profile[info[#info]]
+                        return color.r, color.g, color.b, color.a
+                    end,
+                    set = function (info, r, g, b, a)
+                        local color = Addon.db.profile[info[#info]]
+                        color.r = r
+                        color.g = g
+                        color.b = b
+                        color.a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                    disabled = function() return not Options.POITrackTtaCustomFont end,
+                },
+                HeaderPOITrackTitle = {
+                    type = "header",
+                    order = 300,
+                    name = "Node name"
+                },
+                POITrackShowTitle = {
+                    type = "toggle",
+                    order = 310,
+                    name = "Show",
+                },
+                POITrackTitleOffset = {
+                    type = "range",
+                    order = 320,
+                    name = "Vertical adjustment",
+                    min = -20,
+                    max = 20,
+                    step = 0.5,
+                },
+                POITrackTitleCustomFont = {
+                    type = "toggle",
+                    order = 330,
+                    name = "Use custom font",
+                },
+                POITrackTitleFont = {
+                    type = "select",
+                    order = 340,
+                    name = "Font",
+                    width = 1,
+                    dialogControl = "LSM30_Font",
+                    values = AceGUIWidgetLSMlists['font'],
+                    disabled = function() return not Options.POITrackTitleCustomFont end,
+                },
+                POITrackTitleFontSize = {
+                    type = "range",
+                    order = 350,
+                    name = "Size",
+                    width = 3/4,
+                    min = 2,
+                    max = 36,
+                    step = 0.5,
+                    disabled = function() return not Options.POITrackTitleCustomFont end,
+                },
+                POITrackTitleFontFlags = {
+                    type = "select",
+                    order = 360,
+                    name = "Outline",
+                    width = 3/4,
+                    values = {
+                        [""] = "None",
+                        ["OUTLINE"] = "Normal",
+                        ["THICKOUTLINE"] = "Thick",
+                    },
+                    disabled = function() return not Options.POITrackTitleCustomFont end,
+                },
+                POITrackTitleFontColor = {
+                    type = "color",
+                    order = 370,
+                    name = "Color",
+                    width = 1/2,
+                    hasAlpha = true,
+                    get = function(info)
+                        local color = Addon.db.profile[info[#info]]
+                        return color.r, color.g, color.b, color.a
+                    end,
+                    set = function (info, r, g, b, a)
+                        local color = Addon.db.profile[info[#info]]
+                        color.r = r
+                        color.g = g
+                        color.b = b
+                        color.a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                    disabled = function() return not Options.POITrackTitleCustomFont end,
+                },
             },
-            disabled = function() return not Options.GatherMateDistanceCustomFont end,
-        },
-        GatherMateDistanceFontColor = {
-            type = "color",
-            order = 170,
-            name = "Color",
-            width = 1/2,
-            hasAlpha = true,
-            get = function(info)
-                local color = Addon.db.profile[info[#info]]
-                return color.r, color.g, color.b, color.a
-            end,
-            set = function (info, r, g, b, a)
-                local color = Addon.db.profile[info[#info]]
-                color.r = r
-                color.g = g
-                color.b = b
-                color.a = a
-                Addon:UpdateHUDSettings()
-            end,
-            disabled = function() return not Options.GatherMateDistanceCustomFont end,
-        },
-        HeaderGatherMateTTA = {
-            type = "header",
-            order = 200,
-            name = "Time to arrive"
-        },
-        GatherMateShowTTA = {
-            type = "toggle",
-            order = 210,
-            name = "Show",
-        },
-        GatherMateTtaOffset = {
-            type = "range",
-            order = 220,
-            name = "Vertical adjustment",
-            min = -20,
-            max = 20,
-            step = 0.5,
-        },
-        GatherMateTtaCustomFont = {
-            type = "toggle",
-            order = 230,
-            name = "Use custom font",
-        },
-        GatherMateTtaFont = {
-            type = "select",
-            order = 240,
-            name = "Font",
-            width = 1,
-            dialogControl = "LSM30_Font",
-            values = AceGUIWidgetLSMlists['font'],
-            disabled = function() return not Options.GatherMateTtaCustomFont end,
-        },
-        GatherMateTtaFontSize = {
-            type = "range",
-            order = 250,
-            name = "Size",
-            width = 3/4,
-            min = 2,
-            max = 36,
-            step = 0.5,
-            disabled = function() return not Options.GatherMateTtaCustomFont end,
-        },
-        GatherMateTtaFontFlags = {
-            type = "select",
-            order = 260,
-            name = "Outline",
-            width = 3/4,
-            values = {
-                [""] = "None",
-                ["OUTLINE"] = "Normal",
-                ["THICKOUTLINE"] = "Thick",
-            },
-            disabled = function() return not Options.GatherMateTtaCustomFont end,
-        },
-        GatherMateTtaFontColor = {
-            type = "color",
-            order = 270,
-            name = "Color",
-            width = 1/2,
-            hasAlpha = true,
-            get = function(info)
-                local color = Addon.db.profile[info[#info]]
-                return color.r, color.g, color.b, color.a
-            end,
-            set = function (info, r, g, b, a)
-                local color = Addon.db.profile[info[#info]]
-                color.r = r
-                color.g = g
-                color.b = b
-                color.a = a
-                Addon:UpdateHUDSettings()
-            end,
-            disabled = function() return not Options.GatherMateTtaCustomFont end,
-        },
-        HeaderGatherMateTitle = {
-            type = "header",
-            order = 300,
-            name = "Node name"
-        },
-        GatherMateShowTitle = {
-            type = "toggle",
-            order = 310,
-            name = "Show",
-        },
-        GatherMateTitleOffset = {
-            type = "range",
-            order = 320,
-            name = "Vertical adjustment",
-            min = -20,
-            max = 20,
-            step = 0.5,
-        },
-        GatherMateTitleCustomFont = {
-            type = "toggle",
-            order = 330,
-            name = "Use custom font",
-        },
-        GatherMateTitleFont = {
-            type = "select",
-            order = 340,
-            name = "Font",
-            width = 1,
-            dialogControl = "LSM30_Font",
-            values = AceGUIWidgetLSMlists['font'],
-            disabled = function() return not Options.GatherMateTitleCustomFont end,
-        },
-        GatherMateTitleFontSize = {
-            type = "range",
-            order = 350,
-            name = "Size",
-            width = 3/4,
-            min = 2,
-            max = 36,
-            step = 0.5,
-            disabled = function() return not Options.GatherMateTitleCustomFont end,
-        },
-        GatherMateTitleFontFlags = {
-            type = "select",
-            order = 360,
-            name = "Outline",
-            width = 3/4,
-            values = {
-                [""] = "None",
-                ["OUTLINE"] = "Normal",
-                ["THICKOUTLINE"] = "Thick",
-            },
-            disabled = function() return not Options.GatherMateTitleCustomFont end,
-        },
-        GatherMateTitleFontColor = {
-            type = "color",
-            order = 370,
-            name = "Color",
-            width = 1/2,
-            hasAlpha = true,
-            get = function(info)
-                local color = Addon.db.profile[info[#info]]
-                return color.r, color.g, color.b, color.a
-            end,
-            set = function (info, r, g, b, a)
-                local color = Addon.db.profile[info[#info]]
-                color.r = r
-                color.g = g
-                color.b = b
-                color.a = a
-                Addon:UpdateHUDSettings()
-            end,
-            disabled = function() return not Options.GatherMateTitleCustomFont end,
         },
     },
 }
 
-local POITrackOptions = {
+local GroupOptions = {
     type = "group",
-    order = 10,
-    name = "POITrack",
+    order = 110,
+    name = "Party/Raid",
+    childGroups = "tab",
     args = {
-        POITrackEnabled = {
-            type = "toggle",
-            name = "Enabled",
-            width = "full",
+        Settings = {
+            type = "group",
             order = 10,
+            name = "General",
+            args = {
+                ModuleDescription = {
+                    type = "description",
+                    order = 0,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This module will display location and names of party and raid members.|r",
+                    fontSize = "medium",
+                },
+                GroupAlert = {
+                    type = "description",
+                    name = "|cnPURE_RED_COLOR:Be aware that the compass is hidden in instances (dungeons, raids, delves, etc.), so this functionality won't be available there either.|r",
+                    fontSize = "medium",
+                    image = "Interface/EncounterJournal/UI-EJ-WarningTextIcon",
+                    order = 1,
+                },
+                GroupShowParty = {
+                    type = "toggle",
+                    name = "Show markers for party members",
+                    desc = "Show markers for party members on the compass HUD.",
+                    width = "full",
+                    order = 10,
+                    set = function(info, value)
+                        Addon.db.profile[info[#info]] = value
+                        Addon:HideGroupIcons()
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                GroupShowRaid = {
+                    type = "toggle",
+                    name = "Show markers for raid members",
+                    desc = "Show markers for raid members on the compass HUD.",
+                    width = "full",
+                    order = 20,
+                    set = function(info, value)
+                        Addon.db.profile[info[#info]] = value
+                        Addon:HideGroupIcons()
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                BlankGroupStayArrow = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
+                GroupStay = {
+                    type = "toggle",
+                    name = "Group markers stay on HUD",
+                    desc = "Show markers on the edge of compass if they are out of the HUD bounderies. ",
+                    width = "full",
+                    order = 30,
+                },
+                GroupInterval = {
+                    type = "range",
+                    order = 40,
+                    name = "Update throttle",
+                    desc = "Interval between checking group members' positions relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then positions will be updated 60/6 = 10 times per second.",
+                    width = "full",
+                    min = 1,
+                    max = 100,
+                    softMin = 1,
+                    softMax = 10,
+                    step = 1,
+                },
+            },
         },
-        POITrackRadius = {
-            type = "range",
-            order = 20,
-            name = "Scanning radius",
-            min = 1,
-            max = 2000,
-            softMin = 50,
-            softMax = 1000,
-            step = 1,
-            bigStep = 5,
-        },
-        POITrackInterval = {
-            type = "range",
-            order = 30,
-            name = "Update throttle",
-            desc = "Interval between adding/removing nodes on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
-            min = 1,
-            max = 100,
-            softMin = 1,
-            softMax = 10,
-            step = 1,
-        },
-        HeaderPOITrackNode = {
-            type = "header",
-            order = 50,
-            name = "Node"
-        },
-        POITrackOffset = {
-            type = "range",
-            order = 60,
-            name = "Vertical adjustment",
-            min = -64,
-            max = 64,
-            step = 0.5,
-        },
-        POITrackScale = {
-            type = "range",
-            order = 70,
-            name = "Scale",
-            min = 0,
-            max = 3,
-            step = 0.01,
-            isPercent = true,
-        },
-        HeaderPOITrackDistance = {
-            type = "header",
+        GroupMarkers = {
+            type = "group",
             order = 100,
-            name = "Distance text"
-        },
-        POITrackShowDistance = {
-            type = "toggle",
-            order = 110,
-            name = "Show",
-        },
-        POITrackDistanceOffset = {
-            type = "range",
-            order = 120,
-            name = "Vertical adjustment",
-            min = -20,
-            max = 20,
-            step = 0.5,
-        },
-        POITrackDistanceCustomFont = {
-            type = "toggle",
-            order = 130,
-            name = "Use custom font",
-        },
-        POITrackDistanceFont = {
-            type = "select",
-            order = 140,
-            name = "Font",
-            width = 1,
-            dialogControl = "LSM30_Font",
-            values = AceGUIWidgetLSMlists['font'],
-            disabled = function() return not Options.POITrackDistanceCustomFont end,
-        },
-        POITrackDistanceFontSize = {
-            type = "range",
-            order = 150,
-            name = "Size",
-            width = 3/4,
-            min = 2,
-            max = 36,
-            step = 0.5,
-            disabled = function() return not Options.POITrackDistanceCustomFont end,
-        },
-        POITrackDistanceFontFlags = {
-            type = "select",
-            order = 160,
-            name = "Outline",
-            width = 3/4,
-            values = {
-                [""] = "None",
-                ["OUTLINE"] = "Normal",
-                ["THICKOUTLINE"] = "Thick",
+            name = "Textures",
+            args = {
+                HeaderGroupTexture = { type = "header", order = 100, name = "Group member on the same map", },
+                GroupOffset = {
+                    type = "range",
+                    order = 100,
+                    name = "Vertical adjustment",
+                    width = "full",
+                    min = -64,
+                    max = 64,
+                    step = 1,
+                },
+                GroupTexturePreview = {
+                    type = "description",
+                    order = 110,
+                    name = "",
+                    width = 1/6,
+                    image = function(info)
+                        local atlasID = Addon.db.profile.GroupTexture
+                        if atlasID then
+                            return getAtlasTexture(atlasID)
+                        end
+                        return nil
+                    end,
+                    imageWidth = 24,
+                    imageHeight = 24,
+                    imageCoords = function(info)
+                        local atlasID = Addon.db.profile.GroupTexture
+                        if atlasID then
+                            return getAtlasCoords(atlasID)
+                        end
+                    end
+                },
+                GroupTexture = {
+                    type = "select",
+                    order = 120,
+                    name = "Texture",
+                    values = function() return getPointerAtlasIDs() end,
+                    sorting = function() return getSortedPointerAtlasIDKeys() end,
+                    set = function(info, value)
+                        Addon.db.profile[info[#info]] = value
+                        local texture = getPointerTextureByAtlasID(value)
+                        Addon.db.profile.GroupScale = texture and texture.textureScale or 1
+                        Addon.db.profile.GroupRotate = (texture and texture.textureRotate) and 1 or -1
+                        Addon:HideGroupIcons()
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                GroupScale = {
+                    type = "range",
+                    name = "Scale",
+                    order = 130,
+                    min = 0.01,
+                    max = 5,
+                    softMin = 0.2,
+                    softMax = 3,
+                    step = 0.01,
+                    bigStep = 0.05,
+                    isPercent = true,
+                },
+                GroupTextureCustom = {
+                    type = "input",
+                    order = 140,
+                    name = "Custom atlas ID",
+                    desc = "AtlasID of the texture. You can enter your own. Try WeakAuras' internal texture browser to pick one.",
+                    width = "full",
+                    get = function(info)
+                        return Addon.db.profile.GroupTexture
+                    end,
+                    set = function(info, value)
+                        Addon.db.profile.GroupTexture = value
+                        Addon:HideGroupIcons()
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                GroupRotate = {
+                    type = "toggle",
+                    order = 150,
+                    name = "Edge rotation",
+                    desc = "When enabled, the marker will flip when at the top side of the compass and rotate 90° when on the edge.",
+                    get = function(info)
+                        return Addon.db.profile[info[#info]] and Addon.db.profile[info[#info]] > 0
+                    end,
+                    set = function(info, value)
+                        Addon.db.profile[info[#info]] = value and 1 or -1
+                    end,
+                },
+                HeaderGroupShowAllZones = { type = "header", order = 200, name = "Group member on different map", },
+                DescGroupShowAllZone = {
+                    type = "description",
+                    order = 200.1,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Typically on different continet, zone behind portal, underground zone etc. These markers may not point to the right direction.|r"
+                },
+                GroupShowAllZones = {
+                    type = "toggle",
+                    name = "Show marker",
+                    order = 201,
+                },
+                GroupZoneDesaturate = {
+                    type = "toggle",
+                    name = "Desaturate marker",
+                    order = 202,
+                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                },
+                GroupZoneOffset = {
+                    type = "range",
+                    order = 203,
+                    name = "Vertical adjustment",
+                    min = -64,
+                    max = 64,
+                    step = 1,
+                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                },
+                GroupZoneTransparency = {
+                    type = "range",
+                    name = "Marker opacity",
+                    order = 204,
+                    min = 0.01,
+                    max = 1,
+                    softMin = 0.1,
+                    softMax = 1,
+                    step = 0.01,
+                    bigStep = 0.05,
+                    isPercent = true,
+                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                },
+                BlankGroupZoneTexturePreview = { type = "description", order = 209, fontSize = "small",name = "",width = "full", },
+                GroupZoneTexturePreview = {
+                    type = "description",
+                    order = 210,
+                    name = "",
+                    width = 1/6,
+                    image = function(info)
+                        local atlasID = Addon.db.profile.GroupZoneTexture
+                        if atlasID then
+                            return getAtlasTexture(atlasID)
+                        end
+                        return nil
+                    end,
+                    imageWidth = 24,
+                    imageHeight = 24,
+                    imageCoords = function(info)
+                        local atlasID = Addon.db.profile.GroupZoneTexture
+                        if atlasID then
+                            return getAtlasCoords(atlasID)
+                        end
+                    end
+                },
+                GroupZoneTexture = {
+                    type = "select",
+                    order = 220,
+                    name = "Texture",
+                    values = function() return getPointerAtlasIDs() end,
+                    sorting = function() return getSortedPointerAtlasIDKeys() end,
+                    set = function(info, value)
+                        Addon.db.profile[info[#info]] = value
+                        local texture = getPointerTextureByAtlasID(value)
+                        Addon.db.profile.GroupZoneScale = texture and texture.textureScale or 1
+                        Addon.db.profile.GroupZoneRotate = (texture and texture.textureRotate) and 1 or -1
+                        Addon:HideGroupIcons()
+                        Addon:UpdateHUDSettings()
+                    end,
+                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                },
+                GroupZoneScale = {
+                    type = "range",
+                    name = "Scale",
+                    order = 230,
+                    min = 0.01,
+                    max = 5,
+                    softMin = 0.2,
+                    softMax = 3,
+                    step = 0.01,
+                    bigStep = 0.05,
+                    isPercent = true,
+                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                },
+                GroupZoneTextureCustom = {
+                    type = "input",
+                    order = 240,
+                    name = "Custom atlas ID",
+                    desc = "AtlasID of the texture. You can enter your own. Try WeakAuras' internal texture browser to pick one.",
+                    width = "full",
+                    get = function(info)
+                        return Addon.db.profile.GroupZoneTexture
+                    end,
+                    set = function(info, value)
+                        Addon.db.profile.GroupZoneTexture = value
+                        Addon:HideGroupIcons()
+                        Addon:UpdateHUDSettings()
+                    end,
+                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                },
+                GroupZoneRotate = {
+                    type = "toggle",
+                    order = 250,
+                    name = "Edge rotation",
+                    desc = "When enabled, the marker will flip when at the top side of the compass and rotate 90° when on the edge.",
+                    get = function(info)
+                        return Addon.db.profile[info[#info]] and Addon.db.profile[info[#info]] > 0
+                    end,
+                    set = function(info, value)
+                        Addon.db.profile[info[#info]] = value and 1 or -1
+                    end,
+                    disabled = function() return not Addon.db.profile.GroupShowAllZones end,
+                },
             },
-            disabled = function() return not Options.POITrackDistanceCustomFont end,
         },
-        POITrackDistanceFontColor = {
-            type = "color",
-            order = 170,
-            name = "Color",
-            width = 1/2,
-            hasAlpha = true,
-            get = function(info)
-                local color = Addon.db.profile[info[#info]]
-                return color.r, color.g, color.b, color.a
-            end,
-            set = function (info, r, g, b, a)
-                local color = Addon.db.profile[info[#info]]
-                color.r = r
-                color.g = g
-                color.b = b
-                color.a = a
-                Addon:UpdateHUDSettings()
-            end,
-            disabled = function() return not Options.POITrackDistanceCustomFont end,
-        },
-        HeaderPOITrackTTA = {
-            type = "header",
+        GroupTexts = {
+            type = "group",
             order = 200,
-            name = "Time to arrive"
-        },
-        POITrackShowTTA = {
-            type = "toggle",
-            order = 210,
-            name = "Show",
-        },
-        POITrackTtaOffset = {
-            type = "range",
-            order = 220,
-            name = "Vertical adjustment",
-            min = -20,
-            max = 20,
-            step = 0.5,
-        },
-        POITrackTtaCustomFont = {
-            type = "toggle",
-            order = 230,
-            name = "Use custom font",
-        },
-        POITrackTtaFont = {
-            type = "select",
-            order = 240,
-            name = "Font",
-            width = 1,
-            dialogControl = "LSM30_Font",
-            values = AceGUIWidgetLSMlists['font'],
-            disabled = function() return not Options.POITrackTtaCustomFont end,
-        },
-        POITrackTtaFontSize = {
-            type = "range",
-            order = 250,
-            name = "Size",
-            width = 3/4,
-            min = 2,
-            max = 36,
-            step = 0.5,
-            disabled = function() return not Options.POITrackTtaCustomFont end,
-        },
-        POITrackTtaFontFlags = {
-            type = "select",
-            order = 260,
-            name = "Outline",
-            width = 3/4,
-            values = {
-                [""] = "None",
-                ["OUTLINE"] = "Normal",
-                ["THICKOUTLINE"] = "Thick",
+            name = "Texts",
+            childGroups = "tab",
+            args = {
+                Party = {
+                    type = "group",
+                    order = 10,
+                    name = "Party",
+                    args = {
+                        GroupPartyNameShow = {
+                            type = "toggle",
+                            order = 20,
+                            name = "Show",
+                        },
+                        GroupPartyNameOffset = {
+                            type = "range",
+                            order = 30,
+                            name = "Vertical adjustment",
+                            min = -20,
+                            max = 20,
+                            step = 0.5,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
+                        },
+                        HeaderGroupPartyBorderBackground = { type = "header", order = 39, name = "Border and Background", },
+                        GroupPartyNameBorder = {
+                            type = "select",
+                            order = 40,
+                            width = 1,
+                            name = "Border",
+                            dialogControl = "LSM30_Border",
+                            values = AceGUIWidgetLSMlists.border,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
+                        },
+                        GroupPartyNameBorderThickness = {
+                            type = "range",
+                            order = 45,
+                            name = "Border thickness",
+                            width = 1,
+                            min = 1,
+                            max = 24,
+                            step = 0.5,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
+                        },
+                        BlankGroupPartyNameBorderColor = { type = "description", order = 49, fontSize = "small",name = "",width = "full", },
+                        GroupPartyNameBorderClass = {
+                            type = "toggle",
+                            order = 50,
+                            name = "Class color",
+                            width = 1,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
+                        },
+                        GroupPartyNameBorderColor = {
+                            type = "color",
+                            order = 55,
+                            name = "Custom color",
+                            width = 1,
+                            hasAlpha = true,
+                            get = function(info)
+                                return Addon.db.profile[info[#info]].r, Addon.db.profile[info[#info]].g, Addon.db.profile[info[#info]].b, Addon.db.profile[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Addon.db.profile[info[#info]].r = r
+                                Addon.db.profile[info[#info]].g = g
+                                Addon.db.profile[info[#info]].b = b
+                                Addon.db.profile[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow or Addon.db.profile.GroupPartyNameBorderClass end,
+                        },
+                        BlankGroupPartyNameBackground = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
+                        GroupPartyNameBackground = {
+                            type = "select",
+                            order = 70,
+                            name = "Background",
+                            width = 1,
+                            dialogControl = "LSM30_Background",
+                            values = AceGUIWidgetLSMlists['background'],
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
+                        },
+                        BlankGroupPartyNameBackgroundColor = { type = "description", order = 74, fontSize = "small",name = "",width = "full", },
+                        GroupPartyNameBackgroundClass = {
+                            type = "toggle",
+                            order = 75,
+                            name = "Class color",
+                            width = 1,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
+                        },
+                        GroupPartyNameBackgroundColor = {
+                            type = "color",
+                            order = 80,
+                            name = "Custom color",
+                            width = 1,
+                            hasAlpha = true,
+                            get = function(info)
+                                return Addon.db.profile[info[#info]].r, Addon.db.profile[info[#info]].g, Addon.db.profile[info[#info]].b, Addon.db.profile[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Addon.db.profile[info[#info]].r = r
+                                Addon.db.profile[info[#info]].g = g
+                                Addon.db.profile[info[#info]].b = b
+                                Addon.db.profile[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow or Addon.db.profile.GroupPartyNameBackgroundClass end,
+                        },
+                        HeaderGroupPartyFont = { type = "header", order = 89, name = "Font", },
+                        GroupPartyNameClassColor = {
+                            type = "toggle",
+                            order = 90,
+                            name = "Use class color",
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
+                        },
+                        GroupPartyNameFontColor = {
+                            type = "color",
+                            order = 100,
+                            name = "Custom color",
+                            hasAlpha = true,
+                            get = function(info)
+                                local color = Addon.db.profile[info[#info]]
+                                return color.r, color.g, color.b, color.a
+                            end,
+                            set = function (info, r, g, b, a)
+                                local color = Addon.db.profile[info[#info]]
+                                color.r = r
+                                color.g = g
+                                color.b = b
+                                color.a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow or Addon.db.profile.GroupPartyNameClassColor end,
+                        },
+                        BlankGroupPartyCustomFont = { type = "description", order = 109, fontSize = "small",name = "",width = "full", },
+                        GroupPartyNameCustomFont = {
+                            type = "toggle",
+                            order = 110,
+                            name = "Custom font",
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow end,
+                        },
+                        BlankGroupPartyNameCustomFontName = { type = "description", order = 119, fontSize = "small",name = "",width = "full", },
+                        GroupPartyNameFont = {
+                            type = "select",
+                            order = 120,
+                            name = "Font",
+                            width = 3/4,
+                            dialogControl = "LSM30_Font",
+                            values = AceGUIWidgetLSMlists['font'],
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow or not Addon.db.profile.GroupPartyNameCustomFont end,
+                        },
+                        GroupPartyNameFontSize = {
+                            type = "range",
+                            order = 130,
+                            name = "Size",
+                            width = 3/4,
+                            min = 2,
+                            max = 36,
+                            step = 0.5,
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow or not Addon.db.profile.GroupPartyNameCustomFont end,
+                        },
+                        GroupPartyNameFontFlags = {
+                            type = "select",
+                            order = 140,
+                            name = "Outline",
+                            width = 3/4,
+                            values = {
+                                [""] = "None",
+                                ["OUTLINE"] = "Normal",
+                                ["THICKOUTLINE"] = "Thick",
+                            },
+                            disabled = function() return not Addon.db.profile.GroupPartyNameShow or not Addon.db.profile.GroupPartyNameCustomFont end,
+                        },
+                    },
+                },
+                Raid = {
+                    type = "group",
+                    order = 20,
+                    name = "Raid",
+                    args = {
+                        GroupRaidNameShow = {
+                            type = "toggle",
+                            order = 220,
+                            name = "Show",
+                        },
+                        GroupRaidNameOffset = {
+                            type = "range",
+                            order = 230,
+                            name = "Vertical adjustment",
+                            min = -20,
+                            max = 20,
+                            step = 0.5,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                        },
+                        HeaderGroupRaidNameShow = { type = "header", order = 239, name = "Border and Background", },
+                        GroupRaidNameBorder = {
+                            type = "select",
+                            order = 240,
+                            name = "Border",
+                            width = 1,
+                            dialogControl = "LSM30_Border",
+                            values = AceGUIWidgetLSMlists.border,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                        },
+                        GroupRaidNameBorderThickness = {
+                            type = "range",
+                            order = 245,
+                            name = "Border thickness",
+                            width = 1,
+                            min = 1,
+                            max = 24,
+                            step = 0.5,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                        },
+                        BlankGroupRaidNameBorderColor = { type = "description", order = 249, fontSize = "small",name = "",width = "full", },
+                        GroupRaidNameBorderClass = {
+                            type = "toggle",
+                            order = 250,
+                            name = "Class color",
+                            width = 1,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                        },
+                        GroupRaidNameBorderColor = {
+                            type = "color",
+                            order = 255,
+                            name = "Custom color",
+                            width = 1,
+                            hasAlpha = true,
+                            get = function(info)
+                                return Addon.db.profile[info[#info]].r, Addon.db.profile[info[#info]].g, Addon.db.profile[info[#info]].b, Addon.db.profile[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Addon.db.profile[info[#info]].r = r
+                                Addon.db.profile[info[#info]].g = g
+                                Addon.db.profile[info[#info]].b = b
+                                Addon.db.profile[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow or Addon.db.profile.GroupRaidNameBorderClass end,
+                        },
+                        BlankGroupRaidNameBackground = { type = "description", order = 269, fontSize = "small",name = "",width = "full", },
+                        GroupRaidNameBackground = {
+                            type = "select",
+                            order = 270,
+                            name = "Background",
+                            width = 1,
+                            dialogControl = "LSM30_Background",
+                            values = AceGUIWidgetLSMlists['background'],
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                        },
+                        BlankGroupRaidNameBackgroundColor = { type = "description", order = 274, fontSize = "small",name = "",width = "full", },
+                        GroupRaidNameBackgroundClass = {
+                            type = "toggle",
+                            order = 275,
+                            name = "Class color",
+                            width = 1,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                        },
+                        GroupRaidNameBackgroundColor = {
+                            type = "color",
+                            order = 280,
+                            name = "Custom color",
+                            width = 1,
+                            hasAlpha = true,
+                            get = function(info)
+                                return Addon.db.profile[info[#info]].r, Addon.db.profile[info[#info]].g, Addon.db.profile[info[#info]].b, Addon.db.profile[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Addon.db.profile[info[#info]].r = r
+                                Addon.db.profile[info[#info]].g = g
+                                Addon.db.profile[info[#info]].b = b
+                                Addon.db.profile[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow or Addon.db.profile.GroupRaidNameBackgroundClass end,
+                        },
+                        HeaderGroupPartyFont = { type = "header", order = 289, name = "Font", },
+                        GroupRaidNameClassColor = {
+                            type = "toggle",
+                            order = 290,
+                            name = "Use class color",
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                        },
+                        GroupRaidNameFontColor = {
+                            type = "color",
+                            order = 300,
+                            name = "Custom color",
+                            hasAlpha = true,
+                            get = function(info)
+                                local color = Addon.db.profile[info[#info]]
+                                return color.r, color.g, color.b, color.a
+                            end,
+                            set = function (info, r, g, b, a)
+                                local color = Addon.db.profile[info[#info]]
+                                color.r = r
+                                color.g = g
+                                color.b = b
+                                color.a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow or Addon.db.profile.GroupRaidNameClassColor end,
+                        },
+                        BlankGroupRaidCustomFont = { type = "description", order = 309, fontSize = "small",name = "",width = "full", },
+                        GroupRaidNameCustomFont = {
+                            type = "toggle",
+                            order = 310,
+                            name = "Custom font",
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow end,
+                        },
+                        BlankGroupRaidNameCustomFontName = { type = "description", order = 319, fontSize = "small",name = "",width = "full", },
+                        GroupRaidNameFont = {
+                            type = "select",
+                            order = 320,
+                            name = "Font",
+                            width = 3/4,
+                            dialogControl = "LSM30_Font",
+                            values = AceGUIWidgetLSMlists['font'],
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow or not Addon.db.profile.GroupRaidNameCustomFont end,
+                        },
+                        GroupRaidNameFontSize = {
+                            type = "range",
+                            order = 330,
+                            name = "Size",
+                            width = 3/4,
+                            min = 2,
+                            max = 36,
+                            step = 0.5,
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow or not Addon.db.profile.GroupRaidNameCustomFont end,
+                        },
+                        GroupRaidNameFontFlags = {
+                            type = "select",
+                            order = 340,
+                            name = "Outline",
+                            width = 3/4,
+                            values = {
+                                [""] = "None",
+                                ["OUTLINE"] = "Normal",
+                                ["THICKOUTLINE"] = "Thick",
+                            },
+                            disabled = function() return not Addon.db.profile.GroupRaidNameShow or not Addon.db.profile.GroupRaidNameCustomFont end,
+                        },
+                    },
+                },
             },
-            disabled = function() return not Options.POITrackTtaCustomFont end,
         },
-        POITrackTtaFontColor = {
-            type = "color",
-            order = 270,
-            name = "Color",
-            width = 1/2,
-            hasAlpha = true,
-            get = function(info)
-                local color = Addon.db.profile[info[#info]]
-                return color.r, color.g, color.b, color.a
-            end,
-            set = function (info, r, g, b, a)
-                local color = Addon.db.profile[info[#info]]
-                color.r = r
-                color.g = g
-                color.b = b
-                color.a = a
-                Addon:UpdateHUDSettings()
-            end,
-            disabled = function() return not Options.POITrackTtaCustomFont end,
-        },
-        HeaderPOITrackTitle = {
-            type = "header",
-            order = 300,
-            name = "Node name"
-        },
-        POITrackShowTitle = {
-            type = "toggle",
-            order = 310,
-            name = "Show",
-        },
-        POITrackTitleOffset = {
-            type = "range",
-            order = 320,
-            name = "Vertical adjustment",
-            min = -20,
-            max = 20,
-            step = 0.5,
-        },
-        POITrackTitleCustomFont = {
-            type = "toggle",
-            order = 330,
-            name = "Use custom font",
-        },
-        POITrackTitleFont = {
-            type = "select",
-            order = 340,
-            name = "Font",
-            width = 1,
-            dialogControl = "LSM30_Font",
-            values = AceGUIWidgetLSMlists['font'],
-            disabled = function() return not Options.POITrackTitleCustomFont end,
-        },
-        POITrackTitleFontSize = {
-            type = "range",
-            order = 350,
-            name = "Size",
-            width = 3/4,
-            min = 2,
-            max = 36,
-            step = 0.5,
-            disabled = function() return not Options.POITrackTitleCustomFont end,
-        },
-        POITrackTitleFontFlags = {
-            type = "select",
-            order = 360,
-            name = "Outline",
-            width = 3/4,
-            values = {
-                [""] = "None",
-                ["OUTLINE"] = "Normal",
-                ["THICKOUTLINE"] = "Thick",
+    },
+}
+
+local GatherMateOptions = {
+    type = "group",
+    order = 1010,
+    name = "GatherMate2 addon",
+    childGroups = "tab",
+    args = {
+        Settings = {
+            type = "group",
+            order = 10,
+            name = "General",
+            args = {
+                ModuleDescription = {
+                    type = "description",
+                    order = 0,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This module will display potential locations of gathering nodes.|r",
+                    fontSize = "medium",
+                },                GatherMateEnabled = {
+                    type = "toggle",
+                    name = "Enabled",
+                    width = "full",
+                    order = 10,
+                },
+                GatherMateRadius = {
+                    type = "range",
+                    order = 20,
+                    name = "Scanning radius",
+                    min = 1,
+                    max = 2000,
+                    softMin = 50,
+                    softMax = 1000,
+                    step = 1,
+                    bigStep = 5,
+                },
+                GatherMateInterval = {
+                    type = "range",
+                    order = 30,
+                    name = "Update throttle",
+                    desc = "Interval between adding/removing nodes on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
+                    min = 1,
+                    max = 100,
+                    softMin = 1,
+                    softMax = 10,
+                    step = 1,
+                },
+                HeaderGatherMateNode = {
+                    type = "header",
+                    order = 50,
+                    name = "Node"
+                },
+                GatherMateOffset = {
+                    type = "range",
+                    order = 60,
+                    name = "Vertical adjustment",
+                    min = -64,
+                    max = 64,
+                    step = 0.5,
+                },
+                GatherMateScale = {
+                    type = "range",
+                    order = 70,
+                    name = "Scale",
+                    min = 0,
+                    max = 3,
+                    step = 0.01,
+                    isPercent = true,
+                },
             },
-            disabled = function() return not Options.POITrackTitleCustomFont end,
         },
-        POITrackTitleFontColor = {
-            type = "color",
-            order = 370,
-            name = "Color",
-            width = 1/2,
-            hasAlpha = true,
-            get = function(info)
-                local color = Addon.db.profile[info[#info]]
-                return color.r, color.g, color.b, color.a
-            end,
-            set = function (info, r, g, b, a)
-                local color = Addon.db.profile[info[#info]]
-                color.r = r
-                color.g = g
-                color.b = b
-                color.a = a
-                Addon:UpdateHUDSettings()
-            end,
-            disabled = function() return not Options.POITrackTitleCustomFont end,
+        Texts = {
+            type = "group",
+            order = 20,
+            name = "Texts",
+            args = {
+                HeaderGatherMateDistance = {
+                    type = "header",
+                    order = 100,
+                    name = "Distance text"
+                },
+                GatherMateShowDistance = {
+                    type = "toggle",
+                    order = 110,
+                    name = "Show",
+                },
+                GatherMateDistanceOffset = {
+                    type = "range",
+                    order = 120,
+                    name = "Vertical adjustment",
+                    min = -20,
+                    max = 20,
+                    step = 0.5,
+                },
+                GatherMateDistanceCustomFont = {
+                    type = "toggle",
+                    order = 130,
+                    name = "Use custom font",
+                },
+                GatherMateDistanceFont = {
+                    type = "select",
+                    order = 140,
+                    name = "Font",
+                    width = 1,
+                    dialogControl = "LSM30_Font",
+                    values = AceGUIWidgetLSMlists['font'],
+                    disabled = function() return not Options.GatherMateDistanceCustomFont end,
+                },
+                GatherMateDistanceFontSize = {
+                    type = "range",
+                    order = 150,
+                    name = "Size",
+                    width = 3/4,
+                    min = 2,
+                    max = 36,
+                    step = 0.5,
+                    disabled = function() return not Options.GatherMateDistanceCustomFont end,
+                },
+                GatherMateDistanceFontFlags = {
+                    type = "select",
+                    order = 160,
+                    name = "Outline",
+                    width = 3/4,
+                    values = {
+                        [""] = "None",
+                        ["OUTLINE"] = "Normal",
+                        ["THICKOUTLINE"] = "Thick",
+                    },
+                    disabled = function() return not Options.GatherMateDistanceCustomFont end,
+                },
+                GatherMateDistanceFontColor = {
+                    type = "color",
+                    order = 170,
+                    name = "Color",
+                    width = 1/2,
+                    hasAlpha = true,
+                    get = function(info)
+                        local color = Addon.db.profile[info[#info]]
+                        return color.r, color.g, color.b, color.a
+                    end,
+                    set = function (info, r, g, b, a)
+                        local color = Addon.db.profile[info[#info]]
+                        color.r = r
+                        color.g = g
+                        color.b = b
+                        color.a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                    disabled = function() return not Options.GatherMateDistanceCustomFont end,
+                },
+                HeaderGatherMateTTA = {
+                    type = "header",
+                    order = 200,
+                    name = "Time to arrive"
+                },
+                GatherMateShowTTA = {
+                    type = "toggle",
+                    order = 210,
+                    name = "Show",
+                },
+                GatherMateTtaOffset = {
+                    type = "range",
+                    order = 220,
+                    name = "Vertical adjustment",
+                    min = -20,
+                    max = 20,
+                    step = 0.5,
+                },
+                GatherMateTtaCustomFont = {
+                    type = "toggle",
+                    order = 230,
+                    name = "Use custom font",
+                },
+                GatherMateTtaFont = {
+                    type = "select",
+                    order = 240,
+                    name = "Font",
+                    width = 1,
+                    dialogControl = "LSM30_Font",
+                    values = AceGUIWidgetLSMlists['font'],
+                    disabled = function() return not Options.GatherMateTtaCustomFont end,
+                },
+                GatherMateTtaFontSize = {
+                    type = "range",
+                    order = 250,
+                    name = "Size",
+                    width = 3/4,
+                    min = 2,
+                    max = 36,
+                    step = 0.5,
+                    disabled = function() return not Options.GatherMateTtaCustomFont end,
+                },
+                GatherMateTtaFontFlags = {
+                    type = "select",
+                    order = 260,
+                    name = "Outline",
+                    width = 3/4,
+                    values = {
+                        [""] = "None",
+                        ["OUTLINE"] = "Normal",
+                        ["THICKOUTLINE"] = "Thick",
+                    },
+                    disabled = function() return not Options.GatherMateTtaCustomFont end,
+                },
+                GatherMateTtaFontColor = {
+                    type = "color",
+                    order = 270,
+                    name = "Color",
+                    width = 1/2,
+                    hasAlpha = true,
+                    get = function(info)
+                        local color = Addon.db.profile[info[#info]]
+                        return color.r, color.g, color.b, color.a
+                    end,
+                    set = function (info, r, g, b, a)
+                        local color = Addon.db.profile[info[#info]]
+                        color.r = r
+                        color.g = g
+                        color.b = b
+                        color.a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                    disabled = function() return not Options.GatherMateTtaCustomFont end,
+                },
+                HeaderGatherMateTitle = {
+                    type = "header",
+                    order = 300,
+                    name = "Node name"
+                },
+                GatherMateShowTitle = {
+                    type = "toggle",
+                    order = 310,
+                    name = "Show",
+                },
+                GatherMateTitleOffset = {
+                    type = "range",
+                    order = 320,
+                    name = "Vertical adjustment",
+                    min = -20,
+                    max = 20,
+                    step = 0.5,
+                },
+                GatherMateTitleCustomFont = {
+                    type = "toggle",
+                    order = 330,
+                    name = "Use custom font",
+                },
+                GatherMateTitleFont = {
+                    type = "select",
+                    order = 340,
+                    name = "Font",
+                    width = 1,
+                    dialogControl = "LSM30_Font",
+                    values = AceGUIWidgetLSMlists['font'],
+                    disabled = function() return not Options.GatherMateTitleCustomFont end,
+                },
+                GatherMateTitleFontSize = {
+                    type = "range",
+                    order = 350,
+                    name = "Size",
+                    width = 3/4,
+                    min = 2,
+                    max = 36,
+                    step = 0.5,
+                    disabled = function() return not Options.GatherMateTitleCustomFont end,
+                },
+                GatherMateTitleFontFlags = {
+                    type = "select",
+                    order = 360,
+                    name = "Outline",
+                    width = 3/4,
+                    values = {
+                        [""] = "None",
+                        ["OUTLINE"] = "Normal",
+                        ["THICKOUTLINE"] = "Thick",
+                    },
+                    disabled = function() return not Options.GatherMateTitleCustomFont end,
+                },
+                GatherMateTitleFontColor = {
+                    type = "color",
+                    order = 370,
+                    name = "Color",
+                    width = 1/2,
+                    hasAlpha = true,
+                    get = function(info)
+                        local color = Addon.db.profile[info[#info]]
+                        return color.r, color.g, color.b, color.a
+                    end,
+                    set = function (info, r, g, b, a)
+                        local color = Addon.db.profile[info[#info]]
+                        color.r = r
+                        color.g = g
+                        color.b = b
+                        color.a = a
+                        Addon:UpdateHUDSettings()
+                    end,
+                    disabled = function() return not Options.GatherMateTitleCustomFont end,
+                },
+            },
         },
     },
 }
@@ -3881,7 +3965,7 @@ local function setPOITrackNodes()
             if not poiTrackPointTable[player.uiMapID] then
                 poiTrackPointTable[player.uiMapID] = {}
             end
-            
+
             local mapPOIs = GetAreaPOIForMap(player.uiMapID)
             if mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
@@ -3931,8 +4015,8 @@ local function setPOITrackNodes()
                     end
                     poiTrackPointTable[player.uiMapID]["POI_" .. poiID].visible = true
                 end
-            end       
-            
+            end
+
             local dungeonEntrances = GetDungeonEntrancesForMap(player.uiMapID)
             if dungeonEntrances then
                 for _, entrance in ipairs(dungeonEntrances) do
@@ -5108,15 +5192,16 @@ function Addon:ConstructDefaultsAndOptions()
     self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
     self.Options.args.Tabs.args.Pointers.args = pointersOptionsArgs
     self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
-    self.Options.args.Profiles.order = 80
-    IntegrationsOptions.args.GatherMate = GatherMateOptions
-    IntegrationsOptions.args.POITrack = POITrackOptions
-    self.Options.args.AddonIntegrations = IntegrationsOptions
+    self.Options.args.Profiles.order = 900
+    MinimapOptions.args.POITrack = POITrackOptions
+    MinimapOptions.args.Group = GroupOptions
+    MinimapOptions.args.GatherMate = GatherMateOptions
+    self.Options.args.MinimapIntegrations = MinimapOptions
 
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
     _, Addon.categoryID = AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, nil, nil, "Tabs")
+    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Minimap icons", Const.METADATA.NAME, "MinimapIntegrations")
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Profiles", Const.METADATA.NAME, "Profiles")
-    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Addon integrations", Const.METADATA.NAME, "AddonIntegrations")
 end
 
 function Addon:RefreshConfig()
