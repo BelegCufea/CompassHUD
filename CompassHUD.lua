@@ -36,6 +36,7 @@ local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
 local IsTaskQuestActive = C_TaskQuest.IsActive
 local RequestPreloadRewardData = C_TaskQuest.RequestPreloadRewardData
+local GetWorldQuestsOnMap = C_TaskQuest.GetQuestsOnMap
 local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
@@ -715,10 +716,12 @@ Addon.Defaults = {
         POITrackTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         POITrackTitleFontFlags     = "",
         POITrackFilter             = {
+            ["WorldQuest"] = true,
             ["Taxi"] = false,
             ["Event"] = true,
             ["Instance"] = true,
             ["Delve"] = true,
+            ["Portal"] = false,
             ["Other"] = true,
         },
     },
@@ -802,11 +805,13 @@ end
 
 local function getPOITrackFilter()
     local list = {}
+    list["WorldQuest"] = "World Quests"
     list["Taxi"] = "Flightpoints"
     list["Event"] = "Events"
     list["Instance"] = "Instances (Dungeons, Raids)"
     list["Delve"] = "Delves"
-    list["Other"] = "Other"
+    list["Portal"] = "Teleports"
+    list["Other"] = "Miscellaneous"
     return list
 end
 
@@ -1634,7 +1639,7 @@ Addon.Options = {
     },
 }
 
-local MinimapOptions = {
+local TrackingOption = {
     type = "group",
     order = 10,
     name ="Integrations",
@@ -1651,7 +1656,7 @@ local MinimapOptions = {
 local POITrackOptions = {
     type = "group",
     order = 10,
-    name = "Points of interest",
+    name = "Minimap icons",
     childGroups = "tab",
     args = {
         Settings = {
@@ -1724,6 +1729,7 @@ local POITrackOptions = {
                 POITrackFilter = {
                     type = "multiselect",
                     name = "Visible icon types",
+                    order = 910,
                     width = "full",
                     values = function() return getPOITrackFilter() end,
                     get = function(info, key)
@@ -1733,7 +1739,6 @@ local POITrackOptions = {
                         Addon.db.profile.POITrackFilter[key] = value
                         Addon:UpdateHUDSettings()
                     end,
-                    order = 910,
                 },
             },
         },
@@ -3244,6 +3249,20 @@ local function isTask(questID)
         or (classification == Enum.QuestClassification.WorldQuest)
 end
 
+local function getWQicon(questID)
+    local icon
+    RequestPreloadRewardData(questID)
+    local reward = GetQuestRewardCurrencyInfo(questID, 1, false)
+    local _, itemTexture = GetQuestLogRewardInfo(1, questID)
+    local gold = GetQuestLogRewardMoney(questID)
+    if gold > 0 then
+        icon = [[Interface\Icons\INV_Misc_Coin_02]]
+    else
+        icon = itemTexture or (reward and reward.texture)
+    end
+    return icon
+end
+
 local function retextureSuperTrackedFrame(questPointer)
     STtexture.questID = questPointer.questID
     STtexture.pointer = nil
@@ -3891,7 +3910,7 @@ end
 
 local function updatePOITrackNode(poi)
     local scale = Options.Scale * Options.VerticalScale * Options.POITrackScale
-    poi.frame:SetSize(textureHeight * Options.POITrackScale * 1.3, textureHeight * Options.POITrackScale * 1.3)
+    poi.frame:SetSize(textureHeight * Options.POITrackScale * (poi.scale or 1), textureHeight * Options.POITrackScale * (poi.scale or 1))
     local gameFontNormal = { fontColor = {}}
     gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
     gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
@@ -3974,9 +3993,18 @@ local function createPOITrackNode(table)
 	poiTrackNode:SetPoint("CENTER");
 	poiTrackNode.texture = poiTrackNode:CreateTexture(nil, "ARTWORK")
 	poiTrackNode.texture:SetAllPoints(poiTrackNode)
-	poiTrackNode.texture:SetAtlas(table.atlasName)
+    poiTrackNode.texture:SetAtlas(table.atlasName)
     poiTrackNode.texture:SetSize(textureHeight, textureHeight)
-	poiTrackNode:Hide()
+    if table.circle then
+        poiTrackNode.texture:SetSize(textureHeight, textureHeight)
+        poiTrackNode.mask = poiTrackNode:CreateMaskTexture()
+        poiTrackNode.mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        poiTrackNode.mask:SetAllPoints(poiTrackNode.texture)
+        poiTrackNode.texture:AddMaskTexture(poiTrackNode.mask)
+        poiTrackNode.border = poiTrackNode:CreateTexture(nil, "OVERLAY", nil, 1)
+        poiTrackNode.border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
+        poiTrackNode.border:SetAllPoints(poiTrackNode.texture)
+    end
     poiTrackNode.DistanceText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
     poiTrackNode.DistanceText:SetJustifyV("TOP")
     poiTrackNode.DistanceText:SetSize(0, 16)
@@ -4015,7 +4043,7 @@ local function setPOITrackNodes()
             end
 
             local mapPOIs = GetAreaPOIForMap(player.uiMapID)
-            if Options.POITrackFilter["Other"] and mapPOIs then
+            if (Options.POITrackFilter["Portal"] or Options.POITrackFilter["Other"]) and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
                     if not poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID] then
                         poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
@@ -4025,9 +4053,13 @@ local function setPOITrackNodes()
                         poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].x = xWorld
                         poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].y = yWorld
                         poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID])
+                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].scale = 1.3
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID])
                     end
-                    poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].visible = true
+                    local poi = poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID]
+                    local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
+                    poi.visible = (startsWithTaxiNode and Options.POITrackFilter["Portal"]) or
+                                (not startsWithTaxiNode and Options.POITrackFilter["Other"])
                 end
             end
 
@@ -4042,6 +4074,7 @@ local function setPOITrackNodes()
                         poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].x = xWorld
                         poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].y = yWorld
                         poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID])
+                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].scale = 1.3
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID])
                     end
                     poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].visible = true
@@ -4059,6 +4092,7 @@ local function setPOITrackNodes()
                         poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].x = xWorld
                         poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].y = yWorld
                         poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID])
+                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].scale = 1.3
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID])
                     end
                     poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].visible = true
@@ -4076,6 +4110,7 @@ local function setPOITrackNodes()
                         poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].x = xWorld
                         poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].y = yWorld
                         poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID])
+                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].scale = 1.3
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID])
                     end
                     poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].visible = true
@@ -4093,13 +4128,45 @@ local function setPOITrackNodes()
                         poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].x = xWorld
                         poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].y = yWorld
                         poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID])
+                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].scale = 1.2
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID])
                     end
                     poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].visible = true
                 end
             end
+
+            local mapWQ = GetWorldQuestsOnMap(player.uiMapID)
+            if Options.POITrackFilter["WorldQuest"] and mapWQ then
+                for _, wq in ipairs(mapWQ) do
+                    if isTask(wq.questID) then
+                        if not poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID] then
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID] = wq
+                            local xZone, yZone = poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].x, poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].y
+                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].instance = player.uiMapID
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].name = GetTitleForQuestID(wq.questID)
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].x = xWorld
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].y = yWorld
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].atlasName = "completiondialog-warwithincampaign-worldquests-icon"
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].circle = true
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID])
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].scale = 1
+                            updatePOITrackNode(poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID])
+                        end
+                        if not poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture then
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture = getWQicon(wq.questID)
+                            if poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture then
+                                local poiTrackNode = poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].frame
+                                poiTrackNode.texture:SetTexture(poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture)
+                            end
+                        end
+                        poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].visible = true
+                    end
+                end
+            end
         end
     end
+
     local minAngle = 360
     for _, pois in pairs(poiTrackPointTable) do
         for _, poi in pairs(pois) do
@@ -4133,15 +4200,20 @@ local function setPOITrackNodes()
         end
     end
     if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
+        local done = false
         for _, pois in pairs(poiTrackPointTable) do
             for _, poi in pairs(pois) do
                 if poi.visible and poi.shown and poi.angle then
-                    local showTexts = abs(poi.angle) <= (minAngle + 0.001)
-                    poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and showTexts)
-                    poi.frame.TimeText:SetShown(Options.POITrackShowTTA and showTexts)
-                    poi.frame.Title:SetShown(Options.POITrackShowTitle and showTexts)
+                    if abs(poi.angle) <= (minAngle + 0.001) then
+                        poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
+                        poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
+                        poi.frame.Title:SetShown(Options.POITrackShowTitle)
+                        done = true
+                        break
+                    end
                 end
             end
+            if done then break end
         end
     end
 end
@@ -4263,15 +4335,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
 
 
     if questPointsTable[questID].category == Enum.QuestClassification.WorldQuest then
-        RequestPreloadRewardData(questID)
-        local reward = GetQuestRewardCurrencyInfo(questID, 1, false)
-        local _, itemTexture = GetQuestLogRewardInfo(1, questID)
-        local gold = GetQuestLogRewardMoney(questID)
-        if gold > 0 then
-            questPointsTable[questID].texture = [[Interface\Icons\INV_Misc_Coin_02]]
-        else
-            questPointsTable[questID].texture = itemTexture or (reward and reward.texture)
-        end
+        questPointsTable[questID].texture = getWQicon(questID)
         questPointsTable[questID].circle = true
     end
 
@@ -5265,14 +5329,14 @@ function Addon:ConstructDefaultsAndOptions()
     self.Options.args.Tabs.args.Pointers.args = pointersOptionsArgs
     self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
     self.Options.args.Profiles.order = 900
-    MinimapOptions.args.POITrack = POITrackOptions
-    MinimapOptions.args.Group = GroupOptions
-    MinimapOptions.args.GatherMate = GatherMateOptions
-    self.Options.args.MinimapIntegrations = MinimapOptions
+    TrackingOption.args.POITrack = POITrackOptions
+    TrackingOption.args.Group = GroupOptions
+    TrackingOption.args.GatherMate = GatherMateOptions
+    self.Options.args.TrackingIntegrations = TrackingOption
 
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
     _, Addon.categoryID = AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, nil, nil, "Tabs")
-    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Minimap icons", Const.METADATA.NAME, "MinimapIntegrations")
+    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Minimap tracking", Const.METADATA.NAME, "TrackingIntegrations")
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Profiles", Const.METADATA.NAME, "Profiles")
 end
 
