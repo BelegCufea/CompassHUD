@@ -688,7 +688,7 @@ Addon.Defaults = {
         GatherMateTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         GatherMateTitleFontFlags     = "",
         POITrackEnabled            = true,
-        POITrackRadius             = 1000,
+        POITrackRadius             = 0,
         POITrackInterval           = 6,
         POITrackOffset             = 20,
         POITrackScale              = 1,
@@ -713,6 +713,13 @@ Addon.Defaults = {
         POITrackTitleFontSize      = 12,
         POITrackTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         POITrackTitleFontFlags     = "",
+        POITrackFilter             = {
+            ["Taxi"] = false,
+            ["Event"] = true,
+            ["Instance"] = true,
+            ["Delve"] = true,
+            ["Other"] = true,
+        },
     },
 }
 
@@ -790,6 +797,16 @@ local function getStrateLevels()
         values[v] = i .. " - " .. v
     end
     return values
+end
+
+local function getPOITrackFilter()
+    local list = {}
+    list["Taxi"] = "Flightpoints"
+    list["Event"] = "Events"
+    list["Instance"] = "Instances (Dungeons, Raids)"
+    list["Delve"] = "Delves"
+    list["Other"] = "Other"
+    return list
 end
 
 Addon.Options = {
@@ -1644,7 +1661,7 @@ local POITrackOptions = {
                 ModuleDescription = {
                     type = "description",
                     order = 0,
-                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This module will display location, name, distance and TTA of some minimap icons.|r",
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This module will display location, name, distance and TTA of some minimap icons in current zone.|r",
                     fontSize = "medium",
                 },
                 POITrackEnabled = {
@@ -1657,7 +1674,7 @@ local POITrackOptions = {
                     type = "range",
                     order = 20,
                     name = "Scanning radius",
-                    desc = "Radius around the player in which nodes will be added to the HUD.\nIf set to 0, then all nodes in current zone will be added.",
+                    desc = "Radius around the player in which icons will be added to the HUD.\nIf set to 0, then all icons in current zone will be added.",
                     min = 0,
                     max = 10000,
                     softMin = 0,
@@ -1669,7 +1686,7 @@ local POITrackOptions = {
                     type = "range",
                     order = 30,
                     name = "Update throttle",
-                    desc = "Interval between adding/removing nodes on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
+                    desc = "Interval between adding/removing icons on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
                     min = 1,
                     max = 100,
                     softMin = 1,
@@ -1679,7 +1696,7 @@ local POITrackOptions = {
                 HeaderPOITrackNode = {
                     type = "header",
                     order = 50,
-                    name = "Node"
+                    name = "Icon"
                 },
                 POITrackOffset = {
                     type = "range",
@@ -1697,6 +1714,25 @@ local POITrackOptions = {
                     max = 3,
                     step = 0.01,
                     isPercent = true,
+                },
+                HeaderPOITrackFilter = {
+                    type = "header",
+                    order = 909,
+                    name = "Filter"
+                },
+                POITrackFilter = {
+                    type = "multiselect",
+                    name = "Visible icon types",
+                    width = "full",
+                    values = function() return getPOITrackFilter() end,
+                    get = function(info, key)
+                        return Addon.db.profile.POITrackFilter[key] or false
+                    end,
+                    set = function(info, key, value)
+                        Addon.db.profile.POITrackFilter[key] = value
+                        Addon:UpdateHUDSettings()
+                    end,
+                    order = 910,
                 },
             },
         },
@@ -1856,7 +1892,7 @@ local POITrackOptions = {
                 HeaderPOITrackTitle = {
                     type = "header",
                     order = 300,
-                    name = "Node name"
+                    name = "Icon name"
                 },
                 POITrackShowTitle = {
                     type = "toggle",
@@ -3953,72 +3989,71 @@ end
 local function setPOITrackNodes()
     if not Options.POITrackEnabled then return end
     if poiTrackThrottle and poiTrackThrottle >= Options.POITrackInterval then
+        for map, pois in pairs(poiTrackPointTable) do
+            for poi, node in pairs(pois) do
+                poiTrackPointTable[map][poi].visible = false
+            end
+        end
         poiTrackThrottle = 0
         local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
         if x and y then
-            for map, pois in pairs(poiTrackPointTable) do
-                for poi, node in pairs(pois) do
-                    poiTrackPointTable[map][poi].visible = false
-                end
-            end
-
             if not poiTrackPointTable[player.uiMapID] then
                 poiTrackPointTable[player.uiMapID] = {}
             end
 
             local mapPOIs = GetAreaPOIForMap(player.uiMapID)
-            if mapPOIs then
+            if Options.POITrackFilter["Other"] and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    if not poiTrackPointTable[player.uiMapID]["POI_" .. poiID] then
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.y
+                    if not poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID] then
+                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID])
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID])
                     end
-                    poiTrackPointTable[player.uiMapID]["POI_" .. poiID].visible = true
+                    poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].visible = true
                 end
             end
 
             mapPOIs = GetDelvesForMap(player.uiMapID)
-            if mapPOIs then
+            if Options.POITrackFilter["Delve"] and  mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    if not poiTrackPointTable[player.uiMapID]["POI_" .. poiID] then
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.y
+                    if not poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID] then
+                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID])
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID])
                     end
-                    poiTrackPointTable[player.uiMapID]["POI_" .. poiID].visible = true
+                    poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].visible = true
                 end
             end
 
             mapPOIs = GetEventsForMap(player.uiMapID)
-            if mapPOIs then
+            if Options.POITrackFilter["Event"] and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    if not poiTrackPointTable[player.uiMapID]["POI_" .. poiID] then
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["POI_" .. poiID].position.y
+                    if not poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID] then
+                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["POI_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["POI_" .. poiID])
+                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID])
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID])
                     end
-                    poiTrackPointTable[player.uiMapID]["POI_" .. poiID].visible = true
+                    poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].visible = true
                 end
             end
 
             local dungeonEntrances = GetDungeonEntrancesForMap(player.uiMapID)
-            if dungeonEntrances then
+            if Options.POITrackFilter["Instance"] and dungeonEntrances then
                 for _, entrance in ipairs(dungeonEntrances) do
                     if not poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID] then
                         poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID] = entrance
@@ -4035,7 +4070,7 @@ local function setPOITrackNodes()
             end
 
             local mapTaxis = GetTaxiNodesForMap(player.uiMapID)
-            if mapTaxis then
+            if Options.POITrackFilter["Taxi"] and mapTaxis then
                 for _, taxi in ipairs(mapTaxis) do
                     if not poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID] then
                         poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID] = taxi
@@ -4050,6 +4085,8 @@ local function setPOITrackNodes()
                     poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].visible = true
                 end
             end
+
+            Debug:Table("POITrack", poiTrackPointTable[player.uiMapID])
         end
     end
     for _, pois in pairs(poiTrackPointTable) do
@@ -4057,14 +4094,17 @@ local function setPOITrackNodes()
             local shown = false
             if poi.visible and player.angle then
                 if poi.x and poi.y and poi.instance then
-                    local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
-                    if angle < 0 then angle = angle + (2 * PI) end
-                    if angle > PI then angle = angle - (2 * PI) end
-                    if angle then
-                        local visible = math.rad(Options.Degrees)/2
-                        if angle < visible and angle > -visible then
-                            poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
-                            shown = true
+                    local distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
+                    if Options.POITrackRadius == 0 or (distance and distance <= Options.POITrackRadius) then
+                        local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
+                        if angle < 0 then angle = angle + (2 * PI) end
+                        if angle > PI then angle = angle - (2 * PI) end
+                        if angle then
+                            local visible = math.rad(Options.Degrees)/2
+                            if angle < visible and angle > -visible then
+                                poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
+                                shown = true
+                            end
                         end
                     end
                 end
