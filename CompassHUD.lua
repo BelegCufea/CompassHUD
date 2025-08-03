@@ -693,7 +693,12 @@ Addon.Defaults = {
         POITrackInterval           = 30,
         POITrackOffset             = 20,
         POITrackScale              = 1,
-        POITrackTextsDegrees       = 5,
+        POITrackOpacityMax         = 0.7,
+        POITrackOpacityMin         = 0.2,
+        POITrackOpacitySelected    = 1,
+        POITrackOpacityMaxRadius   = 1000,
+        POITrackOpacityMinRadius   = 100,
+        POITrackTextsDegrees       = 2.5,
         POITrackShowDistance       = true,
         POITrackShowTTA            = true,
         POITrackShowTitle          = true,
@@ -1721,7 +1726,7 @@ local POITrackOptions = {
                     type = "range",
                     order = 30,
                     name = "Update throttle",
-                    desc = "Interval between adding/removing icons on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
+                    desc = "Interval between adding/removing icons on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 30 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/30 = 2 times per second.",
                     min = 1,
                     max = 100,
                     softMin = 1,
@@ -1750,10 +1755,51 @@ local POITrackOptions = {
                     step = 0.01,
                     isPercent = true,
                 },
-                HeaderPOITrackFilter = {
+                HeaderPOITrackOpacity = {
                     type = "header",
-                    order = 909,
-                    name = "Filter"
+                    order = 100,
+                    name = "Opacity"
+                },
+                POITrackOpacityDescription = {
+                    type = "description",
+                    order = 110,
+                    name = "Adjust the opacity range for POI icons on the HUD.\nIcons farther from the player will appear more transparent, down to the specified minimum opacity.",
+                    fontSize = "medium",
+                },
+                POITrackOpacityMin = {
+                    type = "range",
+                    order = 120,
+                    name = "Minimum opacity",
+                    min = 0,
+                    max = 1,
+                    softMin = 0.1,
+                    softMax = 1,
+                    step = 0.01,
+                    isPercent = true,
+                },
+                POITrackOpacityMax = {
+                    type = "range",
+                    order = 130,
+                    name = "Maximum opacity",
+                    min = 0,
+                    max = 1,
+                    softMin = 0.1,
+                    softMax = 1,
+                    step = 0.01,
+                    isPercent = true,
+                },
+            },
+        },
+        Filter = {
+            type = "group",
+            order = 20,
+            name = "Filter",
+            args = {
+               ModuleDescription = {
+                    type = "description",
+                    order = 0,
+                    name = "Select which icons will be wisible.",
+                    fontSize = "medium",
                 },
                 POITrackFilter = {
                     type = "multiselect",
@@ -1773,20 +1819,31 @@ local POITrackOptions = {
         },
         Texts = {
             type = "group",
-            order = 20,
+            order = 30,
             name = "Texts",
             args = {
                 POITrackTextsDegrees = {
                     type = "range",
-                    order = 90,
+                    order = 10,
                     name = "Texts visibility angle",
-                    width = "full",
                     desc = "Texts will be shown only if the angle to the icon is less than this value.\nOnly the closest icon to heading will show texts.\nIf set to 0, then all selected texts are shown for every visible icon.",
                     min = 0,
                     max = 360,
                     softMin = 0,
                     softMax = 30,
                     step = 0.5,
+                },
+                POITrackOpacitySelected = {
+                    type = "range",
+                    order = 20,
+                    name = "Opacity of visible texts",
+                    desc = "Set the opacity of the text labels for icon near the heading.\nThis option is only enabled when 'Texts visibility angle' is greater than 0.",                    min = 0,
+                    max = 1,
+                    softMin = 0.1,
+                    softMax = 1,
+                    step = 0.01,
+                    isPercent = true,
+                    disabled = function() return Options.POITrackTextsDegrees == 0 end,
                 },
                 HeaderPOITrackDistance = {
                     type = "header",
@@ -4197,13 +4254,15 @@ local function setPOITrackNodes()
     end
 
     local minAngle = 360
+    local effectivePOITrackRadius = Options.POITrackRadius == 0 and Options.POITrackOpacityMaxRadius or Options.POITrackRadius
+    local opacityFactor = (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / (effectivePOITrackRadius - Options.POITrackOpacityMinRadius)
     for _, pois in pairs(poiTrackPointTable) do
         for _, poi in pairs(pois) do
             local shown = false
             if poi.visible and player.angle then
                 if poi.x and poi.y and poi.instance then
-                    local distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
-                    if Options.POITrackRadius == 0 or (distance and distance <= Options.POITrackRadius) then
+                    poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
+                    if Options.POITrackRadius == 0 or (poi.distance and poi.distance <= Options.POITrackRadius) then
                         local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
                         poi.angle = angle
                         if abs(angle) < minAngle then
@@ -4226,6 +4285,14 @@ local function setPOITrackNodes()
             poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
             poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
             poi.shown = shown
+
+            poi.opacity = Options.POITrackOpacityMin
+            if not poi.distance or (poi.distance < Options.POITrackOpacityMinRadius) then
+                poi.opacity = Options.POITrackOpacityMax
+            elseif poi.distance <= effectivePOITrackRadius then
+                poi.opacity = Options.POITrackOpacityMax + (poi.distance - Options.POITrackOpacityMinRadius) * opacityFactor
+            end
+            poi.frame:SetAlpha(poi.opacity)
         end
     end
     if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
@@ -4237,6 +4304,7 @@ local function setPOITrackNodes()
                         poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
                         poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
                         poi.frame.Title:SetShown(Options.POITrackShowTitle)
+                        poi.frame:SetAlpha(Options.POITrackOpacitySelected)
                         done = true
                         break
                     end
