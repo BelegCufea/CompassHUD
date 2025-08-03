@@ -1,68 +1,118 @@
 # CompassHUD
 
-A configurable compass strip showing player's heading along with questmarkers including distance and time to arive.
+A configurable compass strip that displays your character's heading, along with various markers such as name, distance, and time to arrival.
 
-![Example1](https://i.imgur.com/D7Ugc0T.png)
+![Example1](https://i.imgur.com/NmushPm.png)
 
 
 ## Inspirations
 
-I was inspired by [Compass](https://www.wowinterface.com/downloads/info14051-Compass.html) and [GoWCompass](https://www.curseforge.com/wow/addons/gowcompass) addons. Thought I tried to write my own code and not use CTRL+C and CTRL+V too much.
+I was inspired by [Compass](https://www.wowinterface.com/downloads/info14051-Compass.html) and [GoWCompass](https://www.curseforge.com/wow/addons/gowcompass).</br>
+While influenced by their ideas, I wrote my own code from scratch—avoiding too much copy-paste.
 
 
-## Features
+## Main Features
 
-- Compass strip can be moved, resized and centered on screen.
-- You can define update rate.
-- You can choose either predefined texture for main HUD or define your own.
-- Autamatically detects TomTom crazy arrow and allows to set pointer on the HUD.
-- Available configurable options are:
+- Fully movable and resizable compass strip.
+- Optional numeric heading display.
+- Support for predefined or custom compass textures.
+- Plethora of markers to be displayed on the compass.
 
-    *- setting background and border*
+### Some examples:
 
-    ![BackgroundBorder](https://i.imgur.com/fKY6J1S.png)
+*- Changing background and border:*</br>
+![BackgroundBorder](https://i.imgur.com/fKY6J1S.png)
 
-    *- setting compass HUD FOV up to 360*
+*- Configuring compass HUD FOV (up to 360°):*</br>
+![FOV](https://i.imgur.com/Q9HEzRG.png)
 
-    ![FOV](https://i.imgur.com/Q9HEzRG.png)
+*- Allowing quest markers to remain visible on the edge of the compass HUD:*</br>
+![QuestOutOfBoundery](https://i.imgur.com/jzSYOS6.png)
 
-    *- allowing quest markers to stay on the edge of compass HUD even when they go beyond the boundaries*
+*- Customizing visibility, textures, and behavior for various pointer types:*</br>
+![CustomTextures](https://i.imgur.com/fhRaRWj.png)
 
-    ![QuestOutOfBoundery](https://i.imgur.com/jzSYOS6.png)
+*- Setting numerical heading display options:*</br>
+![Heading](https://i.imgur.com/CxlBmpL.png)
 
-    *- setting visibility and several other options for different types of pointers*
-
-    ![CustomTextures](https://i.imgur.com/fhRaRWj.png)
-
-    *- setting font, visibilty and colors for cardinal and ordinal directions and degrees for custom HUD*
 
 ## Configuration
 
-Locate the `CompassHUD` section within the `Options` -> `Addon` section.
+Find the `CompassHUD` addon in the `Options` -> `AddOns` section of the game menu.
 
-- On the `Settings` panel you can change some general options.
+### HUD settings
 
-![Settings](https://i.imgur.com/3c6xno9.png)
+- The `General` panel contains basic global settings. For many of these settings, there is a tooltip shown while hovering over the them.</br>
+![Settings](https://i.imgur.com/W5uhfbJ.png)
 
-- On the `Compass HUD settings` panel you can choose if you want to construct your own custom HUD or use standard texture.
+- The `Compass HUD` panel lets you choose between the default texture or customize your own strip with posibility to show/hide/edit several elements.</br>
+![Custom](https://i.imgur.com/ElQIDGp.png)
 
-![Custom](https://i.imgur.com/GSMDwDR.png)
+### Supertracker
 
-- On the `Pointers` panel you can set visiblity and several other settings for different types of pointers.
+Under the `Supertracker` submenu, you can configure visibility and behavior for various pointer types.
 
-*visibility, position and fonts*
-![PointerTexts](https://i.imgur.com/HUTgxJ6.png)
-*textures and sizes*
-![PointerTextures](https://i.imgur.com/PjywdZ6.png)
-*picking from texture presets*
-![PointerPresets](https://i.imgur.com/SghnLjp.png)
+*General behavior settings:*</br>
+![PointerGeneral](https://i.imgur.com/qWe8KPX.png)
 
-### TODO (maybe, if there is a demand)
+*Choosing from pointer texture presets:*</br>
+![PointerPresets](https://i.imgur.com/V1mzqaP.png)
 
-- More textures
-    - *You can use your own. It has to be 2048x16, has 720 degrees starting from N and be in BLP or TGA fromat (look at `CompassHUD.tga` at Media folder). Just put it somewhere in Interface\Addons folder (don't put it in any addon folder as it may be deleted when updating that addon) in SavedVariables put* `CompassTextureTexture = [[Interface\Addons\]] .. {your texture name},` *just after line* `["PositionX"]` ... *of your profile.*
+*For each pointer type, you can also customize:*</br>
+*- Visibility, position, size, default texture*</br>
+*- Edge detection and rotation (mainly for arrow trextures)*</br>
+*- Dynamic icon replacements (for World Quests, POI map pins, etc.)*</br>
+*- In-game SuperTracker retexturing*</br>
+
+![PointerTexts](https://i.imgur.com/a9x1IA8.png)
+
+*Text display options with font and size selection:*</br>
+![PointerTextures](https://i.imgur.com/hUQFmd7.png)
+
+### Minimap tracking
+
+Under the `Minimap tracking` submenu, you’ll find settings for icons usually shown on the minimap. These modules can display many icons on the HUD, potentially impacting FPS if used with all options enabled.
+
+#### Minimap icons
+
+The `Minimap icons` section covers standard WoW minimap icons (off by default).
+
+You can configure:
+- Tracking radius</br>
+- Opacity gradient based on distance</br>
+- Icon filtering by type</br>
+- Text display options (name, distance, TTA)</br>
+- Whether texts are shown for all icons or only the one you're facing
+
+![MinimapIcons](https://i.imgur.com/FvCUD2R.png)
+
+#### Party/Raid
+
+In the `Party/Raid` section, you can configure the visibility of party and raid members, including icon textures, name display, and formatting.</br>
+(Default: Party only)
+
+#### Addon integrations
+
+Additional sections support integrations with other addons (off by default).
+
+For example, if you have `GatherMate2`, you can display possible gathering node locations on the HUD.
+
+### Miscelaneous
+
+#### Custom compass strip textures
+You can use your own.<br>
+It must be 2048x16, has 720 degrees starting from N(orth) and be in BLP or TGA fromat (see `CompassHUD.tga` at Media folder for reference).
+
+Save your file somewhere in `Interface\Addons` folder (outside any addon folder to avoid deletion on update).
+
+In your SavedVariables file located at `WTF\Account\<AccountID>\SavedVariables\CompassHUD.lua`, add:</br>
+*`CompassTextureTexture = [[Interface\Addons\]] .. {your file name without extension}`*</br>
+just after the line containing:</br>
+*`["PositionX"]`*
+
+Check if you put it in correct profile.
 
 
 ## Issues and suggestions
 
-If you encounter any problems or have a suggestion, please [open an issue on Github](https://github.com/BelegCufea/CompassHUD/issues).
+If you run into problems or have feature requests, feel free to [open an issue on Github](https://github.com/BelegCufea/CompassHUD/issues).
