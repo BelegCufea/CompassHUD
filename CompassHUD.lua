@@ -910,36 +910,6 @@ Addon.Options = {
                             step = 1,
                             bigStep = 5,
                         },
-                        BlankStay = { type = "description", order = 49, fontSize = "small",name = "",width = "full", },
-                        PointerStay = {
-                            type = "toggle",
-                            name = "Pointers stay on HUD",
-                            desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows, remaining positioned at the edge of the HUD.",
-                            width = 1.5,
-                            order = 50,
-                        },
-                        StayArrow = {
-                            type = "toggle",
-                            name = "Pointer Out-of-HUD indicator",
-                            desc = "Show a small indicator that the pointer is out of the HUD boundaries. Only show this for textures that don't have Edge rotation enabled.",
-                            width = 1.5,
-                            order = 60,
-                            disabled = function() return not Addon.db.profile.PointerStay end,
-                        },
-                        HideFar = {
-                            type = "toggle",
-                            name = "Hide pointers to other continents",
-                            desc = "Hide pointers that are located on other continents or in zones that require map transitions.",
-                            width = 1.5,
-                            order = 65,
-                        },
-                        UseCurrentMap = {
-                            type = "toggle",
-                            name = "Use map transition for pointers",
-                            desc = "If the tracked quest or map pin is located in a different zone, the pointer will attempt to use map-suggested transitions (e.g., portals, entrances) instead of pointing directly to the marker.",
-                            width = 1.5,
-                            order = 66,
-                        },
                         BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
                         Scale = {
                             type = "range",
@@ -1621,28 +1591,80 @@ Addon.Options = {
                         },
                     },
                 },
-                Pointers = {
-                    type = "group",
+            },
+        },
+    },
+}
+
+local SupertrackerOptions = {
+    type = "group",
+    order = 10,
+    name = "Supertracker",
+    childGroups = "tab",
+    args = {
+        General = {
+            type = "group",
+            order = 10,
+            name = "General",
+            get = function(info)
+                return Addon.db.profile[info[#info]]
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info]] = value
+                Addon:UpdateHUDSettings()
+            end,
+            args = {
+                PointerStay = {
+                    type = "toggle",
+                    name = "Pointers stay on HUD",
+                    desc = "When pointers go beyond the boundaries of the compass HUD, they will transform into sideways arrows, remaining positioned at the edge of the HUD.",
+                    width = 1.5,
                     order = 50,
-                    name = "Pointers",
-                    get = function(info)
-                        return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]]
-                    end,
-                    set = function(info, value)
-                        Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
-                        Addon:UpdateHUDSettings()
-                    end,
-                    args = {},
+                },
+                StayArrow = {
+                    type = "toggle",
+                    name = "Pointer Out-of-HUD indicator",
+                    desc = "Show a small indicator that the pointer is out of the HUD boundaries. Only show this for textures that don't have Edge rotation enabled.",
+                    width = 1.5,
+                    order = 60,
+                    disabled = function() return not Addon.db.profile.PointerStay end,
+                },
+                HideFar = {
+                    type = "toggle",
+                    name = "Hide pointers to other continents",
+                    desc = "Hide pointers that are located on other continents or in zones that require map transitions.",
+                    width = 1.5,
+                    order = 65,
+                },
+                UseCurrentMap = {
+                    type = "toggle",
+                    name = "Use map transition for pointers",
+                    desc = "If the tracked quest or map pin is located in a different zone, the pointer will attempt to use map-suggested transitions (e.g., portals, entrances) instead of pointing directly to the marker.",
+                    width = 1.5,
+                    order = 66,
                 },
             },
+        },
+        Pointers = {
+            type = "group",
+            order = 100,
+            name = "Pointers",
+            get = function(info)
+                return Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]]
+            end,
+            set = function(info, value)
+                Addon.db.profile[info[#info-3]][info[#info-2]][info[#info]] = value
+                Addon:UpdateHUDSettings()
+            end,
+            args = {},
         },
     },
 }
 
 local TrackingOption = {
     type = "group",
-    order = 10,
-    name ="Integrations",
+    order = 20,
+    name = "Minimap",
     get = function(info)
         return Addon.db.profile[info[#info]]
     end,
@@ -4524,7 +4546,7 @@ end
 
 function Addon:CopyPointerSettings(from, to, what)
     local optionNames = {}
-    for _, pointer in pairs(Addon.Options.args.Tabs.args.Pointers.args) do
+    for _, pointer in pairs(Addon.Options.args.Supertracker.args.Pointers.args) do
         if pointer.args.Textures then
             for option, _ in pairs(pointer.args[what].args) do
                 optionNames[option] = true
@@ -4707,7 +4729,7 @@ function Addon:ConstructDefaultsAndOptions()
                     return val
                 end,
                 get = function(info)
-                    local previews = Addon.Options.args.Tabs.args.Pointers.args.Presets.args.Preview.args
+                    local previews = Addon.Options.args.Supertracker.args.Pointers.args.Presets.args.Preview.args
                     wipe(previews)
                     for k, v in pairs(questPointers) do
                         local preset = texturePresets[texturePreset][k]
@@ -5326,16 +5348,18 @@ function Addon:ConstructDefaultsAndOptions()
 
     self.Defaults.profile.Pointers = pointersDefaults
     self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
-    self.Options.args.Tabs.args.Pointers.args = pointersOptionsArgs
-    self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
-    self.Options.args.Profiles.order = 900
+    SupertrackerOptions.args.Pointers.args = pointersOptionsArgs
     TrackingOption.args.POITrack = POITrackOptions
     TrackingOption.args.Group = GroupOptions
     TrackingOption.args.GatherMate = GatherMateOptions
+    self.Options.args.Supertracker = SupertrackerOptions
     self.Options.args.TrackingIntegrations = TrackingOption
+    self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
+    self.Options.args.Profiles.order = 900
 
     AceConfig:RegisterOptionsTable(Const.METADATA.NAME, self.Options)
     _, Addon.categoryID = AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, nil, nil, "Tabs")
+    AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Supertracker", Const.METADATA.NAME, "Supertracker")
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Minimap tracking", Const.METADATA.NAME, "TrackingIntegrations")
     AceConfigDialog:AddToBlizOptions(Const.METADATA.NAME, "Profiles", Const.METADATA.NAME, "Profiles")
 end
