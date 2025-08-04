@@ -1,6 +1,6 @@
 # CompassHUD
 
-A configurable compass strip that displays your character's heading, along with various markers such as name, distance, and time to arrival.
+A configurable compass strip that displays your character's heading, along with various markers with information such as name, distance, and time to arrival.
 
 ![Example1](https://i.imgur.com/NmushPm.png)
 

@@ -1,4 +1,61 @@
-# v1.5.0b (14.7.2023)
+# v1.6.0 (6.8.2025)
+
+## New
+
+### Minimap icons
+
+**Idea, help, and testing by [readi2play](https://www.curseforge.com/members/readi2play)**
+
+You can now track many of WoW’s standard minimap icons directly on the CompassHUD.
+
+You can configure:
+- Tracking radius</br>
+- Opacity gradient based on distance</br>
+- Icon filtering by type</br>
+- Text display options (name, distance, TTA)</br>
+- Whether texts are shown for all icons or only the one you're facing
+
+You can enable this feature under the `CompassHUD` -> `Minimap tracking` -> `Minimap icons` on the `General` panel.
+
+#### General setting
+
+This panel lets you adjust the usual basic properties like the vertical position of the icons on the compass, their scale, and how often their visibility should be refreshed.</br>
+You can also limit the tracking distance. Setting this to 0 will display all icons from the current zone. (Be warned — that can create quite a bit of clutter!)
+
+Something special: **icon opacity based on distance.**</br>
+By default, icons at the edge of the `Scanning radius` (1000 if the radius is 0) will have **minimum opacity**, while those closer to you (around 100 yards — roughly the middle zoom level on the minimap) will have **maximum opacity**.</br>
+Icons in between will fade accordingly. If you’d prefer not to use this effect, just set both min and max opacity values to 100%.</br>
+![MinimapIconsGeneral](https://i.imgur.com/FvCUD2R.png)
+
+#### Filters
+
+The `Filter` panel allows you to choose which types of minimap icons will appear on your compass.</br>
+![MinimapIconsFilter](https://i.imgur.com/hFHQ0SP.png)
+
+#### Texts
+
+As always, you can enable and customize the name, distance, and time-to-arrive (TTA) text.
+
+To reduce visual clutter, there’s an option to show text only for the icon you're currently facing. The `Text visibility angle` setting defines how far off-center an icon can be and still show its text. Set it to 0 to always show texts for all icons.</br>
+There’s also a setting to boost opacity for the faced icon and its text — by default, this is 100%, making it pop out more clearly.
+![MinimapIconsTexts](https://i.imgur.com/ssFMMwA.png)
+
+## Misc
+
+### Reorganized options
+
+I hope the default settings of this addon are good enough for most players, but I tend to expose as many configurable options as possible. This often leads to an overwhelming number of settings — and organizing them meaningfully isn’t exactly my strong suit 😅</br>
+Still, I’m doing my best to improve that (by splitting them into somewhat "organized" chunks).</br>
+![Submenus](https://i.imgur.com/ofaIf0M.png)
+
+In this release:
+- All `Pointer` settings have been moved to the new `Supertracker` submenu.</br>
+- `Party/Raid` settings are now under `Minimap tracking` together with `GatherMate2` and any future addon integrations ([HandyNotes](https://www.curseforge.com/wow/addons/handynotes) comes to my mind).
+
+
+I also bumped TOC to 11.2.0
+
+# v1.5.0b (14.7.2025)
 
 ## Fix
 - Fix for `POI map pin` sometimes using `User map pin` textures
