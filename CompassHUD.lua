@@ -41,6 +41,7 @@ local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
 local GetBestMapForUnit = C_Map.GetBestMapForUnit
+local GetMapLinksForMap = C_Map.GetMapLinksForMap
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
@@ -4146,6 +4147,26 @@ local function setPOITrackNodes()
                     local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
                     poi.visible = (startsWithTaxiNode and Options.POITrackFilter["Portal"]) or
                                 (not startsWithTaxiNode and Options.POITrackFilter["Other"])
+                end
+            end
+
+            local portalPOIs = GetMapLinksForMap(player.uiMapID)
+            if Options.POITrackFilter["Portal"] and portalPOIs then
+                for _, poi in ipairs(portalPOIs) do
+                    if poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode" then
+                        if not poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID] then
+                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID] = poi
+                            local xZone, yZone = poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].position.x, poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].position.y
+                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].instance = player.uiMapID
+                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].x = xWorld
+                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].y = yWorld
+                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID])
+                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].scale = 1.3
+                            updatePOITrackNode(poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID])
+                        end
+                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].visible = true
+                    end
                 end
             end
 
