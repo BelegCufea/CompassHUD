@@ -1,8 +1,29 @@
-# v1.6.0 (6.8.2025)
+# v1.6.1 (9.8.2025)
+
+## New
+
+### Minimap icons (New Types
+
+- Added the following icon types:
+  - **Links** – shows shortcuts between maps
+  - **Hubs** – major cities
+  - **Vignettes** – various visible map events and objects (e.g., active S.C.R.A.P. heaps, world bosses, phase conduits, etc.)
+
+#### Performance Notes
+
+This feature still needs significant optimization.</br>
+For now, I’ve implemented some basic conditions that should reduce CPU usage — and hopefully cut the FPS loss by about half.
+
+That said… it still eats FPS for breakfast. 🍳</br>
+I’m not a professional programmer, so I don’t yet know the right way to solve it — but I’ll keep trying anyway!
+
+# v1.6.0 (4.8.2025)
 
 ## New
 
 ### Minimap icons
+
+![MinimapIcons](https://i.imgur.com/NmushPm.png)
 
 **Idea, help, and testing by [readi2play](https://www.curseforge.com/members/readi2play)**
 

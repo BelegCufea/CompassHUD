@@ -115,4 +115,4 @@ Check if you put it in correct profile.
 
 ## Issues and suggestions
 
-If you run into problems or have feature requests, feel free to [open an issue on Github](https://github.com/BelegCufea/CompassHUD/issues).
+If you run into problems or have feature requests, feel free to [open an issue on GitHub](https://github.com/BelegCufea/CompassHUD/issues).

@@ -53,10 +53,12 @@ local GetAreaPOIForMap =  C_AreaPoiInfo.GetAreaPOIForMap
 local GetDelvesForMap =  C_AreaPoiInfo.GetDelvesForMap
 local GetEventsForMap =  C_AreaPoiInfo.GetEventsForMap
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
+local GetQuestHubsForMap = C_AreaPoiInfo.GetQuestHubsForMap
 local GetDungeonEntrancesForMap = C_EncounterJournal.GetDungeonEntrancesForMap
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
 local GetTaxiNodesForMap = C_TaxiMap.GetTaxiNodesForMap
+local GetVignettes = C_VignetteInfo.GetVignettes
 local GetVignettePosition = C_VignetteInfo.GetVignettePosition
 local GetVignetteInfo = C_VignetteInfo.GetVignetteInfo
 
@@ -727,8 +729,11 @@ Addon.Defaults = {
             ["Event"] = true,
             ["Instance"] = true,
             ["Delve"] = true,
+            ["Hub"] = true,
             ["Portal"] = false,
+            ["Link"] = false,
             ["Other"] = true,
+            ["Vignette"] = false,
         },
     },
 }
@@ -748,7 +753,6 @@ local function round(n, decimals)
     local power = 10 ^ (decimals or 0)
     return math.floor(n * power + 0.5) / power
 end
-
 
 local function getPointerAtlasIDs()
     local atlasIDs = {}
@@ -815,8 +819,11 @@ local function getPOITrackFilter()
     list["Taxi"] = "Flightpoints"
     list["Event"] = "Events"
     list["Instance"] = "Instances (Dungeons, Raids)"
+    list["Hub"] = "Hubs (Cities, Towns, etc.)"
     list["Delve"] = "Delves"
     list["Portal"] = "Teleports"
+    list["Link"] = "Links (Shortcuts, Connections, Paths)"
+    list["Vignette"] = "Vignettes"
     list["Other"] = "Miscellaneous"
     return list
 end
@@ -3277,7 +3284,8 @@ end
 
 local function questPointerSetTexts(frame, dt)
     if player.inInstance then return end
-
+    frame.elapsed = frame.elapsed + dt
+    if frame.distanceHidden and frame.timeHidden then return end
     frame.distance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
     if not frame.distance then
         frame:Hide()
@@ -3288,7 +3296,7 @@ local function questPointerSetTexts(frame, dt)
     end
     frame:Show()
     frame.DistanceText:SetText(BreakUpLargeNumbers(frame.distance))
-    frame.elapsed = frame.elapsed + dt
+    if frame.timeHidden then return end
     if frame.elapsed >= 1 then
         frame.elapsed = 0
         local speed = GetUnitSpeed("player") or GetUnitSpeed("vehicle")
@@ -4151,22 +4159,22 @@ local function setPOITrackNodes()
             end
 
             local portalPOIs = GetMapLinksForMap(player.uiMapID)
-            if Options.POITrackFilter["Portal"] and portalPOIs then
+            if (Options.POITrackFilter["Portal"] or Options.POITrackFilter["Link"]) and portalPOIs then
                 for _, poi in ipairs(portalPOIs) do
-                    if poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode" then
-                        if not poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID] then
-                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID] = poi
-                            local xZone, yZone = poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].position.x, poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].position.y
-                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].instance = player.uiMapID
-                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].x = xWorld
-                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].y = yWorld
-                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID])
-                            poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].scale = 1.3
-                            updatePOITrackNode(poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID])
-                        end
-                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].visible = true
+                    if not poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID] then
+                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID] = poi
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].position.x, poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].position.y
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID])
+                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID])
                     end
+                    local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
+                    poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].visible = (startsWithTaxiNode and Options.POITrackFilter["Portal"]) or
+                        (not startsWithTaxiNode and Options.POITrackFilter["Link"])
                 end
             end
 
@@ -4271,6 +4279,45 @@ local function setPOITrackNodes()
                     end
                 end
             end
+
+            mapPOIs = GetQuestHubsForMap(player.uiMapID)
+            if Options.POITrackFilter["Hub"] and mapPOIs then
+                for _, poiID in ipairs(mapPOIs) do
+                    if not poiTrackPointTable[player.uiMapID]["HUB_" .. poiID] then
+                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].position.y
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].x = xWorld
+                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].y = yWorld
+                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["HUB_" .. poiID])
+                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["HUB_" .. poiID])
+                    end
+                    poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].visible = true
+                end
+            end
+
+            local vignetteGUIDs = GetVignettes()
+            if Options.POITrackFilter["Vignette"] and vignetteGUIDs then
+                for _, vignetteGUID in ipairs(vignetteGUIDs) do
+                    local vignetteInfo = GetVignetteInfo(vignetteGUID)
+                    local vignettePosition = GetVignettePosition(vignetteGUID, player.uiMapID)
+                    if vignetteInfo and vignettePosition then
+                        if not poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID] then
+                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID] = vignetteInfo
+                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(vignettePosition.x, vignettePosition.y, player.uiMapID)
+                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].instance = player.uiMapID
+                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].x = xWorld
+                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].y = yWorld
+                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID])
+                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].scale = 1.3
+                            updatePOITrackNode(poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID])
+                        end
+                        poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].visible = true
+                    end
+                end
+            end
         end
     end
 
@@ -4303,7 +4350,9 @@ local function setPOITrackNodes()
             end
             poi.frame:SetShown(shown)
             poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
+            poi.frame.distanceHidden= not (Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
             poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
+            poi.frame.timeHidden = not (Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
             poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
             poi.shown = shown
 
@@ -4323,7 +4372,9 @@ local function setPOITrackNodes()
                 if poi.visible and poi.shown and poi.angle then
                     if abs(poi.angle) <= (minAngle + 0.001) then
                         poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
+                        poi.frame.distanceHidden = not Options.POITrackShowDistance
                         poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
+                        poi.frame.timeHidden = not Options.POITrackShowTTA
                         poi.frame.Title:SetShown(Options.POITrackShowTitle)
                         poi.frame:SetAlpha(Options.POITrackOpacitySelected)
                         done = true
