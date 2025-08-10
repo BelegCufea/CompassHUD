@@ -1,7 +1,15 @@
+# v1.6.1b (10.8.2025)
+
+## Fix
+- The previous Minimap icon optimization introduced a memory leak (oops!).</br>
+This update should resolve the issue — fingers crossed it sticks this time.
+
+
 # v1.6.1a (10.8.2025)
 
 ## Fix
-- Further optimization of the Minimap icons feature.</br>This change should be more noticeable, especially when traveling between multiple zones.
+- Further optimization of the Minimap icons feature.</br>
+This change should be more noticeable, especially when traveling between multiple zones.
 
 # v1.6.1 (9.8.2025)
 
