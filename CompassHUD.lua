@@ -74,6 +74,7 @@ local questPointsTable = {}
 local groupPointsTable = {}
 local gatherMatePointTable = {}
 local poiTrackPointTable = {}
+local poiTrackCurrentMap = nil
 local HBDmaps = {}
 local STtexture = {}
 local directions = {
@@ -4125,19 +4126,19 @@ end
 local function setPOITrackNodes()
     if not Options.POITrackEnabled then return end
     if poiTrackThrottle and poiTrackThrottle >= Options.POITrackInterval then
-        for map, pois in pairs(poiTrackPointTable) do
-            for poiID, poi in pairs(pois) do
-                if map ~= player.uiMapID and poi.frame then
-                    poi.frame:Hide()
-                else
-                    poiTrackPointTable[map][poiID].visible = false
+        if poiTrackCurrentMap ~= player.uiMapID then
+            for map, pois in pairs(poiTrackPointTable) do
+                if map ~= player.uiMapID then
+                    for _, poi in pairs(pois) do
+                        poi.frame:Hide()
+                    end
                 end
-            end
-            if map ~= player.uiMapID then
-                poiTrackPointTable[map] = nil
-            end
+            end 
+            poiTrackCurrentMap = player.uiMapID
         end
-        poiTrackThrottle = 0
+        for poiID, _ in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID]  or {}) do
+            poiTrackPointTable[player.uiMapID][poiID].visible = false
+        end
         local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
         if x and y then
             if not poiTrackPointTable[player.uiMapID] then
@@ -4326,51 +4327,50 @@ local function setPOITrackNodes()
                 end
             end
         end
+        poiTrackThrottle = 0
     end
 
     local minAngle = 360
     local effectivePOITrackRadius = Options.POITrackRadius == 0 and Options.POITrackOpacityMaxRadius or Options.POITrackRadius
     local opacityFactor = (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / (effectivePOITrackRadius - Options.POITrackOpacityMinRadius)
-    for _, pois in pairs(poiTrackPointTable) do
-        for _, poi in pairs(pois) do
-            local shown = false
-            if poi.visible and player.angle then
-                if poi.x and poi.y and poi.instance then
-                    poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
-                    if Options.POITrackRadius == 0 or (poi.distance and poi.distance <= Options.POITrackRadius) then
-                        local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
-                        poi.angle = angle
-                        if abs(angle) < minAngle then
-                            minAngle = abs(angle)
-                        end
-                        if angle < 0 then angle = angle + (2 * PI) end
-                        if angle > PI then angle = angle - (2 * PI) end
-                        if angle then
-                            local visible = math.rad(Options.Degrees)/2
-                            if angle < visible and angle > -visible then
-                                poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
-                                shown = true
-                            end
+    for _, poi in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID] or {}) do
+        local shown = false
+        if poi.visible and player.angle then
+            if poi.x and poi.y and poi.instance then
+                poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
+                if Options.POITrackRadius == 0 or (poi.distance and poi.distance <= Options.POITrackRadius) then
+                    local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
+                    poi.angle = angle
+                    if abs(angle) < minAngle then
+                        minAngle = abs(angle)
+                    end
+                    if angle < 0 then angle = angle + (2 * PI) end
+                    if angle > PI then angle = angle - (2 * PI) end
+                    if angle then
+                        local visible = math.rad(Options.Degrees)/2
+                        if angle < visible and angle > -visible then
+                            poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
+                            shown = true
                         end
                     end
                 end
             end
-            poi.frame:SetShown(shown)
-            poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
-            poi.frame.distanceHidden= not (Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
-            poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
-            poi.frame.timeHidden = not (Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
-            poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
-            poi.shown = shown
-
-            poi.opacity = Options.POITrackOpacityMin
-            if not poi.distance or (poi.distance < Options.POITrackOpacityMinRadius) then
-                poi.opacity = Options.POITrackOpacityMax
-            elseif poi.distance <= effectivePOITrackRadius then
-                poi.opacity = Options.POITrackOpacityMax + (poi.distance - Options.POITrackOpacityMinRadius) * opacityFactor
-            end
-            poi.frame:SetAlpha(poi.opacity)
         end
+        poi.frame:SetShown(shown)
+        poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
+        poi.frame.distanceHidden= not (Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
+        poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
+        poi.frame.timeHidden = not (Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
+        poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
+        poi.shown = shown
+
+        poi.opacity = Options.POITrackOpacityMin
+        if not poi.distance or (poi.distance < Options.POITrackOpacityMinRadius) then
+            poi.opacity = Options.POITrackOpacityMax
+        elseif poi.distance <= effectivePOITrackRadius then
+            poi.opacity = Options.POITrackOpacityMax + (poi.distance - Options.POITrackOpacityMinRadius) * opacityFactor
+        end
+        poi.frame:SetAlpha(poi.opacity)
     end
     if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
         local done = false
