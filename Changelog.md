@@ -1,8 +1,13 @@
+# v1.6.1a (10.8.2025)
+
+## Fix
+- Further optimization of the Minimap icons feature.</br>This change should be more noticeable, especially when traveling between multiple zones.
+
 # v1.6.1 (9.8.2025)
 
 ## New
 
-### Minimap icons (New Types
+### Minimap icons (New Types)
 
 - Added the following icon types:
   - **Links** – shows shortcuts between maps

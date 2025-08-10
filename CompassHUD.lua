@@ -4126,8 +4126,15 @@ local function setPOITrackNodes()
     if not Options.POITrackEnabled then return end
     if poiTrackThrottle and poiTrackThrottle >= Options.POITrackInterval then
         for map, pois in pairs(poiTrackPointTable) do
-            for poi, node in pairs(pois) do
-                poiTrackPointTable[map][poi].visible = false
+            for poiID, poi in pairs(pois) do
+                if map ~= player.uiMapID and poi.frame then
+                    poi.frame:Hide()
+                else
+                    poiTrackPointTable[map][poiID].visible = false
+                end
+            end
+            if map ~= player.uiMapID then
+                poiTrackPointTable[map] = nil
             end
         end
         poiTrackThrottle = 0
