@@ -32,6 +32,8 @@ local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
 local GetQuestAdditionalHighlights = C_QuestLog.GetQuestAdditionalHighlights
 local IsQuestComplete = C_QuestLog.IsComplete
 local GetQuestRewardCurrencyInfo = C_QuestLog.GetQuestRewardCurrencyInfo
+local GetNumWorldQuestWatches = C_QuestLog.GetNumWorldQuestWatches
+local GetQuestIDForWorldQuestWatchIndex = C_QuestLog.GetQuestIDForWorldQuestWatchIndex
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
 local IsTaskQuestActive = C_TaskQuest.IsActive
@@ -725,7 +727,6 @@ Addon.Defaults = {
         POITrackTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         POITrackTitleFontFlags     = "",
         POITrackFilter             = {
-            ["WorldQuest"] = true,
             ["Taxi"] = false,
             ["Event"] = true,
             ["Instance"] = true,
@@ -736,6 +737,8 @@ Addon.Defaults = {
             ["Other"] = true,
             ["Vignette"] = false,
         },
+        POITrackWQFilter           = "All",
+        POITrackWQWholeZone        = false,
     },
 }
 
@@ -816,7 +819,6 @@ end
 
 local function getPOITrackFilter()
     local list = {}
-    list["WorldQuest"] = "World Quests"
     list["Taxi"] = "Flightpoints"
     list["Event"] = "Events"
     list["Instance"] = "Instances (Dungeons, Raids)"
@@ -826,6 +828,17 @@ local function getPOITrackFilter()
     list["Link"] = "Links (Shortcuts, Connections, Paths)"
     list["Vignette"] = "Vignettes"
     list["Other"] = "Miscellaneous"
+    return list
+end
+
+local function getPOIFrackWQFilter()
+    local list = {}
+    list["None"] = "None"
+    list["All"] = "All"
+    list["Tracked"] = "Tracked"
+    if WorldQuestTrackerAddon then
+        list["WQTracker"] = "World Quest Tracker (WQT)"
+    end
     return list
 end
 
@@ -1823,6 +1836,26 @@ local POITrackOptions = {
                         Addon.db.profile.POITrackFilter[key] = value
                         Addon:UpdateHUDSettings()
                     end,
+                },
+                POITrackWQFilter = {
+                    type = "select",
+                    order = 1010,
+                    name = "World Quests ",
+                    desc = "Select which WorldQuest icons will be visible on the HUD.",
+                    values = function() return getPOIFrackWQFilter() end,
+                    get = function(info)
+                        return Addon.db.profile.POITrackWQFilter
+                    end,
+                    set = function(info, value)
+                        Addon.db.profile.POITrackWQFilter = value
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                POITrackWQWholeZone = {
+                    type = "toggle",
+                    order = 1020,
+                    name = "Bypass scanning radius",
+                    desc = "If enabled, World Quests will be shown in the whole zone, not just in the scanning radius.",
                 },
             },
         },
@@ -4259,9 +4292,22 @@ local function setPOITrackNodes()
             end
 
             local mapWQ = GetWorldQuestsOnMap(player.uiMapID)
-            if Options.POITrackFilter["WorldQuest"] and mapWQ then
+            if Options.POITrackWQFilter ~= "None" and mapWQ then
+                local trackedWQ = {}
+                if Options.POITrackWQFilter == "Tracked" then
+                    for i = 1, GetNumWorldQuestWatches() do
+                        trackedWQ[GetQuestIDForWorldQuestWatchIndex(i)] = true
+                    end
+                elseif Options.POITrackWQFilter == "WQTracker" and WorldQuestTrackerAddon then
+                    for _, wq in ipairs(WorldQuestTrackerAddon.QuestTrackList or {}) do
+                        trackedWQ[wq.questID] = true
+                    end
+                elseif Options.POITrackWQFilter == "WQTracker" then
+                    Options.POITrackWQFilter = "All"
+                end
+
                 for _, wq in ipairs(mapWQ) do
-                    if isTask(wq.questID) then
+                    if isTask(wq.questID) and (wq.mapID == player.uiMapID) then
                         if not poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID] then
                             poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID] = wq
                             local xZone, yZone = poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].x, poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].y
@@ -4283,7 +4329,12 @@ local function setPOITrackNodes()
                                 poiTrackNode.texture:SetTexture(poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture)
                             end
                         end
-                        poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].visible = true
+                        if Options.POITrackWQFilter ~= "All" and not trackedWQ[wq.questID] then
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].visible = false
+                        else
+                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].visible = true
+                        end
+                        poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].wholeZone = Options.POITrackWQWholeZone
                     end
                 end
             end
@@ -4338,7 +4389,7 @@ local function setPOITrackNodes()
         if poi.visible and player.angle then
             if poi.x and poi.y and poi.instance then
                 poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
-                if Options.POITrackRadius == 0 or (poi.distance and poi.distance <= Options.POITrackRadius) then
+                if Options.POITrackRadius == 0 or poi.wholeZone or (poi.distance and poi.distance <= Options.POITrackRadius) then
                     local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
                     poi.angle = angle
                     if abs(angle) < minAngle then

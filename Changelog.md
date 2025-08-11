@@ -1,3 +1,26 @@
+# v1.6.2 (11.8.2025)
+
+## New
+
+### Minimap icons - World quests
+
+- Added a separate section for World Quest tracking in the `Filter` pane.<br>
+You can now choose to:
+  - Show **ALL** World Quests in the current zone
+  - Show only **TRACKED** quests from the default quest tracker
+  - If you have **[World Quest Tracker](https://www.curseforge.com/wow/addons/world-quest-tracker)** installed, show quests tracked in its own tracker
+- Added an option for World Quests to  ignore the global `Scanning Radius`.<br>
+![MinimapIconsWQ](https://i.imgur.com/pdUp2E1.png)
+
+💭 Possible future improvement<br>
+I’m considering adding a layout/customization panel (similar to `Pointers` in the `Supertracker` section) for all icon types — primarily covering, but not limited to:
+- Icon position & size
+- Custom scanning radius
+- Text color
+
+It’s a fair bit of work — but if enough of you would find it useful, I’ll gladly make it happen.<br>
+Suggestions are welcome! 😊
+
 # v1.6.1b (10.8.2025)
 
 ## Fix
