@@ -1,3 +1,9 @@
+# v1.6.2a (12.8.2025)
+
+## Fix
+
+- Fixes `Minimap icons` **Vignettes** positioning.
+
 # v1.6.2 (11.8.2025)
 
 ## New

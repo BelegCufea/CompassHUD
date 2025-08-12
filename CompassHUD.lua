@@ -4181,18 +4181,19 @@ local function setPOITrackNodes()
             local mapPOIs = GetAreaPOIForMap(player.uiMapID)
             if (Options.POITrackFilter["Portal"] or Options.POITrackFilter["Other"]) and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    if not poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID] then
-                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].position.y
+                    local id = "AREA_" .. poiID
+                    if not poiTrackPointTable[player.uiMapID][id] then
+                        poiTrackPointTable[player.uiMapID][id] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID])
-                        poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID].scale = 1.3
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID])
+                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID][id].x = xWorld
+                        poiTrackPointTable[player.uiMapID][id].y = yWorld
+                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
-                    local poi = poiTrackPointTable[player.uiMapID]["OTHER_" .. poiID]
+                    local poi = poiTrackPointTable[player.uiMapID][id]
                     local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
                     poi.visible = (startsWithTaxiNode and Options.POITrackFilter["Portal"]) or
                                 (not startsWithTaxiNode and Options.POITrackFilter["Other"])
@@ -4202,19 +4203,20 @@ local function setPOITrackNodes()
             local portalPOIs = GetMapLinksForMap(player.uiMapID)
             if (Options.POITrackFilter["Portal"] or Options.POITrackFilter["Link"]) and portalPOIs then
                 for _, poi in ipairs(portalPOIs) do
-                    if not poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID] then
-                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID] = poi
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].position.x, poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].position.y
+                    local id = "LINK" .. poi.areaPoiID
+                    if not poiTrackPointTable[player.uiMapID][id] then
+                        poiTrackPointTable[player.uiMapID][id] = poi
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID])
-                        poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].scale = 1.3
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID])
+                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID][id].x = xWorld
+                        poiTrackPointTable[player.uiMapID][id].y = yWorld
+                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
                     local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
-                    poiTrackPointTable[player.uiMapID]["PORTAL_" .. poi.areaPoiID].visible = (startsWithTaxiNode and Options.POITrackFilter["Portal"]) or
+                    poiTrackPointTable[player.uiMapID][id].visible = (startsWithTaxiNode and Options.POITrackFilter["Portal"]) or
                         (not startsWithTaxiNode and Options.POITrackFilter["Link"])
                 end
             end
@@ -4222,72 +4224,76 @@ local function setPOITrackNodes()
             mapPOIs = GetDelvesForMap(player.uiMapID)
             if Options.POITrackFilter["Delve"] and  mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    if not poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID] then
-                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].position.y
+                    local id = "DELVE_" .. poiID
+                    if not poiTrackPointTable[player.uiMapID][id] then
+                        poiTrackPointTable[player.uiMapID][id] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID])
-                        poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].scale = 1.3
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID])
+                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID][id].x = xWorld
+                        poiTrackPointTable[player.uiMapID][id].y = yWorld
+                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
-                    poiTrackPointTable[player.uiMapID]["DELVE_" .. poiID].visible = true
+                    poiTrackPointTable[player.uiMapID][id].visible = true
                 end
             end
 
             mapPOIs = GetEventsForMap(player.uiMapID)
             if Options.POITrackFilter["Event"] and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    if not poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID] then
-                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].position.y
+                    local id = "EVENT_" .. poiID
+                    if not poiTrackPointTable[player.uiMapID][id] then
+                        poiTrackPointTable[player.uiMapID][id] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID])
-                        poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].scale = 1.3
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID])
+                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID][id].x = xWorld
+                        poiTrackPointTable[player.uiMapID][id].y = yWorld
+                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
-                    poiTrackPointTable[player.uiMapID]["EVENT_" .. poiID].visible = true
+                    poiTrackPointTable[player.uiMapID][id].visible = true
                 end
             end
 
             local dungeonEntrances = GetDungeonEntrancesForMap(player.uiMapID)
             if Options.POITrackFilter["Instance"] and dungeonEntrances then
                 for _, entrance in ipairs(dungeonEntrances) do
-                    if not poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID] then
-                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID] = entrance
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].position.x, poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].position.y
+                    local id = "ENTRANCE_" .. entrance.areaPoiID
+                    if not poiTrackPointTable[player.uiMapID][id] then
+                        poiTrackPointTable[player.uiMapID][id] = entrance
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID])
-                        poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].scale = 1.3
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID])
+                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID][id].x = xWorld
+                        poiTrackPointTable[player.uiMapID][id].y = yWorld
+                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
-                    poiTrackPointTable[player.uiMapID]["ENTRANCE_" .. entrance.areaPoiID].visible = true
+                    poiTrackPointTable[player.uiMapID][id].visible = true
                 end
             end
 
             local mapTaxis = GetTaxiNodesForMap(player.uiMapID)
             if Options.POITrackFilter["Taxi"] and mapTaxis then
                 for _, taxi in ipairs(mapTaxis) do
-                    if not poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID] then
-                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID] = taxi
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].position.x, poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].position.y
+                    local id = "TAXI_" .. taxi.nodeID
+                    if not poiTrackPointTable[player.uiMapID][id] then
+                        poiTrackPointTable[player.uiMapID][id] = taxi
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID])
-                        poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].scale = 1.2
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID])
+                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID][id].x = xWorld
+                        poiTrackPointTable[player.uiMapID][id].y = yWorld
+                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        poiTrackPointTable[player.uiMapID][id].scale = 1.2
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
-                    poiTrackPointTable[player.uiMapID]["TAXI_" .. taxi.nodeID].visible = true
+                    poiTrackPointTable[player.uiMapID][id].visible = true
                 end
             end
 
@@ -4308,33 +4314,34 @@ local function setPOITrackNodes()
 
                 for _, wq in ipairs(mapWQ) do
                     if isTask(wq.questID) and (wq.mapID == player.uiMapID) then
-                        if not poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID] then
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID] = wq
-                            local xZone, yZone = poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].x, poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].y
+                        local id = "WQ_" .. wq.questID
+                        if not poiTrackPointTable[player.uiMapID][id] then
+                            poiTrackPointTable[player.uiMapID][id] = wq
+                            local xZone, yZone = poiTrackPointTable[player.uiMapID][id].x, poiTrackPointTable[player.uiMapID][id].y
                             local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].instance = player.uiMapID
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].name = GetTitleForQuestID(wq.questID)
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].x = xWorld
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].y = yWorld
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].atlasName = "completiondialog-warwithincampaign-worldquests-icon"
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].circle = true
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID])
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].scale = 1
-                            updatePOITrackNode(poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID])
+                            poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                            poiTrackPointTable[player.uiMapID][id].name = GetTitleForQuestID(wq.questID)
+                            poiTrackPointTable[player.uiMapID][id].x = xWorld
+                            poiTrackPointTable[player.uiMapID][id].y = yWorld
+                            poiTrackPointTable[player.uiMapID][id].atlasName = "completiondialog-warwithincampaign-worldquests-icon"
+                            poiTrackPointTable[player.uiMapID][id].circle = true
+                            poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                            poiTrackPointTable[player.uiMapID][id].scale = 1
+                            updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                         end
-                        if not poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture then
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture = getWQicon(wq.questID)
-                            if poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture then
-                                local poiTrackNode = poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].frame
-                                poiTrackNode.texture:SetTexture(poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].texture)
+                        if not poiTrackPointTable[player.uiMapID][id].texture then
+                            poiTrackPointTable[player.uiMapID][id].texture = getWQicon(wq.questID)
+                            if poiTrackPointTable[player.uiMapID][id].texture then
+                                local poiTrackNode = poiTrackPointTable[player.uiMapID][id].frame
+                                poiTrackNode.texture:SetTexture(poiTrackPointTable[player.uiMapID][id].texture)
                             end
                         end
                         if Options.POITrackWQFilter ~= "All" and not trackedWQ[wq.questID] then
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].visible = false
+                            poiTrackPointTable[player.uiMapID][id].visible = false
                         else
-                            poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].visible = true
+                            poiTrackPointTable[player.uiMapID][id].visible = true
                         end
-                        poiTrackPointTable[player.uiMapID]["WQ_" .. wq.questID].wholeZone = Options.POITrackWQWholeZone
+                        poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWQWholeZone
                     end
                 end
             end
@@ -4342,18 +4349,19 @@ local function setPOITrackNodes()
             mapPOIs = GetQuestHubsForMap(player.uiMapID)
             if Options.POITrackFilter["Hub"] and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    if not poiTrackPointTable[player.uiMapID]["HUB_" .. poiID] then
-                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID] = GetAreaPOIInfo(player.uiMapID, poiID)
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].position.x, poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].position.y
+                    local id = "HUB_" .. poiID
+                    if not poiTrackPointTable[player.uiMapID][id] then
+                        poiTrackPointTable[player.uiMapID][id] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].x = xWorld
-                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].y = yWorld
-                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["HUB_" .. poiID])
-                        poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].scale = 1.3
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID]["HUB_" .. poiID])
+                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID][id].x = xWorld
+                        poiTrackPointTable[player.uiMapID][id].y = yWorld
+                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
-                    poiTrackPointTable[player.uiMapID]["HUB_" .. poiID].visible = true
+                    poiTrackPointTable[player.uiMapID][id].visible = true
                 end
             end
 
@@ -4363,17 +4371,18 @@ local function setPOITrackNodes()
                     local vignetteInfo = GetVignetteInfo(vignetteGUID)
                     local vignettePosition = GetVignettePosition(vignetteGUID, player.uiMapID)
                     if vignetteInfo and vignettePosition then
-                        if not poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID] then
-                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID] = vignetteInfo
+                        local id = "VIGNETTE_" .. vignetteInfo.vignetteGUID
+                        if not poiTrackPointTable[player.uiMapID][id] then
+                            poiTrackPointTable[player.uiMapID][id] = vignetteInfo
                             local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(vignettePosition.x, vignettePosition.y, player.uiMapID)
-                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].instance = player.uiMapID
-                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].x = xWorld
-                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].y = yWorld
-                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID])
-                            poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].scale = 1.3
-                            updatePOITrackNode(poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID])
+                            poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                            poiTrackPointTable[player.uiMapID][id].x = xWorld
+                            poiTrackPointTable[player.uiMapID][id].y = yWorld
+                            poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                            poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                            updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                         end
-                        poiTrackPointTable[player.uiMapID]["VIGNETTE_" .. vignetteInfo.vignetteID].visible = true
+                        poiTrackPointTable[player.uiMapID][id].visible = true
                     end
                 end
             end
