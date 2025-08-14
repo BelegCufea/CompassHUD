@@ -95,7 +95,9 @@
         "TEXT_TO_SPEECH_SAMPLE_TEXT",
         "SuperTrackedFrame",
         "WorldFrame",
-        "Lerp"
+        "Lerp",
+        "UiMapPoint",
+        "Round"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {

@@ -1,6 +1,9 @@
 local ADDON_NAME = ...
 local Addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
 
+BINDING_HEADER_COMPASSHUD = "CompassHUD"
+BINDING_NAME_COMPASSHUD_SUPERTRACK = "Supertrack minimap icon"
+
 local Const = Addon.CONST
 local Debug = Addon.DEBUG
 
@@ -739,6 +742,8 @@ Addon.Defaults = {
         },
         POITrackWQFilter           = "All",
         POITrackWQWholeZone        = false,
+        POITrackSTRetexture        = true,
+        POITrackWorldmapTexture    = true,
     },
 }
 
@@ -1809,6 +1814,41 @@ local POITrackOptions = {
                     softMax = 1,
                     step = 0.01,
                     isPercent = true,
+                },
+                HeaderPOITrackKeyBinding = {
+                    type = "header",
+                    order = 200,
+                    name = "User Waypoint"
+                },
+                POITrackKeyBinding = {
+                    order = 210,
+                    type = "keybinding",
+                    name = "Set as user waypoint",
+                    desc = "Sets map icon you are facing as user waypoint.",
+                    width = "full",
+                    get = function()
+                        return GetBindingKey("COMPASSHUD_SUPERTRACK")
+                    end,
+                    set = function(_, key)
+                        local oldKey1, oldKey2 = GetBindingKey("COMPASSHUD_SUPERTRACK")
+                        if oldKey1 then SetBinding(oldKey1) end
+                        if oldKey2 then SetBinding(oldKey2) end
+                        if key and key ~= "" then
+                            SetBinding(key, "COMPASSHUD_SUPERTRACK")
+                        end
+                    end,
+                },      
+                POITrackWorldmapTexture = {
+                    type = "toggle",
+                    order = 220,
+                    name = "Icon texture",
+                    desc = "If enabled, the user waypoint will use the minimap texture instead of the default one.",
+                },
+                POITrackSTRetexture = {
+                    type = "toggle",
+                    order = 230,
+                    name = "Retexture Waypoint",
+                    desc = "When enabled, the User waypoint will use the same texture as the minimap icon.",
                 },
             },
         },
@@ -3398,10 +3438,11 @@ local function retextureSuperTrackedFrame(questPointer)
     STtexture.atlas = nil
 
     local questPoint = questPointsTable[STtexture.questID]
+    local moreArgs = questPoint.moreArgs
     if not questPoint or not questPoint.frame then return end
 
     local options = Options.Pointers[questPoint.frame.pointerType]
-    if not (options and options.stRetexture and IsSuperTrackingAnything()) then
+    if not (options and (options.stRetexture or (moreArgs and moreArgs.stRetexture)) and IsSuperTrackingAnything()) then
         -- Clean up if not retexturing
         if STtexture.mask then
             SuperTrackedFrame.Icon:RemoveMaskTexture(STtexture.mask)
@@ -3435,7 +3476,7 @@ local function retextureSuperTrackedFrame(questPointer)
     -- === Determine texture or atlas ===
     if questPoint.texture and options.worldmapTexture then
         STtexture.pointer = questPoint.texture
-    elseif questPoint.atlasName and options.worldmapTexture then
+    elseif questPoint.atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         STtexture.atlas = questPoint.atlasName
     else
         STtexture.atlas = questPoint.completed and options.atlasAltID or options.atlasID
@@ -3457,7 +3498,6 @@ local function retextureSuperTrackedFrame(questPointer)
 end
 
 local function updateQuestIcon(questPointer)
-
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
     local pointer = questPointsTable[questPointer.questID]
@@ -4394,43 +4434,45 @@ local function setPOITrackNodes()
     local effectivePOITrackRadius = Options.POITrackRadius == 0 and Options.POITrackOpacityMaxRadius or Options.POITrackRadius
     local opacityFactor = (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / (effectivePOITrackRadius - Options.POITrackOpacityMinRadius)
     for _, poi in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID] or {}) do
-        local shown = false
-        if poi.visible and player.angle then
-            if poi.x and poi.y and poi.instance then
-                poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
-                if Options.POITrackRadius == 0 or poi.wholeZone or (poi.distance and poi.distance <= Options.POITrackRadius) then
-                    local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
-                    poi.angle = angle
-                    if abs(angle) < minAngle then
-                        minAngle = abs(angle)
-                    end
-                    if angle < 0 then angle = angle + (2 * PI) end
-                    if angle > PI then angle = angle - (2 * PI) end
-                    if angle then
-                        local visible = math.rad(Options.Degrees)/2
-                        if angle < visible and angle > -visible then
-                            poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
-                            shown = true
+        if poi.frame then
+            local shown = false
+            if poi.visible and player.angle then
+                if poi.x and poi.y and poi.instance then
+                    poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
+                    if Options.POITrackRadius == 0 or poi.wholeZone or (poi.distance and poi.distance <= Options.POITrackRadius) then
+                        local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
+                        poi.angle = angle
+                        if abs(angle) < minAngle then
+                            minAngle = abs(angle)
+                        end
+                        if angle < 0 then angle = angle + (2 * PI) end
+                        if angle > PI then angle = angle - (2 * PI) end
+                        if angle then
+                            local visible = math.rad(Options.Degrees)/2
+                            if angle < visible and angle > -visible then
+                                poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
+                                shown = true
+                            end
                         end
                     end
                 end
             end
-        end
-        poi.frame:SetShown(shown)
-        poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
-        poi.frame.distanceHidden= not (Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
-        poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
-        poi.frame.timeHidden = not (Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
-        poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
-        poi.shown = shown
+            poi.frame:SetShown(shown)
+            poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
+            poi.frame.distanceHidden= not (Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
+            poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
+            poi.frame.timeHidden = not (Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
+            poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
+            poi.shown = shown
 
-        poi.opacity = Options.POITrackOpacityMin
-        if not poi.distance or (poi.distance < Options.POITrackOpacityMinRadius) then
-            poi.opacity = Options.POITrackOpacityMax
-        elseif poi.distance <= effectivePOITrackRadius then
-            poi.opacity = Options.POITrackOpacityMax + (poi.distance - Options.POITrackOpacityMinRadius) * opacityFactor
+            poi.opacity = Options.POITrackOpacityMin
+            if not poi.distance or (poi.distance < Options.POITrackOpacityMinRadius) then
+                poi.opacity = Options.POITrackOpacityMax
+            elseif poi.distance <= effectivePOITrackRadius then
+                poi.opacity = Options.POITrackOpacityMax + (poi.distance - Options.POITrackOpacityMinRadius) * opacityFactor
+            end
+            poi.frame:SetAlpha(poi.opacity)
         end
-        poi.frame:SetAlpha(poi.opacity)
     end
     if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
         local done = false
@@ -4444,6 +4486,7 @@ local function setPOITrackNodes()
                         poi.frame.timeHidden = not Options.POITrackShowTTA
                         poi.frame.Title:SetShown(Options.POITrackShowTitle)
                         poi.frame:SetAlpha(Options.POITrackOpacitySelected)
+                        poiTrackPointTable[player.uiMapID].heading = poi
                         done = true
                         break
                     end
@@ -4516,23 +4559,6 @@ local function onUpdate(_, elapsed)
     updateHUD(false)
 end
 
-local function createHUD()
-    HUD = CreateFrame('Frame', ADDON_NAME, UIParent, "BackdropTemplate")
-    HUD:SetPoint("CENTER")
-    HUD:SetClampedToScreen(true)
-    HUD:RegisterForDrag("LeftButton")
-
-    HUD:SetScript("OnAttributeChanged", function(self, name, value)
-        if name == "state-hudvisibility" then
-            local visible = false
-            if value == "show" and not player.inInstance then
-                visible = true
-            end
-            Addon:SetVisibility(visible)
-        end
-    end)
-end
-
 local function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName, texture, moreArgs)
     if type(questPointsTable[questID]) ~= "table" then
         questPointsTable[questID] = {}
@@ -4590,7 +4616,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
         questPointsTable[questID].frame.texture:SetTexture(questPointsTable[questID].texture)
         questPointsTable[questID].overrideRotation = true
         questPointsTable[questID].frame.scaleMultiplier = 1
-    elseif questPointsTable[questID].atlasName and options.worldmapTexture then
+    elseif questPointsTable[questID].atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         questPointsTable[questID].frame.texture:SetAtlas(questPointsTable[questID].atlasName)
         questPointsTable[questID].overrideRotation = true
         questPointsTable[questID].frame.scaleMultiplier = 1
@@ -4625,6 +4651,45 @@ local function tomtomClearWaypoint(self, uid)
     end
 end
 
+local function supertrackPOITrack()
+    if not Options.POITrackEnabled then return end
+    if not player.uiMapID or not poiTrackPointTable[player.uiMapID] then
+        return
+    end
+
+    local poi = poiTrackPointTable[player.uiMapID].heading
+    if poi and C_Map.CanSetUserWaypointOnMap(player.uiMapID) then
+        local poiTracked = { atlasName = poi.atlasName, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance }
+        poiTracked.xZone, poiTracked.yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, poi.instance, false)
+        local pos = CreateVector2D(poiTracked.xZone, poiTracked.yZone)
+        local mapPoint = UiMapPoint.CreateFromVector2D(player.uiMapID, pos)
+        poiTrackPointTable[player.uiMapID].tracked = poiTracked
+        C_Map.SetUserWaypoint(mapPoint)
+        C_SuperTrack.SetSuperTrackedUserWaypoint(true)
+    end
+end
+
+local function createHUD()
+    HUD = CreateFrame('Frame', ADDON_NAME, UIParent, "BackdropTemplate")
+    HUD:SetPoint("CENTER")
+    HUD:SetClampedToScreen(true)
+    HUD:RegisterForDrag("LeftButton")
+
+    HUD:SetScript("OnAttributeChanged", function(self, name, value)
+        if name == "state-hudvisibility" then
+            local visible = false
+            if value == "show" and not player.inInstance then
+                visible = true
+            end
+            Addon:SetVisibility(visible)
+        end
+    end)
+
+    HUD.SupertrackMinimapIcon = function(self)
+        supertrackPOITrack()
+    end    
+end
+
 local function OnEvent(event,...)
     if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
@@ -4652,7 +4717,17 @@ local function OnEvent(event,...)
         if superTrackingType == Enum.SuperTrackingType.UserWaypoint then
             local point = GetUserWaypoint()
             if point then
-                updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, nil, completed)
+                local poiTracked = poiTrackPointTable[player.uiMapID] and poiTrackPointTable[player.uiMapID].tracked
+                local mult = 10000000
+                local name, atlasName
+                if poiTracked and math.floor(point.position.x * mult + 0.5) == math.floor(poiTracked.xZone * mult + 0.5) and
+                    math.floor(point.position.y * mult + 0.5) == math.floor(poiTracked.yZone * mult + 0.5) then
+                    name, atlasName = poiTracked.name, poiTracked.atlasName
+                end
+                updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, atlasName, nil, {
+                    ["stRetexture"] = Options.POITrackSTRetexture,
+                    ["worldmapTexture"] = Options.POITrackWorldmapTexture,
+                })
             end
         end
         local uiMapID = WorldMapFrame:GetMapID()
