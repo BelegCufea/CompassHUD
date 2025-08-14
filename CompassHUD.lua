@@ -4203,7 +4203,10 @@ local function setPOITrackNodes()
             for map, pois in pairs(poiTrackPointTable) do
                 if map ~= player.uiMapID then
                     for _, poi in pairs(pois) do
-                        poi.frame:Hide()
+                        if poi.frame then
+                            poi.visible = false
+                            poi.frame:Hide()
+                        end
                     end
                 end
             end 
@@ -4718,7 +4721,7 @@ local function OnEvent(event,...)
             local point = GetUserWaypoint()
             if point then
                 local poiTracked = poiTrackPointTable[player.uiMapID] and poiTrackPointTable[player.uiMapID].tracked
-                local mult = 10000000
+                local mult = 100000000
                 local name, atlasName
                 if poiTracked and math.floor(point.position.x * mult + 0.5) == math.floor(poiTracked.xZone * mult + 0.5) and
                     math.floor(point.position.y * mult + 0.5) == math.floor(poiTracked.yZone * mult + 0.5) then
