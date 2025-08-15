@@ -4662,13 +4662,17 @@ local function supertrackPOITrack()
 
     local poi = poiTrackPointTable[player.uiMapID].heading
     if poi and C_Map.CanSetUserWaypointOnMap(player.uiMapID) then
-        local poiTracked = { atlasName = poi.atlasName, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance }
+        local poiTracked = { atlasName = poi.atlasName, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance, questID = poi.questID }
         poiTracked.xZone, poiTracked.yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, poi.instance, false)
         local pos = CreateVector2D(poiTracked.xZone, poiTracked.yZone)
         local mapPoint = UiMapPoint.CreateFromVector2D(player.uiMapID, pos)
         poiTrackPointTable[player.uiMapID].tracked = poiTracked
-        C_Map.SetUserWaypoint(mapPoint)
-        C_SuperTrack.SetSuperTrackedUserWaypoint(true)
+        if poiTracked.questID then
+            C_SuperTrack.SetSuperTrackedQuestID(poiTracked.questID)
+        else
+            C_Map.SetUserWaypoint(mapPoint)
+            C_SuperTrack.SetSuperTrackedUserWaypoint(true)
+        end
     end
 end
 
@@ -4723,14 +4727,16 @@ local function OnEvent(event,...)
                 local poiTracked = poiTrackPointTable[player.uiMapID] and poiTrackPointTable[player.uiMapID].tracked
                 local mult = 100000000
                 local name, atlasName
-                if poiTracked and math.floor(point.position.x * mult + 0.5) == math.floor(poiTracked.xZone * mult + 0.5) and
+                if poiTracked and poiTracked.questID then
+                   updateQuest(poiTracked.questID, poiTracked.xZone, poiTracked.yZone, player.uiMapID, 0, nil, false) 
+                elseif poiTracked and math.floor(point.position.x * mult + 0.5) == math.floor(poiTracked.xZone * mult + 0.5) and
                     math.floor(point.position.y * mult + 0.5) == math.floor(poiTracked.yZone * mult + 0.5) then
                     name, atlasName = poiTracked.name, poiTracked.atlasName
+                    updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, atlasName, nil, {
+                        ["stRetexture"] = Options.POITrackSTRetexture,
+                        ["worldmapTexture"] = Options.POITrackWorldmapTexture,
+                    })
                 end
-                updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, atlasName, nil, {
-                    ["stRetexture"] = Options.POITrackSTRetexture,
-                    ["worldmapTexture"] = Options.POITrackWorldmapTexture,
-                })
             end
         end
         local uiMapID = WorldMapFrame:GetMapID()
