@@ -1,3 +1,26 @@
+# v1.6.3 (15.8.2025)
+
+## New
+
+### Minimap icons – Waypoints
+
+- Added a feature to set the **currently faced minimap icon** as a user waypoint.
+
+**Notes:**
+- This works only if `Texts visibility angle` in the `Texts` pane is **NOT** set to `0` (i.e., not showing texts for all icons).
+- For **World Quests**, this will *supertrack* the quest directly instead of creating a user waypoint.  
+  The related options for reward textures and Supertracker retexturing are found under  
+  `Supertracker` → `WorldQuest` category → `Pointers` pane.
+
+**How to use:**
+1. Set a key bind:
+   - In the standard WoW UI: `Options` → `Keybindings` → `CompassHUD`
+   - Or in the addon UI: `Minimap icons` → `General` pane → `User waypoint` group → `Set as user waypoint`
+2. (Optional) Enable using the minimap icon’s texture and retexture Supertracker.
+
+![MinimapIconsWaypoint](https://i.imgur.com/IHKNn7b.png)
+
+
 # v1.6.2a (12.8.2025)
 
 ## Fix
@@ -99,7 +122,7 @@ The `Filter` panel allows you to choose which types of minimap icons will appear
 
 As always, you can enable and customize the name, distance, and time-to-arrive (TTA) text.
 
-To reduce visual clutter, there’s an option to show text only for the icon you're currently facing. The `Text visibility angle` setting defines how far off-center an icon can be and still show its text. Set it to 0 to always show texts for all icons.</br>
+To reduce visual clutter, there’s an option to show text only for the icon you're currently facing. The `Texts visibility angle` setting defines how far off-center an icon can be and still show its text. Set it to 0 to always show texts for all icons.</br>
 There’s also a setting to boost opacity for the faced icon and its text — by default, this is 100%, making it pop out more clearly.
 ![MinimapIconsTexts](https://i.imgur.com/ssFMMwA.png)
 
