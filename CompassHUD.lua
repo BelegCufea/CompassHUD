@@ -1818,13 +1818,19 @@ local POITrackOptions = {
                 HeaderPOITrackKeyBinding = {
                     type = "header",
                     order = 200,
-                    name = "User Waypoint"
+                    name = "Supertracking"
+                },
+                POITrackWaypointNote = {
+                    type = "description",
+                    order = 209,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This feature attempts to set world supertracking as if you had clicked the POI on the World Map.\nIf it cannot find a valid POI (e.g., for vignettes), it will set a user waypoint instead.|r",
+                    fontSize = "medium",
                 },
                 POITrackKeyBinding = {
                     order = 210,
                     type = "keybinding",
-                    name = "Set as user waypoint",
-                    desc = "Sets map icon you are facing as user waypoint.",
+                    name = "Keybind (Supertrack minimap icon)",
+                    desc = "Sets the map icon you are facing as a waypoint.",
                     width = "full",
                     get = function()
                         return GetBindingKey("COMPASSHUD_SUPERTRACK")
@@ -1837,18 +1843,24 @@ local POITrackOptions = {
                             SetBinding(key, "COMPASSHUD_SUPERTRACK")
                         end
                     end,
-                },      
+                },   
+                POITrackTextureNote = {
+                    type = "description",
+                    order = 219,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Only applies if a user waypoint (e.g., for vignettes) is used.|r",
+                    fontSize = "medium",
+                },                
                 POITrackWorldmapTexture = {
                     type = "toggle",
                     order = 220,
                     name = "Icon texture",
-                    desc = "If enabled, the user waypoint will use the minimap texture instead of the default one.",
+                    desc = "If enabled, the user waypoint will use the minimap icon’s texture instead of the user waypoint diamond.",
                 },
                 POITrackSTRetexture = {
                     type = "toggle",
                     order = 230,
                     name = "Retexture Waypoint",
-                    desc = "When enabled, the User waypoint will use the same texture as the minimap icon.",
+                    desc = "If enabled, the user waypoint will use the same texture as the minimap icon.",
                 },
             },
         },
@@ -4665,10 +4677,14 @@ local function supertrackPOITrack()
         local poiTracked = { atlasName = poi.atlasName, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance, questID = poi.questID }
         poiTracked.xZone, poiTracked.yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, poi.instance, false)
         local pos = CreateVector2D(poiTracked.xZone, poiTracked.yZone)
-        local mapPoint = UiMapPoint.CreateFromVector2D(player.uiMapID, pos)
+        local mapPoint = UiMapPoint.CreateFromVector2D(poiTracked.instance, pos)
         poiTrackPointTable[player.uiMapID].tracked = poiTracked
-        if poiTracked.questID then
-            C_SuperTrack.SetSuperTrackedQuestID(poiTracked.questID)
+        if poi.questID then
+            C_SuperTrack.SetSuperTrackedQuestID(poi.questID)
+        elseif poi.areaPoiID then
+            C_SuperTrack.SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.AreaPOI, poi.areaPoiID)
+        elseif poi.nodeID then
+            C_SuperTrack.SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.TaxiNode, poi.nodeID)
         else
             C_Map.SetUserWaypoint(mapPoint)
             C_SuperTrack.SetSuperTrackedUserWaypoint(true)

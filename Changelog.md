@@ -1,3 +1,13 @@
+# v1.6.3a (15.8.2025)
+
+## Misc
+
+### Minimap icons – Waypoints
+
+Tweaked waypoint behavior. It now attempts to set the supertracker directly to the POI without creating a user waypoint. Only if this fails will it fall back to using a user waypoint. I believe I’ve found a way to do this directly for everything except vignettes.
+
+Apologies for the rapid-fire releases — it seems I need to get back to proper testing before pushing anything live.
+
 # v1.6.3 (15.8.2025)
 
 ## New
