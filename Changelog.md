@@ -1,3 +1,13 @@
+# v1....
+
+## Misc
+
+### Minimap icons
+
+- Added support for Dragonriding races
+- Moved Supertracking to its own pane
+- Cleaned up the Supertracking code
+
 # v1.6.3a (15.8.2025)
 
 ## Misc

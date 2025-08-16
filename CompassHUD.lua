@@ -47,6 +47,8 @@ local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
 local GetBestMapForUnit = C_Map.GetBestMapForUnit
 local GetMapLinksForMap = C_Map.GetMapLinksForMap
+local CanSetUserWaypointOnMap = C_Map.CanSetUserWaypointOnMap
+local SetUserWaypoint = C_Map.SetUserWaypoint
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
@@ -54,11 +56,15 @@ local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
 local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
 local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
 local IsSuperTrackingAnything = C_SuperTrack.IsSuperTrackingAnything
+local SetSuperTrackedQuestID = C_SuperTrack.SetSuperTrackedQuestID
+local SetSuperTrackedMapPin = C_SuperTrack.SetSuperTrackedMapPin
+local SetSuperTrackedUserWaypoint = C_SuperTrack.SetSuperTrackedUserWaypoint
 local GetAreaPOIForMap =  C_AreaPoiInfo.GetAreaPOIForMap
 local GetDelvesForMap =  C_AreaPoiInfo.GetDelvesForMap
 local GetEventsForMap =  C_AreaPoiInfo.GetEventsForMap
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetQuestHubsForMap = C_AreaPoiInfo.GetQuestHubsForMap
+local GetDragonridingRacesForMap = C_AreaPoiInfo.GetDragonridingRacesForMap
 local GetDungeonEntrancesForMap = C_EncounterJournal.GetDungeonEntrancesForMap
 local GetClassColor = C_ClassColor.GetClassColor
 local GetAtlasInfo = C_Texture.GetAtlasInfo
@@ -739,6 +745,7 @@ Addon.Defaults = {
             ["Link"] = false,
             ["Other"] = true,
             ["Vignette"] = false,
+            ["Races"] = false,
         },
         POITrackWQFilter           = "All",
         POITrackWQWholeZone        = false,
@@ -833,6 +840,7 @@ local function getPOITrackFilter()
     list["Link"] = "Links (Shortcuts, Connections, Paths)"
     list["Vignette"] = "Vignettes"
     list["Other"] = "Miscellaneous"
+    list["Race"] = "Dragonriding races"
     return list
 end
 
@@ -1815,53 +1823,6 @@ local POITrackOptions = {
                     step = 0.01,
                     isPercent = true,
                 },
-                HeaderPOITrackKeyBinding = {
-                    type = "header",
-                    order = 200,
-                    name = "Supertracking"
-                },
-                POITrackWaypointNote = {
-                    type = "description",
-                    order = 209,
-                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This feature attempts to set world supertracking as if you had clicked the POI on the World Map.\nIf it cannot find a valid POI (e.g., for vignettes), it will set a user waypoint instead.|r",
-                    fontSize = "medium",
-                },
-                POITrackKeyBinding = {
-                    order = 210,
-                    type = "keybinding",
-                    name = "Keybind (Supertrack minimap icon)",
-                    desc = "Sets the map icon you are facing as a waypoint.",
-                    width = "full",
-                    get = function()
-                        return GetBindingKey("COMPASSHUD_SUPERTRACK")
-                    end,
-                    set = function(_, key)
-                        local oldKey1, oldKey2 = GetBindingKey("COMPASSHUD_SUPERTRACK")
-                        if oldKey1 then SetBinding(oldKey1) end
-                        if oldKey2 then SetBinding(oldKey2) end
-                        if key and key ~= "" then
-                            SetBinding(key, "COMPASSHUD_SUPERTRACK")
-                        end
-                    end,
-                },   
-                POITrackTextureNote = {
-                    type = "description",
-                    order = 219,
-                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Only applies if a user waypoint (e.g., for vignettes) is used.|r",
-                    fontSize = "medium",
-                },                
-                POITrackWorldmapTexture = {
-                    type = "toggle",
-                    order = 220,
-                    name = "Icon texture",
-                    desc = "If enabled, the user waypoint will use the minimap icon’s texture instead of the user waypoint diamond.",
-                },
-                POITrackSTRetexture = {
-                    type = "toggle",
-                    order = 230,
-                    name = "Retexture Waypoint",
-                    desc = "If enabled, the user waypoint will use the same texture as the minimap icon.",
-                },
             },
         },
         Filter = {
@@ -2161,6 +2122,61 @@ local POITrackOptions = {
                     end,
                     disabled = function() return not Options.POITrackTitleCustomFont end,
                 },
+            },
+        },
+        Supertracking = {
+            type = "group",
+            order = 40,
+            name = "Supertracking",
+            args = {
+                POITrackWaypointNote = {
+                    type = "description",
+                    order = 9,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This feature attempts to set world supertracking as if you had clicked the POI on the World Map.\nIf no valid POI is found (e.g., for vignettes), a user waypoint will be set instead.|r\n\n",
+                    fontSize = "medium",
+                },
+                POITrackKeyBinding = {
+                    order = 10,
+                    type = "keybinding",
+                    name = "Keybind (Supertrack minimap icon)",
+                    desc = "Sets the minimap icon you are facing as a waypoint.",
+                    width = "full",
+                    get = function()
+                        return GetBindingKey("COMPASSHUD_SUPERTRACK")
+                    end,
+                    set = function(_, key)
+                        local oldKey1, oldKey2 = GetBindingKey("COMPASSHUD_SUPERTRACK")
+                        if oldKey1 then SetBinding(oldKey1) end
+                        if oldKey2 then SetBinding(oldKey2) end
+                        if key and key ~= "" then
+                            SetBinding(key, "COMPASSHUD_SUPERTRACK")
+                        end
+                    end,
+                }, 
+                HeaderPOITrackTexture = {
+                    type = "header",
+                    order = 108,
+                    name = "User Waypoint Texture"
+                },
+                POITrackTextureNote = {
+                    type = "description",
+                    order = 109,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Only applies if a user waypoint is used (e.g., for vignettes).\nOtherwise, the settings in Supertracking for the relevant category are applied.|r\n\n",
+                    fontSize = "medium",
+                },                
+                POITrackWorldmapTexture = {
+                    type = "toggle",
+                    order = 110,
+                    name = "Icon texture",
+                    desc = "If enabled, the user waypoint will use the minimap icon’s texture instead of the default diamond icon.",
+                },
+                POITrackSTRetexture = {
+                    type = "toggle",
+                    order = 120,
+                    name = "Retexture Waypoint",
+                    desc = "If enabled, the user waypoint will use the same texture as the minimap icon.",
+                },
+
             },
         },
     },
@@ -4441,6 +4457,25 @@ local function setPOITrackNodes()
                     end
                 end
             end
+
+            mapPOIs = GetDragonridingRacesForMap(player.uiMapID)
+            if Options.POITrackFilter["Race"] and  mapPOIs then
+                for _, poiID in ipairs(mapPOIs) do
+                    local id = "Race_" .. poiID
+                    if not poiTrackPointTable[player.uiMapID][id] then
+                        poiTrackPointTable[player.uiMapID][id] = GetAreaPOIInfo(player.uiMapID, poiID)
+                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                        poiTrackPointTable[player.uiMapID][id].x = xWorld
+                        poiTrackPointTable[player.uiMapID][id].y = yWorld
+                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                    end
+                    poiTrackPointTable[player.uiMapID][id].visible = true
+                end
+            end            
         end
         poiTrackThrottle = 0
     end
@@ -4673,21 +4708,21 @@ local function supertrackPOITrack()
     end
 
     local poi = poiTrackPointTable[player.uiMapID].heading
-    if poi and C_Map.CanSetUserWaypointOnMap(player.uiMapID) then
-        local poiTracked = { atlasName = poi.atlasName, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance, questID = poi.questID }
-        poiTracked.xZone, poiTracked.yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, poi.instance, false)
-        local pos = CreateVector2D(poiTracked.xZone, poiTracked.yZone)
-        local mapPoint = UiMapPoint.CreateFromVector2D(poiTracked.instance, pos)
-        poiTrackPointTable[player.uiMapID].tracked = poiTracked
+    if poi then
         if poi.questID then
-            C_SuperTrack.SetSuperTrackedQuestID(poi.questID)
+            SetSuperTrackedQuestID(poi.questID)
         elseif poi.areaPoiID then
-            C_SuperTrack.SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.AreaPOI, poi.areaPoiID)
+            SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.AreaPOI, poi.areaPoiID)
         elseif poi.nodeID then
-            C_SuperTrack.SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.TaxiNode, poi.nodeID)
-        else
-            C_Map.SetUserWaypoint(mapPoint)
-            C_SuperTrack.SetSuperTrackedUserWaypoint(true)
+            SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.TaxiNode, poi.nodeID)
+        elseif CanSetUserWaypointOnMap(poi.instance) then
+            local poiTracked = { atlasName = poi.atlasName, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance, questID = poi.questID }
+            poiTracked.xZone, poiTracked.yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, poi.instance, false)
+            local pos = CreateVector2D(poiTracked.xZone, poiTracked.yZone)
+            local mapPoint = UiMapPoint.CreateFromVector2D(poiTracked.instance, pos)
+            poiTrackPointTable[player.uiMapID].tracked = poiTracked        
+            SetUserWaypoint(mapPoint)
+            SetSuperTrackedUserWaypoint(true)
         end
     end
 end
