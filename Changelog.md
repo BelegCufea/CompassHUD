@@ -5,6 +5,7 @@
 ### Minimap icons
 
 - Added support for Dragonriding races
+- Keybind now toggles Supertracking instead of only setting it
 - Moved Supertracking to its own pane
 - Cleaned up the Supertracking code
 
@@ -28,8 +29,8 @@ Apologies for the rapid-fire releases — it seems I need to get back to proper 
 
 **Notes:**
 - This works only if `Texts visibility angle` in the `Texts` pane is **NOT** set to `0` (i.e., not showing texts for all icons).
-- For **World Quests**, this will *supertrack* the quest directly instead of creating a user waypoint.  
-  The related options for reward textures and Supertracker retexturing are found under  
+- For **World Quests**, this will *supertrack* the quest directly instead of creating a user waypoint.
+  The related options for reward textures and Supertracker retexturing are found under
   `Supertracker` → `WorldQuest` category → `Pointers` pane.
 
 **How to use:**

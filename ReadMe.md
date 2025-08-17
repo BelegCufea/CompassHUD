@@ -82,7 +82,8 @@ You can configure:
 - Opacity gradient based on distance</br>
 - Icon filtering by type</br>
 - Text display options (name, distance, TTA)</br>
-- Whether texts are shown for all icons or only the one you're facing
+- Whether texts are shown for all icons or only the one you're facing</br>
+- Keybind for setting the facing minimap icon as a Supertracker
 
 ![MinimapIcons](https://i.imgur.com/FvCUD2R.png)
 
