@@ -1,4 +1,4 @@
-# v1....
+# v1.6.4 (17.8.2025)
 
 ## Misc
 
@@ -8,6 +8,8 @@
 - Keybind now toggles Supertracking instead of only setting it
 - Moved Supertracking to its own pane
 - Cleaned up the Supertracking code
+
+![MinimapIconsSupertracking](https://i.imgur.com/Baqo58E.png)
 
 # v1.6.3a (15.8.2025)
 

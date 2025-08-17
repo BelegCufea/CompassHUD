@@ -50,6 +50,7 @@ local GetMapLinksForMap = C_Map.GetMapLinksForMap
 local CanSetUserWaypointOnMap = C_Map.CanSetUserWaypointOnMap
 local SetUserWaypoint = C_Map.SetUserWaypoint
 local GetMapChildrenInfo = C_Map.GetMapChildrenInfo
+local ClearUserWaypoint = C_Map.ClearUserWaypoint
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
@@ -60,7 +61,6 @@ local IsSuperTrackingAnything = C_SuperTrack.IsSuperTrackingAnything
 local SetSuperTrackedQuestID = C_SuperTrack.SetSuperTrackedQuestID
 local SetSuperTrackedMapPin = C_SuperTrack.SetSuperTrackedMapPin
 local SetSuperTrackedUserWaypoint = C_SuperTrack.SetSuperTrackedUserWaypoint
-local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
 local GetAreaPOIForMap =  C_AreaPoiInfo.GetAreaPOIForMap
 local GetDelvesForMap =  C_AreaPoiInfo.GetDelvesForMap
 local GetEventsForMap =  C_AreaPoiInfo.GetEventsForMap
@@ -4783,7 +4783,7 @@ local function supertrackPOITrack()
                 if userWaypoint and userWaypoint.uiMapID == poiTracked.instance and
                     math.floor(userWaypoint.position.x * 100000000 + 0.5) == math.floor(poiTracked.xZone * 100000000 + 0.5) and
                     math.floor(userWaypoint.position.y * 100000000 + 0.5) == math.floor(poiTracked.yZone * 100000000 + 0.5) then
-                    C_Map.ClearUserWaypoint()
+                    ClearUserWaypoint()
                     ClearAllSuperTracked()
                     return
                 end
