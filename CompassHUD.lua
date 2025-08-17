@@ -836,7 +836,6 @@ local function cachePOIs()
             end
         end
         poiCacheContinents[continentID] = true
-        Debug:Table("Cached POIs for continent ID: " .. continentID, poiCache)
     end
 end
 
@@ -4860,7 +4859,6 @@ local function OnEvent(event,...)
         local uiMapID = WorldMapFrame:GetMapID()
         if superTrackingType == Enum.SuperTrackingType.MapPin then
             local STtype, STtypeID = GetSuperTrackedMapPin()
-            Debug:Info("SuperTrackingType: ", superTrackingType, " STtype: ", STtype, " STtypeID: ", STtypeID, "uiMapID: ", uiMapID)
             local poiInfo
             local title
 
@@ -4872,20 +4870,16 @@ local function OnEvent(event,...)
             -- try to get corrent uiMapID
             if questPointsTable[selectedPin] and questPointsTable[selectedPin].moreArgs and questPointsTable[selectedPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[selectedPin].moreArgs.STtypeID == moreArgs.STtypeID then
                 uiMapID = questPointsTable[selectedPin].uiMapID
-                Debug:Info("Using selectedPin uiMapID: ", STtypeID, uiMapID)
             elseif STtypeID and (not uiMapID or not poiCache[STtypeID] or not poiCache[STtypeID][uiMapID]) then
                 for mapID, _ in pairs(poiCache[STtypeID] or {}) do
                     uiMapID = mapID
                     break
                 end
-                Debug:Info("Using poiCache uiMapID: ", STtypeID, uiMapID)
             end
 
             -- POI
             if STtype == 0 then
-                Debug:Info("SuperTrackingType is AreaPOI", uiMapID, STtypeID)
                 poiInfo = GetAreaPOIInfo(uiMapID, STtypeID)
-                Debug:Table("poiInfo: ", poiInfo)
             end
 
             -- Offer
