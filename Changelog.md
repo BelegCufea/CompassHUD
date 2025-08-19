@@ -1,3 +1,15 @@
+# v1.6.4a (19.8.2025)
+
+## Fix
+
+### Minimap icons
+
+I am blind (AGAIN)!
+
+- Added proper Supertracking for minimap icons of vignettes
+- Left the options (and code) for user waypoints, although there should be no case where a simple user waypoint is used
+- Further code clean-up
+
 # v1.6.4 (17.8.2025)
 
 ## Misc

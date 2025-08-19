@@ -61,6 +61,7 @@ local IsSuperTrackingAnything = C_SuperTrack.IsSuperTrackingAnything
 local SetSuperTrackedQuestID = C_SuperTrack.SetSuperTrackedQuestID
 local SetSuperTrackedMapPin = C_SuperTrack.SetSuperTrackedMapPin
 local SetSuperTrackedUserWaypoint = C_SuperTrack.SetSuperTrackedUserWaypoint
+local SetSuperTrackedVignette = C_SuperTrack.SetSuperTrackedVignette
 local GetAreaPOIForMap =  C_AreaPoiInfo.GetAreaPOIForMap
 local GetDelvesForMap =  C_AreaPoiInfo.GetDelvesForMap
 local GetEventsForMap =  C_AreaPoiInfo.GetEventsForMap
@@ -2201,7 +2202,7 @@ local POITrackOptions = {
                 POITrackWaypointNote = {
                     type = "description",
                     order = 9,
-                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This feature attempts to set world supertracking for currently facing minimap icon as if you had clicked the POI on the World Map.\nIf no valid POI is found (e.g., for vignettes), a user waypoint will be set instead.|r\n\n",
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This feature attempts to set world supertracking for currently facing minimap icon as if you had clicked the POI on the World Map.\nIf no valid POI is found, a user waypoint will be set instead.|r\n\n",
                     fontSize = "medium",
                 },
                 POITrackKeyBinding = {
@@ -2230,7 +2231,7 @@ local POITrackOptions = {
                 POITrackTextureNote = {
                     type = "description",
                     order = 109,
-                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Only applies if a user waypoint is used (e.g., for vignettes).\nOtherwise, the settings in Supertracker for the relevant pointer category are applied.|r\n\n",
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Only applies if a user waypoint is used.\nOtherwise, the settings in Supertracker for the relevant pointer category are applied.|r\n\n",
                     fontSize = "medium",
                 },
                 POITrackWorldmapTexture = {
@@ -4349,7 +4350,7 @@ local function setPOITrackNodes()
             end
 
             mapPOIs = GetDelvesForMap(player.uiMapID)
-            if Options.POITrackFilter["Delve"] and  mapPOIs then
+            if Options.POITrackFilter[poiTypeEnum.DELVE] and  mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
                     local id = setPOITrackNode(poiID, poiTypeEnum.DELVE)
                     poiTrackPointTable[player.uiMapID][id].visible = true
@@ -4357,7 +4358,7 @@ local function setPOITrackNodes()
             end
 
             mapPOIs = GetEventsForMap(player.uiMapID)
-            if Options.POITrackFilter["Event"] and mapPOIs then
+            if Options.POITrackFilter[poiTypeEnum.EVENT] and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
                     local id = setPOITrackNode(poiID, poiTypeEnum.EVENT)
                     poiTrackPointTable[player.uiMapID][id].visible = true
@@ -4365,7 +4366,7 @@ local function setPOITrackNodes()
             end
 
             mapPOIs = GetQuestHubsForMap(player.uiMapID)
-            if Options.POITrackFilter["Hub"] and mapPOIs then
+            if Options.POITrackFilter[poiTypeEnum.HUB] and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
                     local id = setPOITrackNode(poiID, poiTypeEnum.HUB)
                     poiTrackPointTable[player.uiMapID][id].visible = true
@@ -4373,7 +4374,7 @@ local function setPOITrackNodes()
             end
 
             mapPOIs = GetDragonridingRacesForMap(player.uiMapID)
-            if Options.POITrackFilter["Race"] and  mapPOIs then
+            if Options.POITrackFilter[poiTypeEnum.RACE] and  mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
                     local id = setPOITrackNode(poiID, poiTypeEnum.RACE)
                     poiTrackPointTable[player.uiMapID][id].visible = true
@@ -4381,9 +4382,9 @@ local function setPOITrackNodes()
             end
 
             local portalPOIs = GetMapLinksForMap(player.uiMapID)
-            if (Options.POITrackFilter["Portal"] or Options.POITrackFilter["Link"]) and portalPOIs then
+            if (Options.POITrackFilter[poiTypeEnum.PORTAL] or Options.POITrackFilter[poiTypeEnum.LINK]) and portalPOIs then
                 for _, poi in ipairs(portalPOIs) do
-                    local id = "LINK" .. poi.areaPoiID
+                    local id = poiTypeEnum.LINK .."_" .. poi.areaPoiID
                     if not poiTrackPointTable[player.uiMapID][id] then
                         poiTrackPointTable[player.uiMapID][id] = poi
                         local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
@@ -4396,15 +4397,15 @@ local function setPOITrackNodes()
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
                     local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
-                    poiTrackPointTable[player.uiMapID][id].visible = (startsWithTaxiNode and Options.POITrackFilter["Portal"]) or
-                        (not startsWithTaxiNode and Options.POITrackFilter["Link"])
+                    poiTrackPointTable[player.uiMapID][id].visible = (startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.PORTAL]) or
+                        (not startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.LINK])
                 end
             end
 
             local dungeonEntrances = GetDungeonEntrancesForMap(player.uiMapID)
-            if Options.POITrackFilter["Instance"] and dungeonEntrances then
+            if Options.POITrackFilter[poiTypeEnum.INSTANCE] and dungeonEntrances then
                 for _, entrance in ipairs(dungeonEntrances) do
-                    local id = "ENTRANCE_" .. entrance.areaPoiID
+                    local id = poiTypeEnum.INSTANCE .. "_" .. entrance.areaPoiID
                     if not poiTrackPointTable[player.uiMapID][id] then
                         poiTrackPointTable[player.uiMapID][id] = entrance
                         local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
@@ -4421,9 +4422,9 @@ local function setPOITrackNodes()
             end
 
             local mapTaxis = GetTaxiNodesForMap(player.uiMapID)
-            if Options.POITrackFilter["Taxi"] and mapTaxis then
+            if Options.POITrackFilter[poiTypeEnum.TAXI] and mapTaxis then
                 for _, taxi in ipairs(mapTaxis) do
-                    local id = "TAXI_" .. taxi.nodeID
+                    local id = poiTypeEnum.TAXI .. "_" .. taxi.nodeID
                     if not poiTrackPointTable[player.uiMapID][id] then
                         poiTrackPointTable[player.uiMapID][id] = taxi
                         local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
@@ -4436,6 +4437,28 @@ local function setPOITrackNodes()
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
                     poiTrackPointTable[player.uiMapID][id].visible = true
+                end
+            end
+
+            local vignetteGUIDs = GetVignettes()
+            if Options.POITrackFilter[poiTypeEnum.VIGNETTE] and vignetteGUIDs then
+                for _, vignetteGUID in ipairs(vignetteGUIDs) do
+                    local vignetteInfo = GetVignetteInfo(vignetteGUID)
+                    local vignettePosition = GetVignettePosition(vignetteGUID, player.uiMapID)
+                    if vignetteInfo and vignettePosition then
+                        local id = poiTypeEnum.VIGNETTE .. "_" .. vignetteInfo.vignetteGUID
+                        if not poiTrackPointTable[player.uiMapID][id] then
+                            poiTrackPointTable[player.uiMapID][id] = vignetteInfo
+                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(vignettePosition.x, vignettePosition.y, player.uiMapID)
+                            poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
+                            poiTrackPointTable[player.uiMapID][id].x = xWorld
+                            poiTrackPointTable[player.uiMapID][id].y = yWorld
+                            poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                            poiTrackPointTable[player.uiMapID][id].scale = 1.3
+                            updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        end
+                        poiTrackPointTable[player.uiMapID][id].visible = true
+                    end
                 end
             end
 
@@ -4456,7 +4479,7 @@ local function setPOITrackNodes()
 
                 for _, wq in ipairs(mapWQ) do
                     if isTask(wq.questID) and (wq.mapID == player.uiMapID) then
-                        local id = "WQ_" .. wq.questID
+                        local id = "WorldQuest_" .. wq.questID
                         if not poiTrackPointTable[player.uiMapID][id] then
                             poiTrackPointTable[player.uiMapID][id] = wq
                             local xZone, yZone = poiTrackPointTable[player.uiMapID][id].x, poiTrackPointTable[player.uiMapID][id].y
@@ -4484,28 +4507,6 @@ local function setPOITrackNodes()
                             poiTrackPointTable[player.uiMapID][id].visible = true
                         end
                         poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWQWholeZone
-                    end
-                end
-            end
-
-            local vignetteGUIDs = GetVignettes()
-            if Options.POITrackFilter["Vignette"] and vignetteGUIDs then
-                for _, vignetteGUID in ipairs(vignetteGUIDs) do
-                    local vignetteInfo = GetVignetteInfo(vignetteGUID)
-                    local vignettePosition = GetVignettePosition(vignetteGUID, player.uiMapID)
-                    if vignetteInfo and vignettePosition then
-                        local id = "VIGNETTE_" .. vignetteInfo.vignetteGUID
-                        if not poiTrackPointTable[player.uiMapID][id] then
-                            poiTrackPointTable[player.uiMapID][id] = vignetteInfo
-                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(vignettePosition.x, vignettePosition.y, player.uiMapID)
-                            poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
-                            poiTrackPointTable[player.uiMapID][id].x = xWorld
-                            poiTrackPointTable[player.uiMapID][id].y = yWorld
-                            poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
-                            poiTrackPointTable[player.uiMapID][id].scale = 1.3
-                            updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
-                        end
-                        poiTrackPointTable[player.uiMapID][id].visible = true
                     end
                 end
             end
@@ -4771,6 +4772,15 @@ local function supertrackPOITrack()
                 end
             end
             SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.TaxiNode, poi.nodeID)
+        elseif poi.vignetteGUID then
+            if type == Enum.SuperTrackingType.Vignette then
+                local stVignetteGUID = GetSuperTrackedVignette()
+                if stVignetteGUID == poi.vignetteGUID then
+                    ClearAllSuperTracked()
+                    return
+                end
+            end
+            SetSuperTrackedVignette(poi.vignetteGUID)
         elseif CanSetUserWaypointOnMap(poi.instance) then
             local poiTracked = { atlasName = poi.atlasName, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance, questID = poi.questID }
             poiTracked.xZone, poiTracked.yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, poi.instance, false)
@@ -4909,7 +4919,7 @@ local function OnEvent(event,...)
                 end
             end
         end
-        if superTrackingType == Enum.SuperTrackingType.Vignette and WorldMapFrame:IsVisible() then
+        if superTrackingType == Enum.SuperTrackingType.Vignette then
             local vignetteGUID = GetSuperTrackedVignette()
             if vignetteGUID then
                 local vignettePosition = GetVignettePosition(vignetteGUID, uiMapID)
