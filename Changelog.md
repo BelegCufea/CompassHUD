@@ -1,3 +1,10 @@
+# v1.6.4b (21.8.2025)
+
+## Fix
+
+- Fixed the pointer not showing for standard user waypoints
+- Fixed inconsistent behavior when supertracking minimap icons
+
 # v1.6.4a (19.8.2025)
 
 ## Fix

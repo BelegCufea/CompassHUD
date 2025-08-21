@@ -4854,19 +4854,19 @@ local function OnEvent(event,...)
                 local poiTracked = poiTrackPointTable[player.uiMapID] and poiTrackPointTable[player.uiMapID].tracked
                 local mult = 100000000
                 local name, atlasName
-                if poiTracked and poiTracked.questID then
-                   updateQuest(poiTracked.questID, poiTracked.xZone, poiTracked.yZone, player.uiMapID, 0, nil, false)
-                elseif poiTracked and math.floor(point.position.x * mult + 0.5) == math.floor(poiTracked.xZone * mult + 0.5) and
+                if poiTracked and math.floor(point.position.x * mult + 0.5) == math.floor(poiTracked.xZone * mult + 0.5) and
                     math.floor(point.position.y * mult + 0.5) == math.floor(poiTracked.yZone * mult + 0.5) then
                     name, atlasName = poiTracked.name, poiTracked.atlasName
                     updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, atlasName, nil, {
                         ["stRetexture"] = Options.POITrackSTRetexture,
                         ["worldmapTexture"] = Options.POITrackWorldmapTexture,
                     })
+                else
+                    updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, nil, completed)
                 end
             end
         end
-        local uiMapID = WorldMapFrame:GetMapID()
+        local uiMapID = WorldMapFrame:IsVisible() and WorldMapFrame:GetMapID() or player.uiMapID
         if superTrackingType == Enum.SuperTrackingType.MapPin then
             local STtype, STtypeID = GetSuperTrackedMapPin()
             local poiInfo
