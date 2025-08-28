@@ -4528,6 +4528,7 @@ local function setPOITrackNodes()
                         poi.angle = angle
                         if abs(angle) < minAngle then
                             minAngle = abs(angle)
+                            poiTrackPointTable[player.uiMapID].heading = poi
                         end
                         if angle < 0 then angle = angle + (2 * PI) end
                         if angle > PI then angle = angle - (2 * PI) end
@@ -4559,24 +4560,15 @@ local function setPOITrackNodes()
         end
     end
     if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
-        local done = false
-        for _, pois in pairs(poiTrackPointTable) do
-            for _, poi in pairs(pois) do
-                if poi.visible and poi.shown and poi.angle then
-                    if abs(poi.angle) <= (minAngle + 0.001) then
-                        poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
-                        poi.frame.distanceHidden = not Options.POITrackShowDistance
-                        poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
-                        poi.frame.timeHidden = not Options.POITrackShowTTA
-                        poi.frame.Title:SetShown(Options.POITrackShowTitle)
-                        poi.frame:SetAlpha(Options.POITrackOpacitySelected)
-                        poiTrackPointTable[player.uiMapID].heading = poi
-                        done = true
-                        break
-                    end
-                end
-            end
-            if done then break end
+        local poi = poiTrackPointTable[player.uiMapID] and poiTrackPointTable[player.uiMapID].heading
+        if poi then
+            poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
+            poi.frame.distanceHidden = not Options.POITrackShowDistance
+            poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
+            poi.frame.timeHidden = not Options.POITrackShowTTA
+            poi.frame.Title:SetShown(Options.POITrackShowTitle)
+            poi.frame:SetAlpha(Options.POITrackOpacitySelected)
+            poiTrackPointTable[player.uiMapID].heading = poi
         end
     end
     HUD.minimapIcons = poiTrackPointTable
@@ -4888,7 +4880,7 @@ local function OnEvent(event,...)
             end
 
             -- POI
-            if STtype == 0 then
+            if (STtype == 0) and uiMapID then
                 poiInfo = GetAreaPOIInfo(uiMapID, STtypeID)
             end
 
@@ -4898,7 +4890,7 @@ local function OnEvent(event,...)
             end
 
             -- Taxi
-            if STtype == 2 then
+            if (STtype == 2) and uiMapID then
                 local taxis = GetTaxiNodesForMap(uiMapID)
                 if taxis then
                     for _,v in pairs(taxis) do
@@ -4919,7 +4911,7 @@ local function OnEvent(event,...)
                 end
             end
         end
-        if superTrackingType == Enum.SuperTrackingType.Vignette then
+        if (superTrackingType == Enum.SuperTrackingType.Vignette) and uiMapID then
             local vignetteGUID = GetSuperTrackedVignette()
             if vignetteGUID then
                 local vignettePosition = GetVignettePosition(vignetteGUID, uiMapID)

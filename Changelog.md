@@ -1,3 +1,13 @@
+# v...
+
+## Misc
+
+- **Minimap icons** – Supertracking is now available even if `Texts visibility angle` in the `Texts` pane is set to `0`
+
+## Fix
+
+- Added additional error handling
+
 # v1.6.4b (21.8.2025)
 
 ## Fix
