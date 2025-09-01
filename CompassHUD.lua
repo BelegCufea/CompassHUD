@@ -4300,6 +4300,11 @@ local function setPOITrackNode(poiID, poiType)
     local id = poiType .. "_" .. poiID
     if not poiTrackPointTable[player.uiMapID][id] then
         local poi = poiCache[poiID] and poiCache[poiID][player.uiMapID] and poiCache[poiID][player.uiMapID].poi or GetAreaPOIInfo(player.uiMapID, poiID)
+        if not poi.atlasName then
+            local pointerType = getPointerType(nil, selectedPin)
+            local options = Options.Pointers[pointerType]
+            poi.atlasName = options.atlasID
+        end
         poiTrackPointTable[player.uiMapID][id] = poi
         local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
