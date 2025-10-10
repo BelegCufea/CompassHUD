@@ -607,6 +607,7 @@ Addon.Defaults = {
         Visibility      = "[petbattle] hide; show",
         HideFar         = false,
         UseCurrentMap   = true,
+        UseMeters       = false,
         HeadingEnabled         = false,
         HeadingDecimals        = 0,
         HeadingTrueNorth       = true,
@@ -993,6 +994,13 @@ Addon.Options = {
                                     end
                                 end
                              end,
+                        },
+                        UseMeters = {
+                            type = "toggle",
+                            name = "Use Meters instead of Yards",
+                            desc = "If enabled, distances will be shown in meters instead of yards. (1 yard = 0.9144 meters)",
+                            width = "full",
+                            order = 28,
                         },
                         BlankInterval = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
                         Interval = {
@@ -3467,7 +3475,7 @@ local function questPointerSetTexts(frame, dt)
         frame.minDistance = frame.distance
     end
     frame:Show()
-    frame.DistanceText:SetText(BreakUpLargeNumbers(frame.distance))
+    frame.DistanceText:SetText(BreakUpLargeNumbers(frame.distance * (Options.UseMeters and 0.9144 or 1)))
     if frame.timeHidden then return end
     if frame.elapsed >= 1 then
         frame.elapsed = 0

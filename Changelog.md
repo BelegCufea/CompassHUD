@@ -1,3 +1,13 @@
+# v1.6.4d (10.10.2025)
+
+## New
+
+- Added an option on the **General** tab to use **meters instead of yards** (Default: Off). [Suggested by [raptormama](https://github.com/raptormama)]
+
+## Misc
+
+- Updated TOC to 11.2.5
+
 # v1.6.4c (1.9.2025)
 
 ## Misc
