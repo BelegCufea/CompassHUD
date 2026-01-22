@@ -755,6 +755,7 @@ Addon.Defaults = {
         POITrackTitleFontFlags     = "",
         POITrackFilter             = {
             [poiTypeEnum.TAXI] = false,
+            [poiTypeEnum.TAXI.."_min"] = false,
             [poiTypeEnum.EVENT] = true,
             [poiTypeEnum.INSTANCE] = true,
             [poiTypeEnum.DELVE] = true,
@@ -903,6 +904,7 @@ end
 local function getPOITrackFilter()
     local list = {}
     list[poiTypeEnum.TAXI] = "Flightpoints"
+    list[poiTypeEnum.TAXI .. "_min"] = "  - only closest flightpoint"
     list[poiTypeEnum.EVENT] = "Events"
     list[poiTypeEnum.INSTANCE] = "Instances (Dungeons, Raids)"
     list[poiTypeEnum.HUB] = "Hubs (Cities, Towns, etc.)"
@@ -4436,6 +4438,7 @@ local function setPOITrackNodes()
 
             local mapTaxis = GetTaxiNodesForMap(player.uiMapID)
             if Options.POITrackFilter[poiTypeEnum.TAXI] and mapTaxis then
+                local closestTaxiNode, closesttaxiDistance = nil, math.huge
                 for _, taxi in ipairs(mapTaxis) do
                     local id = poiTypeEnum.TAXI .. "_" .. taxi.nodeID
                     if not poiTrackPointTable[player.uiMapID][id] then
@@ -4449,7 +4452,21 @@ local function setPOITrackNodes()
                         poiTrackPointTable[player.uiMapID][id].scale = 1.2
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
-                    poiTrackPointTable[player.uiMapID][id].visible = true
+                    if Options.POITrackFilter[poiTypeEnum.TAXI .. "_min"] then
+                        local distance = HBD:GetWorldDistance(player.uiMapID, player.x, player.y, poiTrackPointTable[player.uiMapID][id].x, poiTrackPointTable[player.uiMapID][id].y)
+                        if distance and distance < closesttaxiDistance then
+                            closesttaxiDistance = distance
+                            closestTaxiNode = id
+                        end
+                        poiTrackPointTable[player.uiMapID][id].visible = false
+                    else
+                        poiTrackPointTable[player.uiMapID][id].visible = true
+                    end
+                end
+                if Options.POITrackFilter[poiTypeEnum.TAXI .. "_min"] then
+                    if closestTaxiNode then
+                        poiTrackPointTable[player.uiMapID][closestTaxiNode].visible = true
+                    end
                 end
             end
 

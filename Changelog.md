@@ -1,3 +1,13 @@
+# v1.6.4e (21.1.202+)
+
+## New
+
+- Added an option to the **Minimap icons** filter to only show the closest Flightpoint. You can find this setting in the **Filter** section. It is **off** by default.
+
+## Misc
+
+- Updated TOC to 12.0.0
+
 # v1.6.4d (10.10.2025)
 
 ## New
