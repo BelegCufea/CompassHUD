@@ -1,4 +1,10 @@
-# v1.6.4e (21.1.202+)
+# v1.6.4f (25.4.2026)
+
+## Fix
+
+- Speed related error (secret value)
+
+# v1.6.4e (21.1.2026)
 
 ## New
 

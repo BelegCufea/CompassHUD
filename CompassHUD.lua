@@ -3482,19 +3482,23 @@ local function questPointerSetTexts(frame, dt)
     if frame.elapsed >= 1 then
         frame.elapsed = 0
         local speed = GetUnitSpeed("player") or GetUnitSpeed("vehicle")
-        if not speed or speed == 0 then -- delta
+        
+        -- NEW: Detect if speed is a secret value using 12.0 API
+        if not speed or issecretvalue(speed) then
+            -- Fallback: calculate speed from distance change (original delta method)
             frame.oldDistance = frame.distance
             C_Timer.After(1, function()
                 local currentDistance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
+                local deltaSpeed = 0
                 if currentDistance then
-                    speed = math.abs(currentDistance - frame.oldDistance)
-                else
-                    speed = 0
+                    deltaSpeed = math.abs(currentDistance - frame.oldDistance)
                 end
-                setTime(frame, currentDistance, speed)
+                setTime(frame, currentDistance, deltaSpeed)
             end)
         else
-            setTime(frame, frame.distance, speed)
+            -- Safe: speed is a normal number (or can be converted)
+            local safeSpeed = tonumber(speed) or 0
+            setTime(frame, frame.distance, safeSpeed)
         end
     end
 end
