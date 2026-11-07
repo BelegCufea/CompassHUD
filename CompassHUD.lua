@@ -42,6 +42,8 @@ local GetQuestLocation = C_TaskQuest.GetQuestLocation
 local IsTaskQuestActive = C_TaskQuest.IsActive
 local RequestPreloadRewardData = C_TaskQuest.RequestPreloadRewardData
 local GetWorldQuestsOnMap = C_TaskQuest.GetQuestsOnMap
+local GetTaskQuestInfoByQuestID = C_TaskQuest.GetQuestInfoByQuestID
+local GetAvailableQuestLines = C_QuestLine and C_QuestLine.GetAvailableQuestLines
 local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
@@ -4850,6 +4852,45 @@ local function createHUD()
     end
 end
 
+-- Name and position of an available quest ("!" quest offer pin).
+-- GetTitleForQuestID is often empty for quests not in the quest log, so the
+-- name comes from the world map pin, or from the data that the pin is built from.
+local function getQuestOfferInfo(questID, uiMapID)
+    -- The pin on the open world map already holds the quest name and its position
+    if WorldMapFrame:IsVisible() then
+        for pin in WorldMapFrame:EnumerateAllPins() do
+            if pin.questID == questID and pin.questName and pin.GetPosition then
+                local x, y = pin:GetPosition()
+                if x and y then
+                    local atlasName = type(pin.questIcon) == "string" and pin.questIcon or nil
+                    return pin.questName, x, y, WorldMapFrame:GetMapID(), atlasName
+                end
+            end
+        end
+    end
+
+    if not uiMapID then return end
+
+    -- Quest givers
+    if GetAvailableQuestLines then
+        for _, info in ipairs(GetAvailableQuestLines(uiMapID) or {}) do
+            if info.questID == questID and info.x and info.y then
+                return info.questName, info.x, info.y, uiMapID
+            end
+        end
+    end
+
+    -- Bonus objectives and other task quests
+    if GetWorldQuestsOnMap then
+        for _, info in ipairs(GetWorldQuestsOnMap(uiMapID) or {}) do
+            if info.questID == questID and info.x and info.y then
+                local name = GetTaskQuestInfoByQuestID and GetTaskQuestInfoByQuestID(questID)
+                return name, info.x, info.y, uiMapID
+            end
+        end
+    end
+end
+
 local function OnEvent(event,...)
     if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
@@ -4920,7 +4961,12 @@ local function OnEvent(event,...)
 
             -- Offer
             if STtype == 1 then
-                title = GetTitleForQuestID(STtypeID)
+                local name, x, y, mapID, atlasName = getQuestOfferInfo(STtypeID, uiMapID)
+                title = name or GetTitleForQuestID(STtypeID)
+                if x and y and mapID then
+                    uiMapID = mapID
+                    poiInfo = { name = title, position = CreateVector2D(x, y), atlasName = atlasName }
+                end
             end
 
             -- Taxi

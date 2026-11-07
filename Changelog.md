@@ -1,3 +1,9 @@
+# v1.6.5a (7.11.2026)
+
+## Fix
+
+- Supertracked available quests (**!** on the world map) now show the quest name, and the pointer uses the quest's real position instead of the mouse cursor position.
+
 # v1.6.5 (6.11.2026)
 
 ## Misc
