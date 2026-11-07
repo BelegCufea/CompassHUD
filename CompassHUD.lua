@@ -127,6 +127,7 @@ local adjCoord, currentFacing
 
 local questUnknown = -999
 local tomTom = -200
+local btwQuests = -210
 local mapPin = -100
 local selectedPin = -110
 
@@ -249,6 +250,7 @@ local pointerTextures = {
 -- "Quest" Classifications
 local questPointers = {
 	[tomTom] =  "TomTom",
+	[btwQuests] = "BtWQuests",
 	[questUnknown] = "Unknown pointer",
     [mapPin] = "User map pin",
     [selectedPin] = "POI map pin",
@@ -283,6 +285,11 @@ local texturePresets = {
             atlasNameAvailable = "Arrow Green small",
             textureScaleAvailable = 1.35,
             textureRotateAvailable = true,
+        },
+        [btwQuests] = {
+            atlasIDavailable = "QuestNormal",
+            atlasNameAvailable = "Available quest",
+            textureScaleAvailable = 0.8,
         },
         [questUnknown] = {
             atlasIDavailable = "128-Store-Main",
@@ -3779,7 +3786,11 @@ local function setQuestsIcons()
             questHide = true
             ClearAllSuperTracked()
         end
-		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == selectedPin and isTrackingPOI) or (questID == tomTom and quest.track))) then
+        -- BtWQuests target reached
+        if questID == btwQuests and quest.track and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
+            quest.track = false
+        end
+		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == selectedPin and isTrackingPOI) or (questID == tomTom and quest.track) or (questID == btwQuests and quest.track))) then
 			local angle = getPlayerFacingAngle(questID)
 			if quest.frame and angle then
                 if Options.Pointers[quest.frame.pointerType].enabled then
@@ -4759,8 +4770,29 @@ local function tomtomClearWaypoint(self, uid)
     if not uid then return end
     if type(uid) ~= "table" then return end
     local tomTomRemoved = TomTom:GetKey(uid)
-    if tomTomActive == tomTomRemoved then
+    if tomTomActive == tomTomRemoved and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
+    end
+    -- The BtWQuests target was a TomTom waypoint: removing it there clears it here too
+    local btw = questPointsTable[btwQuests]
+    if btw and btw.track and btw.waypoint and btw.waypoint.mapID == uid[1] and btw.waypoint.x == uid[2] and btw.waypoint.y == uid[3] then
+        btw.track = false
+    end
+end
+
+-- BtWQuests available quest pins on the world map call BtWQuests_AddWaypoint(mapID, x, y, questName)
+local function btwQuestsAddWaypoint(mapID, x, y, name)
+    if not Options.Pointers[questPointerIdent .. btwQuests].enabled then return end
+    if not (mapID and x and y) then return end
+    updateQuest(btwQuests, x, y, mapID, btwQuests, name or "", false)
+    local btw = questPointsTable[btwQuests]
+    btw.track = true
+    btw.waypoint = { mapID = mapID, x = x, y = y }
+    -- BtWQuests may have sent the same point to TomTom, which already set the TomTom pointer.
+    -- Show it only once, as the BtWQuests pointer.
+    local tt = questPointsTable[tomTom]
+    if tt and tt.track and tt.uiMapID == mapID and tt.x == btw.x and tt.y == btw.y then
+        tt.track = false
     end
 end
 
@@ -5902,6 +5934,10 @@ function Addon:OnEnable()
         self:SecureHook(TomTom, "SetCrazyArrow", tomtomSetCrazyArrow)
         self:SecureHook(TomTom, "ClearWaypoint", tomtomClearWaypoint)
         self:SecureHook(TomTom, "HideWaypoint", tomtomClearWaypoint)
+    end
+
+    if type(BtWQuests_AddWaypoint) == "function" then
+        self:SecureHook("BtWQuests_AddWaypoint", btwQuestsAddWaypoint)
     end
 
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")

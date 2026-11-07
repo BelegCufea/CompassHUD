@@ -1,5 +1,6 @@
 {
     "Lua.diagnostics.globals": [
+        "BtWQuests_AddWaypoint",
         "SELECTED_CHAT_FRAME",
         "DEFAULT_CHAT_FRAME",
         "NORMAL_FONT_COLOR",

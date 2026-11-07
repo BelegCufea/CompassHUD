@@ -1,5 +1,9 @@
 # v1.6.5a (7.11.2026)
 
+## New
+
+- **BtWQuests** support: clicking an available quest (**!**) that BtWQuests shows on the world map now adds a pointer with the quest name. It has its own **BtWQuests** pointer type in the **Supertracker** settings. The pointer goes away when you reach the quest giver or remove the TomTom waypoint. If BtWQuests also sends the point to TomTom, it is shown only once.
+
 ## Fix
 
 - Supertracked available quests (**!** on the world map) now show the quest name, and the pointer uses the quest's real position instead of the mouse cursor position.

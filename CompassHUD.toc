@@ -17,6 +17,7 @@
 ## Category-zhCN: 用户界面
 ## Category-zhTW: 使用者介面
 ## SavedVariables: CompassHUDDB
+## OptionalDeps: TomTom, BtWQuests
 ## DefaultState: enabled
 ## X-Curse-Project-ID: 861865
 
