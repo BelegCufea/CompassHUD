@@ -3780,8 +3780,17 @@ local function setQuestsIcons()
     if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
         trackedQuest = 0
     end
+
+    -- A user map pin on the BtWQuests target (e.g. a copy of its TomTom waypoint) is shown only once, as the BtWQuests pointer
+    local hideMapPin = false
+    local btw, pin = questPointsTable[btwQuests], questPointsTable[mapPin]
+    if isTrackingUserWaypoint and btw and btw.track and btw.x and btw.y and pin and pin.x and pin.y and btw.instance == pin.instance then
+        local distance = HBD:GetWorldDistance(btw.instance, btw.x, btw.y, pin.x, pin.y)
+        hideMapPin = distance ~= nil and distance < 10
+    end
+
 	for questID, quest in pairs(questPointsTable) do
-        local questHide = false
+        local questHide = (questID == mapPin and hideMapPin)
         if quest.moreArgs and quest.moreArgs.vignetteGUID and quest.moreArgs.vignetteGUID == vignetteGUID and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
             questHide = true
             ClearAllSuperTracked()
