@@ -3466,10 +3466,58 @@ local function setTime(frame, distance, speed)
     end
 end
 
+-- Widget setters cost more than the math around them. The HUD calls them for every marker
+-- on every tick, so these skip the call when the value is the same as in the last call.
+-- Code that changes these widgets directly must call invalidateSetCache(frame).
+local function getSetCache(frame)
+    local cache = frame.setCache
+    if not cache then
+        cache = {}
+        frame.setCache = cache
+    end
+    return cache
+end
+
+local function invalidateSetCache(frame)
+    if frame then frame.setCache = nil end
+end
+
+local function setPointCached(frame, x, y)
+    x = math.floor(x * 10 + 0.5) / 10
+    local cache = getSetCache(frame)
+    if cache.pointX ~= x or cache.pointY ~= y then
+        cache.pointX, cache.pointY = x, y
+        frame:SetPoint("CENTER", HUD, "CENTER", x, y)
+    end
+end
+
+local function setAlphaCached(frame, alpha)
+    local cache = getSetCache(frame)
+    if cache.alpha ~= alpha then
+        cache.alpha = alpha
+        frame:SetAlpha(alpha)
+    end
+end
+
+local function setShownCached(frame, key, region, shown)
+    local cache = getSetCache(frame)
+    shown = shown and true or false
+    if cache[key] ~= shown then
+        cache[key] = shown
+        region:SetShown(shown)
+    end
+end
+
+-- Distance text refresh rate (seconds). The marker OnUpdate runs on every rendered frame.
+local TEXT_INTERVAL = 0.1
+
 local function questPointerSetTexts(frame, dt)
     if player.inInstance then return end
     frame.elapsed = frame.elapsed + dt
     if frame.distanceHidden and frame.timeHidden then return end
+    frame.textElapsed = (frame.textElapsed or TEXT_INTERVAL) + dt
+    if frame.textElapsed < TEXT_INTERVAL then return end
+    frame.textElapsed = 0
     frame.distance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
     if not frame.distance then
         frame:Hide()
@@ -3478,8 +3526,11 @@ local function questPointerSetTexts(frame, dt)
     if not frame.minDistance or frame.minDistance > frame.distance then
         frame.minDistance = frame.distance
     end
-    frame:Show()
-    frame.DistanceText:SetText(BreakUpLargeNumbers(frame.distance * (Options.UseMeters and 0.9144 or 1)))
+    local shownDistance = math.floor(frame.distance * (Options.UseMeters and 0.9144 or 1) + 0.5)
+    if frame.shownDistance ~= shownDistance then
+        frame.shownDistance = shownDistance
+        frame.DistanceText:SetText(BreakUpLargeNumbers(shownDistance))
+    end
     if frame.timeHidden then return end
     if frame.elapsed >= 1 then
         frame.elapsed = 0
@@ -3762,12 +3813,13 @@ local function createQuestIcon(questID, questType)
 	return questPointer
 end
 
+local poiTrackingTypes = {[Enum.SuperTrackingType.MapPin] = true, [Enum.SuperTrackingType.Vignette] = true}
+
 local function setQuestsIcons()
     local vignetteGUID = GetSuperTrackedVignette()
     local supertrackingType = GetHighestPrioritySuperTrackingType()
     local isTrackingUserWaypoint = (supertrackingType == Enum.SuperTrackingType.UserWaypoint)
-    local trackingTypes = {[Enum.SuperTrackingType.MapPin] = true, [Enum.SuperTrackingType.Vignette] = true}
-    local isTrackingPOI = trackingTypes[supertrackingType]
+    local isTrackingPOI = poiTrackingTypes[supertrackingType]
     local trackedQuest = GetSuperTrackedQuestID()
     local _, _, playerInstance = HBD:GetPlayerWorldPosition()
     if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
@@ -3859,6 +3911,8 @@ end
 local function updateGroupMemberTexts(unit)
     if not groupPointsTable or not groupPointsTable[unit] then return end
     local v = groupPointsTable[unit]
+    -- Fonts change here, so the name size and the cached marker state must be set again
+    invalidateSetCache(v.frame)
     local scale = Options.Scale * Options.VerticalScale
     local differentZone = player.instance ~= v.instance
     local flipped = (differentZone and Options.GroupZoneOffset > 0) or (not differentZone and Options.GroupOffset > 0)
@@ -3954,18 +4008,22 @@ local function updateGroupTexts()
     end
 end
 
+-- Reused between calls, so sorting allocates nothing
+local strataUnits = {}
+local function farthestFirst(a, b)
+    return groupPointsTable[a].distance > groupPointsTable[b].distance
+end
+
 local function setGroupStrataLevels()
-    local activeUnits = {}
+    wipe(strataUnits)
     for unit, data in pairs(groupPointsTable) do
         if data.active and data.distance then
-            table.insert(activeUnits, { unit = unit, distance = data.distance })
+            strataUnits[#strataUnits + 1] = unit
         end
     end
-    table.sort(activeUnits, function(a, b)
-        return a.distance > b.distance
-    end)
-    for rank, item in ipairs(activeUnits) do
-        groupPointsTable[item.unit].strataLevel = rank+1
+    table.sort(strataUnits, farthestFirst)
+    for rank, unit in ipairs(strataUnits) do
+        groupPointsTable[unit].strataLevel = rank+1
     end
 end
 
@@ -3979,7 +4037,11 @@ local function setGroupIcons()
         for i = 1,groupSize do
             updateGroupMember(player.groupType..i)
         end
+        -- Distances change only in this refresh, so the order is sorted only here
+        setGroupStrataLevels()
     end
+    local visible = math.rad(Options.Degrees)/2
+    local pixelsPerRadian = texturePosition()
     for _, v in pairs(groupPointsTable) do
         if v and v.frame then
             local shown = false
@@ -3992,42 +4054,55 @@ local function setGroupIcons()
                     local angle = player.angle - HBD:GetWorldVector(v.instance, player.x, player.y, v.x, v.y)
                     if angle < 0 then angle = angle + (2 * PI) end
                     if angle > PI then angle = angle - (2 * PI) end
-                    if angle then
-                        local visible = math.rad(Options.Degrees)/2
-                        if angle < visible and angle > -visible then
-                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, differentZone and Options.GroupZoneOffset or Options.GroupOffset)
-                            shown = true
-                        elseif Options.GroupStay then
-                            local side = math.abs(angle)/angle
-                            if (differentZone and (Options.GroupZoneRotate == 1)) or (not differentZone and (Options.GroupRotate == 1)) then
-                                markerRotate = PI/2 * side * ((flipped and 1) or -1)
-                            end
-                            v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, differentZone and Options.GroupZoneOffset or Options.GroupOffset)
-                            shown = true
+                    if angle < visible and angle > -visible then
+                        setPointCached(v.frame, pixelsPerRadian * angle, differentZone and Options.GroupZoneOffset or Options.GroupOffset)
+                        shown = true
+                    elseif Options.GroupStay then
+                        local side = math.abs(angle)/angle
+                        if (differentZone and (Options.GroupZoneRotate == 1)) or (not differentZone and (Options.GroupRotate == 1)) then
+                            markerRotate = PI/2 * side * ((flipped and 1) or -1)
                         end
+                        setPointCached(v.frame, pixelsPerRadian * side * visible, differentZone and Options.GroupZoneOffset or Options.GroupOffset)
+                        shown = true
                     end
                 end
             end
             shown = shown and (Options.GroupShowAllZones or not differentZone)
             v.frame:SetShown(shown)
             if shown then
-                v.frame:SetSize(size, size)
-                v.frame:SetAlpha(differentZone and Options.GroupZoneTransparency or 1)
-                v.frame:SetFrameLevel(Options.Level + (v.strataLevel or 0) + ((not differentZone and 50) or 0))
-                v.frame.texture:SetTexCoord(0, 1, flipped and 1 or 0, flipped and 0 or 1)
-                v.frame.texture:SetAtlas(differentZone and Options.GroupZoneTexture or Options.GroupTexture)
-                v.frame.texture:SetDesaturated(differentZone and Options.GroupZoneDesaturate)
-                v.frame.texture:SetRotation(markerRotate)
-                v.frame.Name.text:SetText(v.name)
-                local sizeX, sizeY = v.frame.Name.text:GetSize()
-                sizeX = sizeX or textureHeight
-                sizeY = sizeY or textureHeight
-                v.frame.Name:SetSize(sizeX + 4, sizeY + 4)
+                local cache = getSetCache(v.frame)
+                if cache.size ~= size then
+                    cache.size = size
+                    v.frame:SetSize(size, size)
+                end
+                setAlphaCached(v.frame, differentZone and Options.GroupZoneTransparency or 1)
+                local level = Options.Level + (v.strataLevel or 0) + ((not differentZone and 50) or 0)
+                if cache.level ~= level then
+                    cache.level = level
+                    v.frame:SetFrameLevel(level)
+                end
+                -- These change the texture coordinates together, so they are applied together in this order
+                local atlas = differentZone and Options.GroupZoneTexture or Options.GroupTexture
+                local desaturated = (differentZone and Options.GroupZoneDesaturate) and true or false
+                if cache.flipped ~= flipped or cache.atlas ~= atlas or cache.desaturated ~= desaturated or cache.rotation ~= markerRotate then
+                    cache.flipped, cache.atlas, cache.desaturated, cache.rotation = flipped, atlas, desaturated, markerRotate
+                    v.frame.texture:SetTexCoord(0, 1, flipped and 1 or 0, flipped and 0 or 1)
+                    v.frame.texture:SetAtlas(atlas)
+                    v.frame.texture:SetDesaturated(desaturated)
+                    v.frame.texture:SetRotation(markerRotate)
+                end
+                if cache.name ~= v.name then
+                    cache.name = v.name
+                    v.frame.Name.text:SetText(v.name)
+                    local sizeX, sizeY = v.frame.Name.text:GetSize()
+                    sizeX = sizeX or textureHeight
+                    sizeY = sizeY or textureHeight
+                    v.frame.Name:SetSize(sizeX + 4, sizeY + 4)
+                end
                 v.frame.Name:SetShown((player.groupType == "party" and Options.GroupPartyNameShow) or (player.groupType == "raid" and Options.GroupRaidNameShow))
             end
         end
     end
-    setGroupStrataLevels()
 end
 
 local function updateGatherMateNode(node)
@@ -4193,6 +4268,8 @@ local function setGatherMateNodes()
 end
 
 local function updatePOITrackNode(poi)
+    -- This sets the text widgets directly, so the cached state is no longer valid
+    invalidateSetCache(poi.frame)
     local scale = Options.Scale * Options.VerticalScale * Options.POITrackScale
     poi.frame:SetSize(textureHeight * Options.POITrackScale * (poi.scale or 1), textureHeight * Options.POITrackScale * (poi.scale or 1))
     local gameFontNormal = { fontColor = {}}
@@ -4553,8 +4630,16 @@ local function setPOITrackNodes()
     local minAngle = 360
     local effectivePOITrackRadius = Options.POITrackRadius == 0 and Options.POITrackOpacityMaxRadius or Options.POITrackRadius
     local opacityFactor = (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / (effectivePOITrackRadius - Options.POITrackOpacityMinRadius)
+    -- Values that are the same for every POI in this tick
+    local visible = math.rad(Options.Degrees)/2
+    local pixelsPerRadian = texturePosition()
+    local textsForAll = Options.POITrackTextsDegrees == 0
+    local showDistance = Options.POITrackShowDistance and textsForAll
+    local showTTA = Options.POITrackShowTTA and textsForAll
+    local showTitle = Options.POITrackShowTitle and textsForAll
     for _, poi in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID] or {}) do
         if poi.frame then
+            local frame = poi.frame
             local shown = false
             if poi.visible and player.angle then
                 if poi.x and poi.y and poi.instance then
@@ -4568,42 +4653,43 @@ local function setPOITrackNodes()
                         end
                         if angle < 0 then angle = angle + (2 * PI) end
                         if angle > PI then angle = angle - (2 * PI) end
-                        if angle then
-                            local visible = math.rad(Options.Degrees)/2
-                            if angle < visible and angle > -visible then
-                                poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
-                                shown = true
-                            end
+                        if angle < visible and angle > -visible then
+                            setPointCached(frame, pixelsPerRadian * angle, Options.POITrackOffset)
+                            shown = true
                         end
                     end
                 end
             end
-            poi.frame:SetShown(shown)
-            poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
-            poi.frame.distanceHidden= not (Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
-            poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
-            poi.frame.timeHidden = not (Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
-            poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
+            frame:SetShown(shown)
             poi.shown = shown
+            -- Texts and opacity matter only for shown markers. A hidden marker gets them when it shows again.
+            if shown then
+                setShownCached(frame, "distanceText", frame.DistanceText, showDistance)
+                frame.distanceHidden = not showDistance
+                setShownCached(frame, "timeText", frame.TimeText, showTTA)
+                frame.timeHidden = not showTTA
+                setShownCached(frame, "title", frame.Title, showTitle)
 
-            poi.opacity = Options.POITrackOpacityMin
-            if not poi.distance or (poi.distance < Options.POITrackOpacityMinRadius) then
-                poi.opacity = Options.POITrackOpacityMax
-            elseif poi.distance <= effectivePOITrackRadius then
-                poi.opacity = Options.POITrackOpacityMax + (poi.distance - Options.POITrackOpacityMinRadius) * opacityFactor
+                poi.opacity = Options.POITrackOpacityMin
+                if not poi.distance or (poi.distance < Options.POITrackOpacityMinRadius) then
+                    poi.opacity = Options.POITrackOpacityMax
+                elseif poi.distance <= effectivePOITrackRadius then
+                    poi.opacity = Options.POITrackOpacityMax + (poi.distance - Options.POITrackOpacityMinRadius) * opacityFactor
+                end
+                setAlphaCached(frame, poi.opacity)
             end
-            poi.frame:SetAlpha(poi.opacity)
         end
     end
     if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
         local poi = poiTrackPointTable[player.uiMapID] and poiTrackPointTable[player.uiMapID].heading
         if poi then
-            poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
-            poi.frame.distanceHidden = not Options.POITrackShowDistance
-            poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
-            poi.frame.timeHidden = not Options.POITrackShowTTA
-            poi.frame.Title:SetShown(Options.POITrackShowTitle)
-            poi.frame:SetAlpha(Options.POITrackOpacitySelected)
+            local frame = poi.frame
+            setShownCached(frame, "distanceText", frame.DistanceText, Options.POITrackShowDistance)
+            frame.distanceHidden = not Options.POITrackShowDistance
+            setShownCached(frame, "timeText", frame.TimeText, Options.POITrackShowTTA)
+            frame.timeHidden = not Options.POITrackShowTTA
+            setShownCached(frame, "title", frame.Title, Options.POITrackShowTitle)
+            setAlphaCached(frame, Options.POITrackOpacitySelected)
             poiTrackPointTable[player.uiMapID].heading = poi
         end
     end

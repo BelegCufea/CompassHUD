@@ -4,6 +4,11 @@
 
 - **User map pin** pointer shows a name when a TomTom waypoint is at the same place. Some addons copy TomTom waypoints into a map pin, which has no name of its own. This covers, for example, Questie Ctrl+click and BtWQuests quest pins.
 
+## Performance
+
+- Lower CPU use for **Minimap icons** tracking and **Party/Raid** markers. Marker positions, opacity, textures and texts are set only when they change, and the distance text updates 10 times per second instead of every frame.
+- Distances are shown as whole numbers.
+
 ## Fix
 
 - Supertracked available quests (**!** on the world map) now show the quest name, and the pointer uses the quest's real position instead of the mouse cursor position.
