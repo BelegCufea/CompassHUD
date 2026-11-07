@@ -2,8 +2,7 @@
 
 ## New
 
-- **BtWQuests** support: clicking an available quest (**!**) that BtWQuests shows on the world map now adds a pointer with the quest name. It has its own **BtWQuests** pointer type in the **Supertracker** settings. The pointer goes away when you reach the quest giver or remove the TomTom waypoint. If the same point is also a TomTom waypoint or a user map pin, it is shown only once.
-- A user map pin on the same spot as the TomTom target (for example a copy of a Questie Ctrl+click waypoint made by another addon) is no longer shown as a second pointer.
+- **User map pin** pointer shows a name when a TomTom waypoint is at the same place. Some addons copy TomTom waypoints into a map pin, which has no name of its own. This covers, for example, Questie Ctrl+click and BtWQuests quest pins.
 
 ## Fix
 

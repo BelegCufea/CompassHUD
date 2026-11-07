@@ -127,7 +127,6 @@ local adjCoord, currentFacing
 
 local questUnknown = -999
 local tomTom = -200
-local btwQuests = -210
 local mapPin = -100
 local selectedPin = -110
 
@@ -250,7 +249,6 @@ local pointerTextures = {
 -- "Quest" Classifications
 local questPointers = {
 	[tomTom] =  "TomTom",
-	[btwQuests] = "BtWQuests",
 	[questUnknown] = "Unknown pointer",
     [mapPin] = "User map pin",
     [selectedPin] = "POI map pin",
@@ -285,11 +283,6 @@ local texturePresets = {
             atlasNameAvailable = "Arrow Green small",
             textureScaleAvailable = 1.35,
             textureRotateAvailable = true,
-        },
-        [btwQuests] = {
-            atlasIDavailable = "QuestNormal",
-            atlasNameAvailable = "Available quest",
-            textureScaleAvailable = 0.8,
         },
         [questUnknown] = {
             atlasIDavailable = "128-Store-Main",
@@ -3780,36 +3773,13 @@ local function setQuestsIcons()
     if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
         trackedQuest = 0
     end
-
-    -- A user map pin on a BtWQuests or TomTom target (e.g. a copy of the TomTom waypoint made by another addon)
-    -- is shown only once, as the BtWQuests or TomTom pointer
-    local hideMapPin = false
-    local pin = questPointsTable[mapPin]
-    if isTrackingUserWaypoint and pin and pin.x and pin.y then
-        for _, id in ipairs({btwQuests, tomTom}) do
-            local target = questPointsTable[id]
-            if target and target.track and target.x and target.y and target.instance == pin.instance
-                and target.frame and Options.Pointers[target.frame.pointerType].enabled then
-                local distance = HBD:GetWorldDistance(target.instance, target.x, target.y, pin.x, pin.y)
-                if distance and distance < 10 then
-                    hideMapPin = true
-                    break
-                end
-            end
-        end
-    end
-
 	for questID, quest in pairs(questPointsTable) do
-        local questHide = (questID == mapPin and hideMapPin)
+        local questHide = false
         if quest.moreArgs and quest.moreArgs.vignetteGUID and quest.moreArgs.vignetteGUID == vignetteGUID and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
             questHide = true
             ClearAllSuperTracked()
         end
-        -- BtWQuests target reached
-        if questID == btwQuests and quest.track and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
-            quest.track = false
-        end
-		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == selectedPin and isTrackingPOI) or (questID == tomTom and quest.track) or (questID == btwQuests and quest.track))) then
+		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == selectedPin and isTrackingPOI) or (questID == tomTom and quest.track))) then
 			local angle = getPlayerFacingAngle(questID)
 			if quest.frame and angle then
                 if Options.Pointers[quest.frame.pointerType].enabled then
@@ -4789,29 +4759,8 @@ local function tomtomClearWaypoint(self, uid)
     if not uid then return end
     if type(uid) ~= "table" then return end
     local tomTomRemoved = TomTom:GetKey(uid)
-    if tomTomActive == tomTomRemoved and questPointsTable[tomTom] then
+    if tomTomActive == tomTomRemoved then
         questPointsTable[tomTom].track = false
-    end
-    -- The BtWQuests target was a TomTom waypoint: removing it there clears it here too
-    local btw = questPointsTable[btwQuests]
-    if btw and btw.track and btw.waypoint and btw.waypoint.mapID == uid[1] and btw.waypoint.x == uid[2] and btw.waypoint.y == uid[3] then
-        btw.track = false
-    end
-end
-
--- BtWQuests available quest pins on the world map call BtWQuests_AddWaypoint(mapID, x, y, questName)
-local function btwQuestsAddWaypoint(mapID, x, y, name)
-    if not Options.Pointers[questPointerIdent .. btwQuests].enabled then return end
-    if not (mapID and x and y) then return end
-    updateQuest(btwQuests, x, y, mapID, btwQuests, name or "", false)
-    local btw = questPointsTable[btwQuests]
-    btw.track = true
-    btw.waypoint = { mapID = mapID, x = x, y = y }
-    -- BtWQuests may have sent the same point to TomTom, which already set the TomTom pointer.
-    -- Show it only once, as the BtWQuests pointer.
-    local tt = questPointsTable[tomTom]
-    if tt and tt.track and tt.uiMapID == mapID and tt.x == btw.x and tt.y == btw.y then
-        tt.track = false
     end
 end
 
@@ -4903,6 +4852,27 @@ local function createHUD()
     end
 end
 
+-- Title of the TomTom waypoint at the same place as a user map pin.
+-- Some addons copy TomTom waypoints into a Blizzard user waypoint, which has no name.
+-- This works for any addon that sets the TomTom waypoint (Questie, BtWQuests, ...).
+local SAME_POINT_YARDS = 10
+local function getTomTomWaypointTitle(uiMapID, x, y)
+    if not (TomTom and type(TomTom.waypoints) == "table" and uiMapID and x and y) then return end
+    local bestTitle, bestDistance
+    for _, mapWaypoints in pairs(TomTom.waypoints) do
+        for _, uid in pairs(mapWaypoints) do
+            local title = type(uid) == "table" and uid.title
+            if title and title ~= "" and uid[1] and uid[2] and uid[3] then
+                local distance = HBD:GetZoneDistance(uiMapID, x, y, uid[1], uid[2], uid[3])
+                if distance and distance <= SAME_POINT_YARDS and (not bestDistance or distance < bestDistance) then
+                    bestTitle, bestDistance = title, distance
+                end
+            end
+        end
+    end
+    return bestTitle
+end
+
 -- Name and position of an available quest ("!" quest offer pin).
 -- GetTitleForQuestID is often empty for quests not in the quest log, so the
 -- name comes from the world map pin, or from the data that the pin is built from.
@@ -4980,7 +4950,8 @@ local function OnEvent(event,...)
                         ["worldmapTexture"] = Options.POITrackWorldmapTexture,
                     })
                 else
-                    updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, nil, completed)
+                    name = getTomTomWaypointTitle(point.uiMapID, point.position.x, point.position.y)
+                    updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed)
                 end
             end
         end
@@ -5953,10 +5924,6 @@ function Addon:OnEnable()
         self:SecureHook(TomTom, "SetCrazyArrow", tomtomSetCrazyArrow)
         self:SecureHook(TomTom, "ClearWaypoint", tomtomClearWaypoint)
         self:SecureHook(TomTom, "HideWaypoint", tomtomClearWaypoint)
-    end
-
-    if type(BtWQuests_AddWaypoint) == "function" then
-        self:SecureHook("BtWQuests_AddWaypoint", btwQuestsAddWaypoint)
     end
 
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
