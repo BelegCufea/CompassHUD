@@ -4725,8 +4725,10 @@ end
 
 local function updatePointerTextures()
     for _, v in pairs(questPointsTable) do
-        local options = Options.Pointers[v.frame.pointerType]
-        if v.texture and options.worldmapTexture then
+        local options = v.frame and Options.Pointers[v.frame.pointerType]
+        if not options then
+            -- no frame: the pointer category is disabled
+        elseif v.texture and options.worldmapTexture then
             v.frame.texture:SetTexture(v.texture)
         else
             v.frame.texture:SetAtlas(options.worldmapTexture and v.atlasName and v.atlasName or v.completed and options.atlasAltID or options.atlasID)
@@ -4791,6 +4793,9 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     if not questPointsTable[questID].frame then
         questPointsTable[questID].frame = createQuestIcon(questID, questType)
     end
+    -- Disabled pointer categories get no frame. The target data above is kept, and the frame
+    -- is created by the next update after the category is enabled again.
+    if not questPointsTable[questID].frame then return end
     questPointsTable[questID].frame.scaleMultiplier = 1.5
     questPointsTable[questID].frame.minDistance = nil
     questPointsTable[questID].frame.QuestText:SetText(title)
