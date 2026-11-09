@@ -4140,6 +4140,8 @@ local function setGroupIcons()
         for i = 1,groupSize do
             updateGroupMember(player.groupType..i)
         end
+        -- draw order by distance: distances only change here, so sort only after this refresh
+        setGroupStrataLevels()
     end
     for _, v in pairs(groupPointsTable) do
         if v and v.frame then
@@ -4186,7 +4188,6 @@ local function setGroupIcons()
             end
         end
     end
-    setGroupStrataLevels()
 end
 
 local function updateGatherMateNode(node)
