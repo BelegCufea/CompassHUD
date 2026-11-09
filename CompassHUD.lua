@@ -4930,6 +4930,14 @@ local function supertrackPOITrack()
     end
 end
 
+-- Effective HUD visibility: outside an instance and the Visibility macro condition says "show".
+-- Both the zone handler and the attribute driver go through this, so neither overrides the other.
+-- Before the driver has set the attribute (nil) the HUD counts as shown.
+local function shouldShowHUD()
+    local state = HUD:GetAttribute("state-hudvisibility")
+    return (state == nil or state == "show") and not player.inInstance
+end
+
 local function createHUD()
     HUD = CreateFrame('Frame', ADDON_NAME, UIParent, "BackdropTemplate")
     HUD:SetPoint("CENTER")
@@ -4938,11 +4946,7 @@ local function createHUD()
 
     HUD:SetScript("OnAttributeChanged", function(self, name, value)
         if name == "state-hudvisibility" then
-            local visible = false
-            if value == "show" and not player.inInstance then
-                visible = true
-            end
-            Addon:SetVisibility(visible)
+            Addon:SetVisibility(shouldShowHUD())
         end
     end)
 
@@ -5146,7 +5150,7 @@ end
 local function OnZoneChange(event, ...)
     cachePOIs()
     player.inInstance = IsInInstance()
-    Addon:SetVisibility(not player.inInstance)
+    Addon:SetVisibility(shouldShowHUD())
     OnGroup(event, ...)
     OnEvent(event, ...)
 end
