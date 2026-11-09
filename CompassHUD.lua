@@ -3854,17 +3854,6 @@ local function createQuestIcon(questID, questType)
 	questPointer:SetPoint("CENTER");
 	questPointer:Hide()
 
-    if questID > 0 then
-        questPointer:SetScript("OnEvent", function(self, event)
-            if event == "QUEST_LOG_UPDATE" then
-                if not select(2,GetQuestPOIInfo(self.questID)) then
-                    questPointer:Hide()
-                end
-            end
-        end)
-        questPointer:RegisterEvent("QUEST_LOG_UPDATE")
-    end
-
     questPointer.texture = questPointer:CreateTexture(nil, "ARTWORK")
     questPointer.texture:SetAllPoints(questPointer)
     questPointer.texture:SetAtlas(Options.Pointers[pointerType].atlasID)
