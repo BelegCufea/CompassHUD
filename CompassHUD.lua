@@ -104,6 +104,7 @@ local questPointsTable = {}
 local groupPointsTable = {}
 local gatherMatePointTable = {}
 local poiTrackPointTable = {}
+local poiTrackHeading -- minimap icon closest to the facing direction, re-picked on every pass
 local poiTrackCurrentMap = nil
 local HBDmaps = {}
 local STtexture = {}
@@ -4625,6 +4626,7 @@ local function setPOITrackNodes()
     end
 
     local minAngle = 360
+    poiTrackHeading = nil
     local effectivePOITrackRadius = Options.POITrackRadius == 0 and Options.POITrackOpacityMaxRadius or Options.POITrackRadius
     local opacityFactor = (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / (effectivePOITrackRadius - Options.POITrackOpacityMinRadius)
     for _, poi in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID] or {}) do
@@ -4641,7 +4643,7 @@ local function setPOITrackNodes()
                         poi.angle = angle
                         if abs(angle) < minAngle then
                             minAngle = abs(angle)
-                            poiTrackPointTable[player.uiMapID].heading = poi
+                            poiTrackHeading = poi
                         end
                         if angle then
                             local visible = math.rad(Options.Degrees)/2
@@ -4671,7 +4673,7 @@ local function setPOITrackNodes()
         end
     end
     if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
-        local poi = poiTrackPointTable[player.uiMapID] and poiTrackPointTable[player.uiMapID].heading
+        local poi = poiTrackHeading
         if poi then
             poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
             poi.frame.distanceHidden = not Options.POITrackShowDistance
@@ -4679,7 +4681,6 @@ local function setPOITrackNodes()
             poi.frame.timeHidden = not Options.POITrackShowTTA
             poi.frame.Title:SetShown(Options.POITrackShowTitle)
             poi.frame:SetAlpha(Options.POITrackOpacitySelected)
-            poiTrackPointTable[player.uiMapID].heading = poi
         end
     end
     HUD.minimapIcons = poiTrackPointTable
@@ -4850,8 +4851,8 @@ local function supertrackPOITrack()
         return
     end
 
-    local poi = poiTrackPointTable[player.uiMapID].heading
-    if poi then
+    local poi = poiTrackHeading
+    if poi and poi.visible and poi.instance == player.uiMapID then
         local type = GetHighestPrioritySuperTrackingType()
         if poi.questID then
             if type == Enum.SuperTrackingType.Quest then
