@@ -3815,6 +3815,38 @@ local function textLineHeight(fontString)
     return (size or 12) * 1.2
 end
 
+-- Stacks the distance, time and title texts of a GatherMate or minimap icon node below the icon,
+-- or above it when the icon row is flipped (positive offset). Shared by both node types.
+local function layoutNodeTexts(frame, flipped, showDistance, showTTA, showTitle, distanceOffset, ttaOffset, titleOffset)
+    local point = "TOP"
+    local relativePoint = "BOTTOM"
+    local distanceTextPosition = distanceOffset
+    local timeTextPosition = - ((showDistance and textLineHeight(frame.DistanceText)) or 0) - ttaOffset
+    local titlePosition = - ((showDistance and textLineHeight(frame.DistanceText)) or 0) - ((showTTA and textLineHeight(frame.TimeText)) or 0) - titleOffset
+    if flipped then
+        point = "BOTTOM"
+        relativePoint = "TOP"
+        distanceTextPosition = ((showTTA and textLineHeight(frame.TimeText)) or 0) + distanceOffset - 4
+        timeTextPosition = ttaOffset - 4
+        if showTitle then
+            titlePosition = titleOffset - 4
+            timeTextPosition = timeTextPosition + textLineHeight(frame.Title) - 4
+            distanceTextPosition = distanceTextPosition + textLineHeight(frame.Title) - 4
+        end
+    end
+
+    frame.DistanceText:ClearAllPoints()
+    frame.DistanceText:SetPoint(point, frame, relativePoint, 0, distanceTextPosition)
+    frame.TimeText:ClearAllPoints()
+    frame.TimeText:SetPoint(point, frame, relativePoint, 0, timeTextPosition)
+    frame.Title:ClearAllPoints()
+    frame.Title:SetPoint(point, frame, relativePoint, 0, titlePosition)
+
+    frame.DistanceText:SetShown(showDistance)
+    frame.TimeText:SetShown(showTTA)
+    frame.Title:SetShown(showTitle)
+end
+
 local function updateQuestIcon(questPointer)
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
@@ -4197,38 +4229,12 @@ local function updateGatherMateNode(node)
     setPointerFont(node.frame.TimeText, scale, Options.GatherMateTtaCustomFont, Options.GatherMateTtaFont, Options.GatherMateTtaFontSize, Options.GatherMateTtaFontFlags, Options.GatherMateTtaFontColor)
     setPointerFont(node.frame.Title, scale, Options.GatherMateTitleCustomFont, Options.GatherMateTitleFont, Options.GatherMateTitleFontSize, Options.GatherMateTitleFontFlags, Options.GatherMateTitleFontColor)
 
-    local point = "TOP"
-    local relativePoint = "BOTTOM"
-    local distanceTextPosition = Options.GatherMateDistanceOffset
-    local timeTextPosition = - ((Options.GatherMateShowDistance and (textLineHeight(node.frame.DistanceText))) or 0) - Options.GatherMateTtaOffset
-    local titlePosition = - ((Options.GatherMateShowDistance and (textLineHeight(node.frame.DistanceText))) or 0) - ((Options.GatherMateShowTTA and (textLineHeight(node.frame.TimeText))) or 0) - Options.GatherMateTitleOffset
-    node.flipped = false
-    if Options.GatherMateOffset > 0 then
-        node.flipped = true
-        point = "BOTTOM"
-        relativePoint = "TOP"
-        distanceTextPosition = ((Options.GatherMateShowTTA and (textLineHeight(node.frame.TimeText))) or 0) + Options.GatherMateDistanceOffset - 4
-        timeTextPosition = Options.GatherMateTtaOffset - 4
-        if Options.GatherMateShowTitle then
-            titlePosition = Options.GatherMateTitleOffset - 4
-            timeTextPosition = timeTextPosition + (textLineHeight(node.frame.Title)) - 4
-            distanceTextPosition = distanceTextPosition + (textLineHeight(node.frame.Title)) - 4
-        end
-    end
-
-    node.frame.DistanceText:ClearAllPoints()
-    node.frame.DistanceText:SetPoint(point, node.frame, relativePoint, 0, distanceTextPosition)
-    node.frame.TimeText:ClearAllPoints()
-    node.frame.TimeText:SetPoint(point, node.frame, relativePoint, 0, timeTextPosition)
-    node.frame.Title:ClearAllPoints()
-    node.frame.Title:SetPoint(point, node.frame, relativePoint, 0, titlePosition)
-
-    node.frame.DistanceText:SetShown(Options.GatherMateShowDistance)
-    node.frame.TimeText:SetShown(Options.GatherMateShowTTA)
+    node.flipped = Options.GatherMateOffset > 0
+    layoutNodeTexts(node.frame, node.flipped, Options.GatherMateShowDistance, Options.GatherMateShowTTA, Options.GatherMateShowTitle,
+        Options.GatherMateDistanceOffset, Options.GatherMateTtaOffset, Options.GatherMateTitleOffset)
     -- lets questPointerSetTexts skip work for hidden texts
     node.frame.distanceHidden = not Options.GatherMateShowDistance
     node.frame.timeHidden = not Options.GatherMateShowTTA
-    node.frame.Title:SetShown(Options.GatherMateShowTitle)
 end
 
 local function updateGatherMate()
@@ -4335,35 +4341,9 @@ local function updatePOITrackNode(poi)
     setPointerFont(poi.frame.TimeText, scale, Options.POITrackTtaCustomFont, Options.POITrackTtaFont, Options.POITrackTtaFontSize, Options.POITrackTtaFontFlags, Options.POITrackTtaFontColor)
     setPointerFont(poi.frame.Title, scale, Options.POITrackTitleCustomFont, Options.POITrackTitleFont, Options.POITrackTitleFontSize, Options.POITrackTitleFontFlags, Options.POITrackTitleFontColor)
 
-    local point = "TOP"
-    local relativePoint = "BOTTOM"
-    local distanceTextPosition = Options.POITrackDistanceOffset
-    local timeTextPosition = - ((Options.POITrackShowDistance and (textLineHeight(poi.frame.DistanceText))) or 0) - Options.POITrackTtaOffset
-    local titlePosition = - ((Options.POITrackShowDistance and (textLineHeight(poi.frame.DistanceText))) or 0) - ((Options.POITrackShowTTA and (textLineHeight(poi.frame.TimeText))) or 0) - Options.POITrackTitleOffset
-    poi.flipped = false
-    if Options.POITrackOffset > 0 then
-        poi.flipped = true
-        point = "BOTTOM"
-        relativePoint = "TOP"
-        distanceTextPosition = ((Options.POITrackShowTTA and (textLineHeight(poi.frame.TimeText))) or 0) + Options.POITrackDistanceOffset - 4
-        timeTextPosition = Options.POITrackTtaOffset - 4
-        if Options.POITrackShowTitle then
-            titlePosition = Options.POITrackTitleOffset - 4
-            timeTextPosition = timeTextPosition + (textLineHeight(poi.frame.Title)) - 4
-            distanceTextPosition = distanceTextPosition + (textLineHeight(poi.frame.Title)) - 4
-        end
-    end
-
-    poi.frame.DistanceText:ClearAllPoints()
-    poi.frame.DistanceText:SetPoint(point, poi.frame, relativePoint, 0, distanceTextPosition)
-    poi.frame.TimeText:ClearAllPoints()
-    poi.frame.TimeText:SetPoint(point, poi.frame, relativePoint, 0, timeTextPosition)
-    poi.frame.Title:ClearAllPoints()
-    poi.frame.Title:SetPoint(point, poi.frame, relativePoint, 0, titlePosition)
-
-    poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
-    poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
-    poi.frame.Title:SetShown(Options.POITrackShowTitle)
+    poi.flipped = Options.POITrackOffset > 0
+    layoutNodeTexts(poi.frame, poi.flipped, Options.POITrackShowDistance, Options.POITrackShowTTA, Options.POITrackShowTitle,
+        Options.POITrackDistanceOffset, Options.POITrackTtaOffset, Options.POITrackTitleOffset)
 end
 
 local function updatePoiTrack()
