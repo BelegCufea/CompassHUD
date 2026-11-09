@@ -5085,7 +5085,9 @@ local function OnEvent(event,...)
             -- try to get corrent uiMapID
             if questPointsTable[selectedPin] and questPointsTable[selectedPin].moreArgs and questPointsTable[selectedPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[selectedPin].moreArgs.STtypeID == moreArgs.STtypeID then
                 uiMapID = questPointsTable[selectedPin].uiMapID
-            elseif STtypeID and (not uiMapID or not poiCache[STtypeID] or not poiCache[STtypeID][uiMapID]) then
+            elseif STtype == 0 and STtypeID and (not uiMapID or not poiCache[STtypeID] or not poiCache[STtypeID][uiMapID]) then
+                -- poiCache is keyed by areaPoiID: only area POIs (STtype 0) can be looked up there,
+                -- quest offer (1) and taxi node (2) IDs would match unrelated area POIs
                 for mapID, _ in pairs(poiCache[STtypeID] or {}) do
                     uiMapID = mapID
                     break
