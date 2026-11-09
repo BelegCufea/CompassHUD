@@ -36,7 +36,7 @@
 ## Misc
 
 - Updated libraries: Ace3 (r1403), HereBeDragons (2.18), LibDBIcon-1.0 (57), LibSharedMedia-3.0 (12000005). The unused HereBeDragons-Pins is no longer loaded.
-- Less work per update: bursts of quest events are handled once, hidden texts skip their calculations, and party/raid markers are sorted only when positions refresh, and only gathering nodes within the scanning radius are kept (previously every node seen during the session, on every map, was processed on every update). Vignettes and world quests that are gone, and quests you no longer track, are removed instead of being kept for the whole session.
+- Less work per update: bursts of quest events are handled once, hidden texts skip their calculations, party/raid markers are sorted only when positions refresh, and only gathering nodes within the scanning radius are kept (previously every node seen during the session, on every map, was processed on every update). Vignettes and world quests that are gone, and quests you no longer track, are removed instead of being kept for the whole session.
 - The code is split from one 6000-line file into smaller files by area (settings, compass, one file per marker type, core). No change in behavior.
 
 # v1.6.5a (7.11.2026)
