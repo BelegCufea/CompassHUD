@@ -915,10 +915,15 @@ local function isTaxiNodeUsable(taxi)
     if not faction or not Enum.FlightPathFaction then
         return true
     end
+    -- A character without a faction yet (e.g. a new Pandaren) is shown every node instead of none
+    local playerFaction = UnitFactionGroup("player")
+    if playerFaction ~= "Horde" and playerFaction ~= "Alliance" then
+        return true
+    end
     if faction == Enum.FlightPathFaction.Horde then
-        return UnitFactionGroup("player") == "Horde"
+        return playerFaction == "Horde"
     elseif faction == Enum.FlightPathFaction.Alliance then
-        return UnitFactionGroup("player") == "Alliance"
+        return playerFaction == "Alliance"
     end
     return true
 end
