@@ -4763,15 +4763,36 @@ local function updateHUD(force)
     setPOITrackNodes()
 end
 
+-- Sets a quest pointer's texture from its target data and pointer type settings:
+-- the world map texture/atlas if enabled (per type, or per target via moreArgs), else the type's atlas.
+-- Shared by updateQuest and updatePointerTextures so a settings change gives the same result as an event.
+local function applyPointerTexture(entry)
+    local frame = entry.frame
+    local options = Options.Pointers[frame.pointerType]
+    local moreArgs = entry.moreArgs
+    entry.overrideRotation = false
+    entry.circle = entry.category == Enum.QuestClassification.WorldQuest
+    frame.scaleMultiplier = 1.5
+    if entry.texture and options.worldmapTexture then
+        frame.texture:SetTexture(entry.texture)
+        entry.overrideRotation = true
+        frame.scaleMultiplier = 1
+    elseif entry.atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
+        frame.texture:SetAtlas(entry.atlasName)
+        entry.overrideRotation = true
+        frame.scaleMultiplier = 1
+    else
+        frame.texture:SetAtlas(entry.completed and options.atlasAltID or options.atlasID)
+        entry.circle = false
+    end
+end
+
 local function updatePointerTextures()
     for _, v in pairs(questPointsTable) do
-        local options = v.frame and Options.Pointers[v.frame.pointerType]
-        if not options then
-            -- no frame: the pointer category is disabled
-        elseif v.texture and options.worldmapTexture then
-            v.frame.texture:SetTexture(v.texture)
-        else
-            v.frame.texture:SetAtlas(options.worldmapTexture and v.atlasName and v.atlasName or v.completed and options.atlasAltID or options.atlasID)
+        -- no frame: the pointer category is disabled
+        if v.frame and Options.Pointers[v.frame.pointerType] then
+            applyPointerTexture(v)
+            updateQuestIcon(v.frame)
         end
     end
 end
@@ -4843,19 +4864,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     questPointsTable[questID].frame.instance = questPointsTable[questID].instance
     questPointsTable[questID].frame.x = questPointsTable[questID].x
     questPointsTable[questID].frame.y = questPointsTable[questID].y
-    local options = Options.Pointers[questPointsTable[questID].frame.pointerType]
-    if questPointsTable[questID].texture and options.worldmapTexture then
-        questPointsTable[questID].frame.texture:SetTexture(questPointsTable[questID].texture)
-        questPointsTable[questID].overrideRotation = true
-        questPointsTable[questID].frame.scaleMultiplier = 1
-    elseif questPointsTable[questID].atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
-        questPointsTable[questID].frame.texture:SetAtlas(questPointsTable[questID].atlasName)
-        questPointsTable[questID].overrideRotation = true
-        questPointsTable[questID].frame.scaleMultiplier = 1
-    else
-        questPointsTable[questID].frame.texture:SetAtlas(completed and options.atlasAltID or options.atlasID)
-        questPointsTable[questID].circle = false
-    end
+    applyPointerTexture(questPointsTable[questID])
     updateQuestIcon(questPointsTable[questID].frame)
 end
 
