@@ -908,6 +908,20 @@ local function getStrateLevels()
     return values
 end
 
+-- Mirrors the world map's flight point filter: hide nodes belonging to the opposite faction
+local function isTaxiNodeUsable(taxi)
+    local faction = taxi.faction
+    if not faction or not Enum.FlightPathFaction then
+        return true
+    end
+    if faction == Enum.FlightPathFaction.Horde then
+        return UnitFactionGroup("player") == "Horde"
+    elseif faction == Enum.FlightPathFaction.Alliance then
+        return UnitFactionGroup("player") == "Alliance"
+    end
+    return true
+end
+
 local function getPOITrackFilter()
     local list = {}
     list[poiTypeEnum.TAXI] = "Flightpoints"
@@ -4473,7 +4487,9 @@ local function setPOITrackNodes()
                         poiTrackPointTable[player.uiMapID][id].scale = 1.2
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
-                    if Options.POITrackFilter[poiTypeEnum.TAXI .. "_min"] then
+                    if not isTaxiNodeUsable(taxi) then
+                        poiTrackPointTable[player.uiMapID][id].visible = false
+                    elseif Options.POITrackFilter[poiTypeEnum.TAXI .. "_min"] then
                         local distance = HBD:GetWorldDistance(player.uiMapID, player.x, player.y, poiTrackPointTable[player.uiMapID][id].x, poiTrackPointTable[player.uiMapID][id].y)
                         if distance and distance < closesttaxiDistance then
                             closesttaxiDistance = distance
