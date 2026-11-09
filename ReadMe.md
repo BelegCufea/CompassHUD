@@ -15,8 +15,15 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 
 - Fully movable and resizable compass strip.
 - Optional numeric heading display.
-- Support for predefined or custom compass textures.
-- Plethora of markers to be displayed on the compass.
+- Support for predefined or custom compass textures, or a strip built from configurable letters and degree marks.
+- Plethora of markers to be displayed on the compass:
+  - the quest, map pin, POI or vignette you are tracking (supertracking), each quest type with its own look,
+  - TomTom waypoints,
+  - minimap icons (flight points, area POIs, delves, events, dungeon entrances, vignettes, world quests, ...),
+  - party and raid members,
+  - gathering nodes from GatherMate2 (or GatherLite in WoW: Forever).
+- Name, distance (yards or meters) and time to arrival for markers.
+- Profiles for different characters or setups.
 
 ### Some examples:
 
@@ -38,35 +45,50 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 
 ## Configuration
 
-Find the `CompassHUD` addon in the `Options` -> `AddOns` section of the game menu.
+Find the `CompassHUD` addon in the `Options` -> `AddOns` section of the game menu. It has the main page and the `Supertracker`, `Minimap tracking` and `Profiles` subpages. The AddOns compartment entry (and the optional minimap button) opens the settings too.
+
+Most settings have a tooltip with more details when you hover over them.
 
 ### HUD settings
 
-- The `General` panel contains basic global settings. For many of these settings, there is a tooltip shown while hovering over the them.</br>
+- The `General` tab contains basic global settings:
+  - lock the compass in place, show the minimap button and the AddOns compartment entry,
+  - distances in yards or meters, and optionally as whole numbers (distances under 1000 otherwise show one decimal),
+  - update frequency, field of view, scale, width, height and frame strata,
+  - `Visibility State`: a macro condition deciding when the HUD is shown (default `[petbattle] hide; show`); the HUD is always hidden in instances,
+  - center the HUD horizontally or reset its position.
+
 ![Settings](https://i.imgur.com/W5uhfbJ.png)
 
-- The `Appearance` panel styles the HUD frame (border, background, edge line). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one. Party/raid names keep their own color setting.
+- The `Appearance` tab styles the HUD frame (central pin, opacity, border, background, edge line). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one. Party/raid names keep their own color setting.
 
-- The `Compass HUD` panel lets you choose between the default texture or customize your own strip with posibility to show/hide/edit several elements.</br>
+- The `Custom HUD` tab lets you choose between the compass texture or a strip built from its parts: main cardinal directions (N, E, S, W), ordinal directions (NE, SE, ...) and degrees, each with its own font, color and position. It also holds the numeric heading display (frame, font, decimal points, north shown as 0 or 360).
+
 ![Custom](https://i.imgur.com/ElQIDGp.png)
 
 ### Supertracker
 
-Under the `Supertracker` submenu, you can configure visibility and behavior for various pointer types.
+Under the `Supertracker` submenu, you can configure visibility and behavior for the pointers to what you are tracking.
 
 *General behavior settings:*</br>
 ![PointerGeneral](https://i.imgur.com/qWe8KPX.png)
 
-The general settings also include `Hide duplicate TomTom pointer` (on by default, shown when TomTom is loaded): when a TomTom waypoint is at the same place as the quest, map pin or POI the game is tracking, only the game's pointer is shown. The TomTom pointer comes back as soon as the game tracks something else. Minimap tracking has the same for its icons: `Hide icon at the tracked target` (on by default).
+- `Pointers stay on HUD`: a pointer outside the field of view stays at the edge of the HUD (optionally with an out-of-HUD indicator).
+- `Hide pointers to other continents`.
+- `Use map transition for pointers`: when the target is in another zone, point to the way there suggested by the map (portal, entrance, ...).
+- `Hide duplicate TomTom pointer` (on by default, shown when TomTom is loaded): when a TomTom waypoint is at the same place as the quest, map pin or POI the game is tracking, only the game's pointer is shown. The TomTom pointer comes back as soon as the game tracks something else.
 
 *Choosing from pointer texture presets:*</br>
 ![PointerPresets](https://i.imgur.com/V1mzqaP.png)
 
+There is a pointer type for each kind of target: TomTom, user map pin, POI map pin, quest classifications (Quest, Campaign, Important, Legendary, Questline, Meta, Calling, Bonus, Threat, World Quest), daily, weekly and scheduled quests, and an "unknown" fallback.
+
 *For each pointer type, you can also customize:*</br>
-*- Visibility, position, size, default texture*</br>
-*- Edge detection and rotation (mainly for arrow trextures)*</br>
+*- Visibility, position, size, and textures (separately for a quest in progress and ready to turn in)*</br>
+*- Edge detection and rotation (mainly for arrow textures)*</br>
 *- Dynamic icon replacements (for World Quests, POI map pins, etc.)*</br>
-*- In-game SuperTracker retexturing*</br>
+*- In-game SuperTracker retexturing (the game's diamond above the target uses the pointer's texture)*</br>
+*- Copying texture or text settings from another pointer type*</br>
 
 ![PointerTexts](https://i.imgur.com/a9x1IA8.png)
 
@@ -75,47 +97,45 @@ The general settings also include `Hide duplicate TomTom pointer` (on by default
 
 ### Minimap tracking
 
-Under the `Minimap tracking` submenu, you’ll find settings for icons usually shown on the minimap. These modules can display many icons on the HUD, potentially impacting FPS if used with all options enabled.
+Under the `Minimap tracking` submenu, you'll find settings for icons usually shown on the minimap. These modules can display many icons on the HUD, which costs some performance when everything is enabled.
 
 #### Minimap icons
 
-The `Minimap icons` section covers standard WoW minimap icons (off by default).
-
-You can configure:
-- Tracking radius</br>
-- Opacity gradient based on distance</br>
-- Icon filtering by type</br>
-- Text display options (name, distance, TTA)</br>
-- Whether texts are shown for all icons or only the one you're facing</br>
-- Keybind for setting the facing minimap icon as a Supertracker
+The `Minimap icons` section covers standard WoW minimap icons (off by default). It has four tabs:
+- `General`: scanning radius, update throttle, position, scale, and an opacity gradient based on distance.
+- `Filter`: which icon types are shown. Flight points of the other faction are hidden, and you can show only the closest flight point. `Bypass scanning radius` shows selected types in the whole zone. World quests can be filtered to none, all, tracked ones or those tracked by World Quest Tracker.
+- `Texts`: name, distance and time to arrival, shown for all icons or only for the one you're facing.
+- `Supertracking`: a keybind that sets the icon you are facing as the game's tracked target (press again to clear it), `Hide icon at the tracked target` (on by default: while an icon is tracked, only its supertracker pointer is shown), and the texture used when a user waypoint has to be created.
 
 ![MinimapIcons](https://i.imgur.com/FvCUD2R.png)
 
 #### Party/Raid
 
-In the `Party/Raid` section, you can configure the visibility of party and raid members, including icon textures, name display, and formatting.</br>
+In the `Party/Raid` section, you can configure the visibility of party and raid members, including icon textures, name display (class colors, fonts, backgrounds), and formatting.</br>
 (Default: Party only)
+
+Members on a different map (another continent, behind a portal, underground, ...) can get their own marker style; their direction may not be accurate.
 
 #### Addon integrations
 
-Additional sections support integrations with other addons (off by default).
+- **GatherMate2 / GatherLite** (off by default): possible gathering node locations within a scanning radius. Node types follow GatherMate2's own display filter. In WoW: Forever, `GatherLite` works the same way when GatherMate2 is not loaded, following GatherLite's minimap tracking toggles.
+- **TomTom**: the TomTom arrow's waypoint is shown as its own pointer type.
+- **World Quest Tracker**: its tracked quests can be used as the world quest filter for minimap icons.
 
-For example, if you have `GatherMate2`, you can display possible gathering node locations on the HUD. In WoW: Forever, `GatherLite` works the same way when GatherMate2 is not loaded.
-
-### Miscelaneous
+### Miscellaneous
 
 #### Custom compass strip textures
 You can use your own.<br>
-It must be 2048x16, has 720 degrees starting from N(orth) and be in BLP or TGA fromat (see `CompassHUD.tga` at Media folder for reference).
+It must be 2048x16, have 720 degrees starting from N(orth), and be in BLP or TGA format (see `CompassHUD.tga` in the Media folder for reference).
 
-Save your file somewhere in `Interface\Addons` folder (outside any addon folder to avoid deletion on update).
+Save your file somewhere in the `Interface\Addons` folder (outside any addon folder to avoid deletion on update).
 
 In your SavedVariables file located at `WTF\Account\<AccountID>\SavedVariables\CompassHUD.lua`, add:</br>
 *`CompassTextureTexture = [[Interface\Addons\]] .. {your file name without extension}`*</br>
 just after the line containing:</br>
 *`["PositionX"]`*
 
-Check if you put it in correct profile.
+Check that you put it in the correct profile. Edit the file only while the game is closed (or logged out), as the game overwrites it on logout.
 
 
 ## Issues and suggestions
