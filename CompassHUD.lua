@@ -3934,9 +3934,11 @@ local function setQuestsIcons()
                     elseif Options.PointerStay then
                         local side = math.abs(angle)/angle
                         local option = Options.Pointers[quest.frame.pointerType]
-                        if (quest.completed and (option.textureAltRotate == 1)) or (not quest.completed and (option.textureRotate == 1)) and not quest.overrideRotation then
+                        -- "a or b and not c" parsed as "a or (b and not c)": compute the flag once instead
+                        local rotates = (quest.completed and option.textureAltRotate == 1) or (not quest.completed and option.textureRotate == 1)
+                        if rotates and not quest.overrideRotation then
                             pointerRotate = (PI/2 * side * ((quest.frame.flipped and 1) or -1))
-                        elseif ((quest.completed and (option.textureAltRotate ~= 1)) or (not quest.completed and (option.textureRotate ~= 1)) or quest.overrideRotation) and Options.StayArrow then
+                        elseif Options.StayArrow then
                             local width, height = quest.frame.texture:GetSize()
                             local offsetX = side * (width * 0.75 + 3)
                             quest.frame.arrowTexture:ClearAllPoints()
@@ -5349,7 +5351,7 @@ function Addon:ConstructDefaultsAndOptions()
     -- add textures from questPointers into pointerTextures
     for _, preset in pairs(texturePresets) do
         for k, v in pairs(preset) do
-            if (v.atlasIDavailable and v.atlasIDturnin and v.atlasIDavailable == v.atlasIDturnin) or (v.atlasIDavailable and not v.atlasIDturnin) and not atlasIDExists(v.atlasIDavailable) then
+            if ((v.atlasIDavailable and v.atlasIDturnin and v.atlasIDavailable == v.atlasIDturnin) or (v.atlasIDavailable and not v.atlasIDturnin)) and not atlasIDExists(v.atlasIDavailable) then
                 local name = v.atlasNameAvailable or (k > 100 and "Recurring") or questPointers[k]
                 pointerTextures[name] = { atlasID = v.atlasIDavailable }
                 if v.textureScaleAvailable then
