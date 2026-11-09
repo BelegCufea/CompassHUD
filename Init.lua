@@ -16,3 +16,7 @@ Addon.env = setmetatable({
     Addon = Addon,
     ADDON_NAME = ADDON_NAME,
 }, { __index = _G })
+
+-- Keybinding labels (Bindings.xml). Set here, first: Options.lua reads them while it loads.
+BINDING_HEADER_COMPASSHUD = "CompassHUD"
+BINDING_NAME_COMPASSHUD_SUPERTRACK = "Toggle Supertracking for Minimap icon"

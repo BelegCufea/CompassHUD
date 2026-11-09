@@ -8,9 +8,6 @@ setfenv(1, Addon.env)
 local pairs, ipairs, next, type, select, tostring, tonumber = pairs, ipairs, next, type, select, tostring, tonumber
 local math, string, table, wipe = math, string, table, wipe
 
-_G.BINDING_HEADER_COMPASSHUD = "CompassHUD"
-_G.BINDING_NAME_COMPASSHUD_SUPERTRACK = "Toggle Supertracking for Minimap icon"
-
 local LSM               = LibStub("LibSharedMedia-3.0")
 local HBD               = LibStub("HereBeDragons-2.0")
 
