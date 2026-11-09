@@ -25,6 +25,7 @@
 - Completed quest pointers with a world map texture show the side arrow instead of rotating.
 - Pointer textures stay the same after a settings change for waypoints made from minimap icons.
 - The game's supertracker icon is only restyled for the target you are actually tracking, and gets its normal look back when **Retexture** is turned off.
+- A TomTom waypoint restored at login now uses the configured pointer font instead of the default one.
 - Quests whose type was not known yet when first tracked switch to the right pointer type.
 - Party members without class info get the party name color, not the raid one.
 

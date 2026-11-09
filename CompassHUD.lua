@@ -5206,6 +5206,33 @@ local function OnEvent(event,...)
     setQuestsIcons()
 end
 
+-- Re-applies all pointer fonts once. A pointer can be created before its font is usable: TomTom
+-- restores a saved waypoint at login, possibly before the addon that registers the chosen font with
+-- LibSharedMedia has done so (LSM:Fetch then returns the default font). Called when a font is
+-- registered and after a loading screen; a burst of calls is merged into one refresh on the next frame.
+local fontRefreshPending = false
+local function schedulePointerFontRefresh()
+    if fontRefreshPending then return end
+    fontRefreshPending = true
+    C_Timer.After(0, function()
+        fontRefreshPending = false
+        for _, quest in pairs(questPointsTable) do
+            if quest.frame then
+                updateQuestIcon(quest.frame)
+            end
+        end
+        updateGroupTexts()
+        updateGatherMate()
+        updatePoiTrack()
+    end)
+end
+
+local function onMediaRegistered(_, mediatype)
+    if mediatype == "font" then
+        schedulePointerFontRefresh()
+    end
+end
+
 local function OnGroup(event, ...)
     local groupType = (IsInRaid() and "raid") or  (IsInGroup() and "party") or "none"
     if groupType ~= (player.groupType or "") then Addon:HideGroupIcons() end
@@ -5213,6 +5240,9 @@ local function OnGroup(event, ...)
 end
 
 local function OnZoneChange(event, ...)
+    if event == "PLAYER_ENTERING_WORLD" then
+        schedulePointerFontRefresh()
+    end
     cachePOIs()
     player.inInstance = IsInInstance()
     Addon:SetVisibility(shouldShowHUD())
@@ -6109,6 +6139,7 @@ function Addon:OnEnable()
         self:SecureHook(TomTom, "HideWaypoint", tomtomClearWaypoint)
     end
 
+    LSM.RegisterCallback(self, "LibSharedMedia_Registered", onMediaRegistered)
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
     self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
     self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
