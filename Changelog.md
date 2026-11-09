@@ -4,6 +4,7 @@
 
 - **User map pin** pointer shows a name when a TomTom waypoint is at the same place. Some addons copy TomTom waypoints into a map pin, which has no name of its own. This covers, for example, Questie Ctrl+click and BtWQuests quest pins.
 - Global **Pointer font** (font, size, outline, color) on the **Appearance** tab. It applies to every pointer text that has no custom font of its own: supertracker, minimap icons, party/raid names and GatherMate2 nodes. It is **off** by default, so the game font is used as before.
+- **Bypass scanning radius** for every minimap icon type (**Minimap icons → Filter**). Selected types are shown in the whole zone, the same as the existing World Quests option. Vignettes are only reported by the game near the player, so for them it has little effect.
 
 ## Fix
 

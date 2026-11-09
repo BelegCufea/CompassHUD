@@ -773,6 +773,7 @@ Addon.Defaults = {
             [poiTypeEnum.VIGNETTE] = false,
             [poiTypeEnum.RACE] = false,
         },
+        POITrackWholeZone          = {},
         POITrackWQFilter           = "All",
         POITrackWQWholeZone        = false,
         POITrackSTRetexture        = true,
@@ -935,6 +936,12 @@ local function getPOITrackFilter()
     list[poiTypeEnum.VIGNETTE] = "Vignettes"
     list[poiTypeEnum.OTHER] = "Miscellaneous"
     list[poiTypeEnum.RACE] = "Dragonriding races"
+    return list
+end
+
+local function getPOITrackWholeZoneFilter()
+    local list = getPOITrackFilter()
+    list[poiTypeEnum.TAXI .. "_min"] = nil
     return list
 end
 
@@ -2019,6 +2026,21 @@ local POITrackOptions = {
                     end,
                     set = function(info, key, value)
                         Addon.db.profile.POITrackFilter[key] = value
+                        Addon:UpdateHUDSettings()
+                    end,
+                },
+                POITrackWholeZone = {
+                    type = "multiselect",
+                    name = "Bypass scanning radius",
+                    desc = "Selected icon types will be shown in the whole zone, not just in the scanning radius.",
+                    order = 920,
+                    width = "full",
+                    values = function() return getPOITrackWholeZoneFilter() end,
+                    get = function(info, key)
+                        return Addon.db.profile.POITrackWholeZone[key] or false
+                    end,
+                    set = function(info, key, value)
+                        Addon.db.profile.POITrackWholeZone[key] = value
                         Addon:UpdateHUDSettings()
                     end,
                 },
@@ -4396,6 +4418,7 @@ local function setPOITrackNodes()
                     local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
                     poi.visible = (startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.PORTAL]) or
                                 (not startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.OTHER])
+                    poi.wholeZone = Options.POITrackWholeZone[startsWithTaxiNode and poiTypeEnum.PORTAL or poiTypeEnum.OTHER]
                 end
             end
 
@@ -4404,6 +4427,7 @@ local function setPOITrackNodes()
                 for _, poiID in ipairs(mapPOIs) do
                     local id = setPOITrackNode(poiID, poiTypeEnum.DELVE)
                     poiTrackPointTable[player.uiMapID][id].visible = true
+                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.DELVE]
                 end
             end
 
@@ -4412,6 +4436,7 @@ local function setPOITrackNodes()
                 for _, poiID in ipairs(mapPOIs) do
                     local id = setPOITrackNode(poiID, poiTypeEnum.EVENT)
                     poiTrackPointTable[player.uiMapID][id].visible = true
+                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.EVENT]
                 end
             end
 
@@ -4420,6 +4445,7 @@ local function setPOITrackNodes()
                 for _, poiID in ipairs(mapPOIs) do
                     local id = setPOITrackNode(poiID, poiTypeEnum.HUB)
                     poiTrackPointTable[player.uiMapID][id].visible = true
+                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.HUB]
                 end
             end
 
@@ -4428,6 +4454,7 @@ local function setPOITrackNodes()
                 for _, poiID in ipairs(mapPOIs) do
                     local id = setPOITrackNode(poiID, poiTypeEnum.RACE)
                     poiTrackPointTable[player.uiMapID][id].visible = true
+                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.RACE]
                 end
             end
 
@@ -4449,6 +4476,7 @@ local function setPOITrackNodes()
                     local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
                     poiTrackPointTable[player.uiMapID][id].visible = (startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.PORTAL]) or
                         (not startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.LINK])
+                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[startsWithTaxiNode and poiTypeEnum.PORTAL or poiTypeEnum.LINK]
                 end
             end
 
@@ -4468,6 +4496,7 @@ local function setPOITrackNodes()
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
                     poiTrackPointTable[player.uiMapID][id].visible = true
+                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.INSTANCE]
                 end
             end
 
@@ -4487,6 +4516,7 @@ local function setPOITrackNodes()
                         poiTrackPointTable[player.uiMapID][id].scale = 1.2
                         updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                     end
+                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.TAXI]
                     if not isTaxiNodeUsable(taxi) then
                         poiTrackPointTable[player.uiMapID][id].visible = false
                     elseif Options.POITrackFilter[poiTypeEnum.TAXI .. "_min"] then
@@ -4525,6 +4555,7 @@ local function setPOITrackNodes()
                             updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
                         end
                         poiTrackPointTable[player.uiMapID][id].visible = true
+                        poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.VIGNETTE]
                     end
                 end
             end
