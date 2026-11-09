@@ -77,6 +77,7 @@ local GetTaxiNodesForMap = C_TaxiMap.GetTaxiNodesForMap
 local GetVignettes = C_VignetteInfo.GetVignettes
 local GetVignettePosition = C_VignetteInfo.GetVignettePosition
 local GetVignetteInfo = C_VignetteInfo.GetVignetteInfo
+local GetGlidingInfo = C_PlayerInfo.GetGlidingInfo
 
 local Options
 local HUD
@@ -3617,6 +3618,11 @@ local function questPointerSetTexts(frame, dt)
         frame.elapsed = 0
         -- GetUnitSpeed returns 0 (truthy) when standing still, so "player or vehicle" never reached the vehicle
         local speed = GetUnitSpeed(UnitInVehicle("player") and "vehicle" or "player")
+        -- GetUnitSpeed does not report skyriding speed; the gliding info does
+        local isGliding, _, forwardSpeed = GetGlidingInfo()
+        if isGliding and forwardSpeed and not issecretvalue(forwardSpeed) and forwardSpeed > 0 then
+            speed = forwardSpeed
+        end
         
         -- NEW: Detect if speed is a secret value using 12.0 API
         if not speed or issecretvalue(speed) then
