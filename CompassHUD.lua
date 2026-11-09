@@ -818,13 +818,16 @@ local function cacheMapPOIs(mapPOIs, poiType, uiMapID)
         for _, poiID in ipairs(mapPOIs) do
             if poiID then
                 local poi = GetAreaPOIInfo(uiMapID, poiID)
-                if not poiCache[poi.areaPoiID] then
-                    poiCache[poi.areaPoiID] = {}
+                -- GetAreaPOIInfo may return nothing: skip that POI
+                if poi then
+                    if not poiCache[poi.areaPoiID] then
+                        poiCache[poi.areaPoiID] = {}
+                    end
+                    poiCache[poi.areaPoiID][uiMapID] = {
+                        poiType = poiType,
+                        poi = poi
+                    }
                 end
-                poiCache[poi.areaPoiID][uiMapID] = {
-                    poiType = poiType,
-                    poi = poi
-                }
             end
         end
     end
@@ -4381,11 +4384,13 @@ local function createPOITrackNode(table)
 	return poiTrackNode
 end
 
+-- Returns the minimap icon node for an area POI, or nil when the game has no details for it (yet).
 local function setPOITrackNode(poiID, poiType)
 
     local id = poiType .. "_" .. poiID
     if not poiTrackPointTable[player.uiMapID][id] then
         local poi = poiCache[poiID] and poiCache[poiID][player.uiMapID] and poiCache[poiID][player.uiMapID].poi or GetAreaPOIInfo(player.uiMapID, poiID)
+        if not (poi and poi.position) then return end
         if not poi.atlasName then
             local pointerType = getPointerType(nil, selectedPin)
             local options = Options.Pointers[pointerType]
@@ -4401,7 +4406,7 @@ local function setPOITrackNode(poiID, poiType)
         poiTrackPointTable[player.uiMapID][id].scale = 1.3
         updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
     end
-    return id
+    return poiTrackPointTable[player.uiMapID][id]
 end
 
 local function setPOITrackNodes()
@@ -4432,48 +4437,57 @@ local function setPOITrackNodes()
             local mapPOIs = GetAreaPOIForMap(player.uiMapID)
             if (Options.POITrackFilter[poiTypeEnum.PORTAL] or Options.POITrackFilter[poiTypeEnum.OTHER]) and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    local id = setPOITrackNode(poiID, poiTypeEnum.OTHER)
-                    local poi = poiTrackPointTable[player.uiMapID][id]
-                    local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
-                    poi.visible = (startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.PORTAL]) or
-                                (not startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.OTHER])
-                    poi.wholeZone = Options.POITrackWholeZone[startsWithTaxiNode and poiTypeEnum.PORTAL or poiTypeEnum.OTHER]
+                    local poi = setPOITrackNode(poiID, poiTypeEnum.OTHER)
+                    if poi then
+                        local startsWithTaxiNode = poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode"
+                        poi.visible = (startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.PORTAL]) or
+                                    (not startsWithTaxiNode and Options.POITrackFilter[poiTypeEnum.OTHER])
+                        poi.wholeZone = Options.POITrackWholeZone[startsWithTaxiNode and poiTypeEnum.PORTAL or poiTypeEnum.OTHER]
+                    end
                 end
             end
 
             mapPOIs = GetDelvesForMap(player.uiMapID)
             if Options.POITrackFilter[poiTypeEnum.DELVE] and  mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    local id = setPOITrackNode(poiID, poiTypeEnum.DELVE)
-                    poiTrackPointTable[player.uiMapID][id].visible = true
-                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.DELVE]
+                    local poi = setPOITrackNode(poiID, poiTypeEnum.DELVE)
+                    if poi then
+                        poi.visible = true
+                        poi.wholeZone = Options.POITrackWholeZone[poiTypeEnum.DELVE]
+                    end
                 end
             end
 
             mapPOIs = GetEventsForMap(player.uiMapID)
             if Options.POITrackFilter[poiTypeEnum.EVENT] and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    local id = setPOITrackNode(poiID, poiTypeEnum.EVENT)
-                    poiTrackPointTable[player.uiMapID][id].visible = true
-                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.EVENT]
+                    local poi = setPOITrackNode(poiID, poiTypeEnum.EVENT)
+                    if poi then
+                        poi.visible = true
+                        poi.wholeZone = Options.POITrackWholeZone[poiTypeEnum.EVENT]
+                    end
                 end
             end
 
             mapPOIs = GetQuestHubsForMap(player.uiMapID)
             if Options.POITrackFilter[poiTypeEnum.HUB] and mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    local id = setPOITrackNode(poiID, poiTypeEnum.HUB)
-                    poiTrackPointTable[player.uiMapID][id].visible = true
-                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.HUB]
+                    local poi = setPOITrackNode(poiID, poiTypeEnum.HUB)
+                    if poi then
+                        poi.visible = true
+                        poi.wholeZone = Options.POITrackWholeZone[poiTypeEnum.HUB]
+                    end
                 end
             end
 
             mapPOIs = GetDragonridingRacesForMap(player.uiMapID)
             if Options.POITrackFilter[poiTypeEnum.RACE] and  mapPOIs then
                 for _, poiID in ipairs(mapPOIs) do
-                    local id = setPOITrackNode(poiID, poiTypeEnum.RACE)
-                    poiTrackPointTable[player.uiMapID][id].visible = true
-                    poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.RACE]
+                    local poi = setPOITrackNode(poiID, poiTypeEnum.RACE)
+                    if poi then
+                        poi.visible = true
+                        poi.wholeZone = Options.POITrackWholeZone[poiTypeEnum.RACE]
+                    end
                 end
             end
 
