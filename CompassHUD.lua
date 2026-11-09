@@ -3617,6 +3617,14 @@ local function questPointerSetTexts(frame, dt)
     if frame.timeHidden then return end
     if frame.elapsed >= 1 then
         frame.elapsed = 0
+        -- Moving away from the target (distance grew since the last check): no arrival time,
+        -- shown like standing still instead of a time that is never reached
+        local lastDistance = frame.ttaLastDistance
+        frame.ttaLastDistance = frame.distance
+        if lastDistance and frame.distance > lastDistance + 0.5 then
+            setTime(frame, frame.distance, 0)
+            return
+        end
         -- GetUnitSpeed returns 0 (truthy) when standing still, so "player or vehicle" never reached the vehicle
         local speed = GetUnitSpeed(UnitInVehicle("player") and "vehicle" or "player")
         -- GetUnitSpeed does not report skyriding speed; the gliding info does
@@ -3635,7 +3643,8 @@ local function questPointerSetTexts(frame, dt)
                 local currentDistance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
                 local deltaSpeed = 0
                 if currentDistance then
-                    deltaSpeed = math.abs(currentDistance - startDistance)
+                    -- approach speed: positive when getting closer, else no arrival time
+                    deltaSpeed = math.max(startDistance - currentDistance, 0)
                 end
                 setTime(frame, currentDistance, deltaSpeed)
             end)
@@ -4877,6 +4886,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     if not questPointsTable[questID].frame then return end
     questPointsTable[questID].frame.scaleMultiplier = 1.5
     questPointsTable[questID].frame.minDistance = nil
+    questPointsTable[questID].frame.ttaLastDistance = nil -- new target: no "moving away" from the old one
     questPointsTable[questID].frame.QuestText:SetText(title)
     questPointsTable[questID].frame.type = "Quest"
     questPointsTable[questID].frame.instance = questPointsTable[questID].instance
