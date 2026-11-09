@@ -4229,8 +4229,8 @@ local function updateGatherMate()
     end
 end
 
-local function createGatherMateNode(nodeID, nodeType, table)
-    local gatherMateNode =  table.frame or CreateFrame("FRAME", nil, HUD)
+local function createGatherMateNode(nodeID, nodeType, data)
+    local gatherMateNode =  data.frame or CreateFrame("FRAME", nil, HUD)
 	gatherMateNode:SetSize(textureHeight, textureHeight)
 	gatherMateNode:SetPoint("CENTER");
 	gatherMateNode.texture = gatherMateNode:CreateTexture(nil, "ARTWORK")
@@ -4251,9 +4251,9 @@ local function createGatherMateNode(nodeID, nodeType, table)
     gatherMateNode.Title:SetParent(gatherMateNode)
     gatherMateNode.Title:SetText(GatherMate2:GetNameForNode(nodeType, nodeID))
     gatherMateNode.type = "GatherMate"
-    gatherMateNode.instance = table.instance
-    gatherMateNode.x = table.x
-    gatherMateNode.y = table.y
+    gatherMateNode.instance = data.instance
+    gatherMateNode.x = data.x
+    gatherMateNode.y = data.y
     gatherMateNode.elapsed = 0
     gatherMateNode:SetScript("OnUpdate", questPointerSetTexts)
 	return gatherMateNode
@@ -4364,15 +4364,15 @@ local function updatePoiTrack()
     end
 end
 
-local function createPOITrackNode(table)
-    local poiTrackNode =  table.frame or CreateFrame("FRAME", nil, HUD)
+local function createPOITrackNode(data)
+    local poiTrackNode =  data.frame or CreateFrame("FRAME", nil, HUD)
 	poiTrackNode:SetSize(textureHeight, textureHeight)
 	poiTrackNode:SetPoint("CENTER");
 	poiTrackNode.texture = poiTrackNode:CreateTexture(nil, "ARTWORK")
 	poiTrackNode.texture:SetAllPoints(poiTrackNode)
-    poiTrackNode.texture:SetAtlas(table.atlasName)
+    poiTrackNode.texture:SetAtlas(data.atlasName)
     poiTrackNode.texture:SetSize(textureHeight, textureHeight)
-    if table.circle then
+    if data.circle then
         poiTrackNode.texture:SetSize(textureHeight, textureHeight)
         poiTrackNode.mask = poiTrackNode:CreateMaskTexture()
         poiTrackNode.mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
@@ -4394,11 +4394,11 @@ local function createPOITrackNode(table)
     poiTrackNode.Title:SetJustifyV("TOP")
     poiTrackNode.Title:SetSize(0, 16)
     poiTrackNode.Title:SetParent(poiTrackNode)
-    poiTrackNode.Title:SetText(table.name)
+    poiTrackNode.Title:SetText(data.name)
     poiTrackNode.type = "poiTrack"
-    poiTrackNode.instance = table.instance
-    poiTrackNode.x = table.x
-    poiTrackNode.y = table.y
+    poiTrackNode.instance = data.instance
+    poiTrackNode.x = data.x
+    poiTrackNode.y = data.y
     poiTrackNode.elapsed = 0
     poiTrackNode:SetScript("OnUpdate", questPointerSetTexts)
 	return poiTrackNode
@@ -4916,9 +4916,9 @@ local function supertrackPOITrack()
 
     local poi = poiTrackHeading
     if poi and poi.visible and poi.instance == player.uiMapID then
-        local type = GetHighestPrioritySuperTrackingType()
+        local stType = GetHighestPrioritySuperTrackingType()
         if poi.questID then
-            if type == Enum.SuperTrackingType.Quest then
+            if stType == Enum.SuperTrackingType.Quest then
                 local questID = GetSuperTrackedQuestID()
                 if questID == poi.questID then
                     ClearAllSuperTracked()
@@ -4927,7 +4927,7 @@ local function supertrackPOITrack()
             end
             SetSuperTrackedQuestID(poi.questID)
         elseif poi.areaPoiID then
-            if type == Enum.SuperTrackingType.MapPin then
+            if stType == Enum.SuperTrackingType.MapPin then
                 local _, stTypeID = GetSuperTrackedMapPin()
                 if stTypeID == poi.areaPoiID then
                     ClearAllSuperTracked()
@@ -4936,7 +4936,7 @@ local function supertrackPOITrack()
             end
             SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.AreaPOI, poi.areaPoiID)
         elseif poi.nodeID then
-            if type == Enum.SuperTrackingType.MapPin then
+            if stType == Enum.SuperTrackingType.MapPin then
                 local _, stTypeID = GetSuperTrackedMapPin()
                 if stTypeID == poi.nodeID then
                     ClearAllSuperTracked()
@@ -4945,7 +4945,7 @@ local function supertrackPOITrack()
             end
             SetSuperTrackedMapPin(Enum.SuperTrackingMapPinType.TaxiNode, poi.nodeID)
         elseif poi.vignetteGUID then
-            if type == Enum.SuperTrackingType.Vignette then
+            if stType == Enum.SuperTrackingType.Vignette then
                 local stVignetteGUID = GetSuperTrackedVignette()
                 if stVignetteGUID == poi.vignetteGUID then
                     ClearAllSuperTracked()
@@ -4959,7 +4959,7 @@ local function supertrackPOITrack()
             local pos = CreateVector2D(poiTracked.xZone, poiTracked.yZone)
             local mapPoint = UiMapPoint.CreateFromVector2D(poiTracked.instance, pos)
             poiTrackPointTable[player.uiMapID].tracked = poiTracked
-            if type == Enum.SuperTrackingType.UserWaypoint then
+            if stType == Enum.SuperTrackingType.UserWaypoint then
                 local userWaypoint = GetUserWaypoint()
                 if userWaypoint and userWaypoint.uiMapID == poiTracked.instance and
                     math.floor(userWaypoint.position.x * 100000000 + 0.5) == math.floor(poiTracked.xZone * 100000000 + 0.5) and
