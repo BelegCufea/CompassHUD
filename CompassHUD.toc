@@ -33,5 +33,6 @@ Options.lua
 Compass.lua
 Markers\Common.lua
 Markers\Quest.lua
+Markers\Group.lua
 CompassHUD.lua
 databroker.lua
