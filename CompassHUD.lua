@@ -3744,6 +3744,13 @@ local function setPointerFont(fontString, scale, custom, font, size, flags, colo
     end
 end
 
+-- Line height of a pointer text, from the font actually applied by setPointerFont (size already includes scale).
+-- Used to stack distance/time/title texts so they don't overlap whichever font is in effect.
+local function textLineHeight(fontString)
+    local _, size = fontString:GetFont()
+    return (size or 12) * 1.2
+end
+
 local function updateQuestIcon(questPointer)
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
@@ -3760,8 +3767,8 @@ local function updateQuestIcon(questPointer)
     local point = "TOP"
     local relativePoint = "BOTTOM"
     local distanceTextPosition = -options.distanceOffset + 2
-    local timeTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2 * scale)) or 0) - options.ttaOffset + 2
-    local questTextPosition = - ((options.showDistance and (options.distanceFontSize * 1.2 * scale)) or 0) - ((options.showTTA and (options.ttaFontSize * 1.2 * scale)) or 0) - options.questOffset + 4
+    local timeTextPosition = - ((options.showDistance and (textLineHeight(questPointer.DistanceText))) or 0) - options.ttaOffset + 2
+    local questTextPosition = - ((options.showDistance and (textLineHeight(questPointer.DistanceText))) or 0) - ((options.showTTA and (textLineHeight(questPointer.TimeText))) or 0) - options.questOffset + 4
     local cropX, cropY = pointer.crop / textureHeight, pointer.crop / textureHeight
     questPointer.texture:SetTexCoord(cropX, 1 - cropX, cropY, 1 - cropY)
     questPointer.flipped = false
@@ -3772,13 +3779,13 @@ local function updateQuestIcon(questPointer)
         end
         point = "BOTTOM"
         relativePoint = "TOP"
-        distanceTextPosition = ((options.showTTA and (options.ttaFontSize * 1.2 * scale)) or 0) + options.distanceOffset - 12
+        distanceTextPosition = ((options.showTTA and (textLineHeight(questPointer.TimeText))) or 0) + options.distanceOffset - 12
         timeTextPosition = options.ttaOffset - 12
         local questText = pointer.text
         if questText and questText:match("%S") and options.showQuest then
             questTextPosition = options.questOffset - 6
-            timeTextPosition = timeTextPosition + (options.questFontSize * 1.2 * scale)
-            distanceTextPosition = distanceTextPosition + (options.questFontSize * 1.2 * scale)
+            timeTextPosition = timeTextPosition + (textLineHeight(questPointer.QuestText))
+            distanceTextPosition = distanceTextPosition + (textLineHeight(questPointer.QuestText))
         end
     end
 
@@ -4141,19 +4148,19 @@ local function updateGatherMateNode(node)
     local point = "TOP"
     local relativePoint = "BOTTOM"
     local distanceTextPosition = Options.GatherMateDistanceOffset
-    local timeTextPosition = - ((Options.GatherMateShowDistance and (Options.GatherMateDistanceFontSize * 1.2 * scale)) or 0) - Options.GatherMateTtaOffset
-    local titlePosition = - ((Options.GatherMateShowDistance and (Options.GatherMateDistanceFontSize * 1.2 * scale)) or 0) - ((Options.GatherMateShowTTA and (Options.GatherMateTtaFontSize * 1.2 * scale)) or 0) - Options.GatherMateTitleOffset
+    local timeTextPosition = - ((Options.GatherMateShowDistance and (textLineHeight(node.frame.DistanceText))) or 0) - Options.GatherMateTtaOffset
+    local titlePosition = - ((Options.GatherMateShowDistance and (textLineHeight(node.frame.DistanceText))) or 0) - ((Options.GatherMateShowTTA and (textLineHeight(node.frame.TimeText))) or 0) - Options.GatherMateTitleOffset
     node.flipped = false
     if Options.GatherMateOffset > 0 then
         node.flipped = true
         point = "BOTTOM"
         relativePoint = "TOP"
-        distanceTextPosition = ((Options.GatherMateShowTTA and (Options.GatherMateTtaFontSize * 1.2 * scale)) or 0) + Options.GatherMateDistanceOffset - 4
+        distanceTextPosition = ((Options.GatherMateShowTTA and (textLineHeight(node.frame.TimeText))) or 0) + Options.GatherMateDistanceOffset - 4
         timeTextPosition = Options.GatherMateTtaOffset - 4
         if Options.GatherMateShowTitle then
             titlePosition = Options.GatherMateTitleOffset - 4
-            timeTextPosition = timeTextPosition + (Options.GatherMateTitleFontSize * 1.2 * scale) - 4
-            distanceTextPosition = distanceTextPosition + (Options.GatherMateTitleFontSize * 1.2 * scale) - 4
+            timeTextPosition = timeTextPosition + (textLineHeight(node.frame.Title)) - 4
+            distanceTextPosition = distanceTextPosition + (textLineHeight(node.frame.Title)) - 4
         end
     end
 
@@ -4278,19 +4285,19 @@ local function updatePOITrackNode(poi)
     local point = "TOP"
     local relativePoint = "BOTTOM"
     local distanceTextPosition = Options.POITrackDistanceOffset
-    local timeTextPosition = - ((Options.POITrackShowDistance and (Options.POITrackDistanceFontSize * 1.2 * scale)) or 0) - Options.POITrackTtaOffset
-    local titlePosition = - ((Options.POITrackShowDistance and (Options.POITrackDistanceFontSize * 1.2 * scale)) or 0) - ((Options.POITrackShowTTA and (Options.POITrackTtaFontSize * 1.2 * scale)) or 0) - Options.POITrackTitleOffset
+    local timeTextPosition = - ((Options.POITrackShowDistance and (textLineHeight(poi.frame.DistanceText))) or 0) - Options.POITrackTtaOffset
+    local titlePosition = - ((Options.POITrackShowDistance and (textLineHeight(poi.frame.DistanceText))) or 0) - ((Options.POITrackShowTTA and (textLineHeight(poi.frame.TimeText))) or 0) - Options.POITrackTitleOffset
     poi.flipped = false
     if Options.POITrackOffset > 0 then
         poi.flipped = true
         point = "BOTTOM"
         relativePoint = "TOP"
-        distanceTextPosition = ((Options.POITrackShowTTA and (Options.POITrackTtaFontSize * 1.2 * scale)) or 0) + Options.POITrackDistanceOffset - 4
+        distanceTextPosition = ((Options.POITrackShowTTA and (textLineHeight(poi.frame.TimeText))) or 0) + Options.POITrackDistanceOffset - 4
         timeTextPosition = Options.POITrackTtaOffset - 4
         if Options.POITrackShowTitle then
             titlePosition = Options.POITrackTitleOffset - 4
-            timeTextPosition = timeTextPosition + (Options.POITrackTitleFontSize * 1.2 * scale) - 4
-            distanceTextPosition = distanceTextPosition + (Options.POITrackTitleFontSize * 1.2 * scale) - 4
+            timeTextPosition = timeTextPosition + (textLineHeight(poi.frame.Title)) - 4
+            distanceTextPosition = distanceTextPosition + (textLineHeight(poi.frame.Title)) - 4
         end
     end
 
