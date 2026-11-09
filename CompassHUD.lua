@@ -107,7 +107,6 @@ local gatherMatePointTable = {}
 local poiTrackPointTable = {}
 local poiTrackHeading -- minimap icon closest to the facing direction, re-picked on every pass
 local poiTrackCurrentMap = nil
-local HBDmaps = {}
 local STtexture = {}
 local directions = {
     [0] = {letter = "N" , main = true },
@@ -3348,17 +3347,6 @@ end
 local function getMapId(questID)
     local uiMapID = GetMapForQuestPOIs()
     if uiMapID and uiMapID > 0 then return uiMapID end
-    for _, uiMapID in ipairs(HBDmaps) do
-        local quests = GetQuestsOnMap(uiMapID)
-        for _, quest in pairs(quests) do
-           if quest.questID == questID then
-              local mapInfo = GetMapInfo(uiMapID)
-              if mapInfo.mapType == 3 then
-                 return uiMapID
-              end
-           end
-        end
-    end
 end
 
 local function updatePlayerCoords()
