@@ -4063,7 +4063,7 @@ local function updateGroupMember(unit)
             groupPointsTable[unit].classColor = GetClassColor(classFile)
         else
             groupPointsTable[unit].className = nil
-            groupPointsTable[unit].classColor = type == "party" and Options.GroupPartyNameFontColor or Options.GroupRaidNameFontColor
+            groupPointsTable[unit].classColor = groupPointsTable[unit].type == "party" and Options.GroupPartyNameFontColor or Options.GroupRaidNameFontColor
         end
         if x and y and instance then
             groupPointsTable[unit].x = x
