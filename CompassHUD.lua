@@ -3361,15 +3361,22 @@ local function updatePlayerCoords()
     player.angle = GetPlayerFacing()
 end
 
-local function getPlayerFacingAngle(questID)
-    if not player.angle then return end
-	if not questID or not questPointsTable[questID] or not questPointsTable[questID].x then return end
-
-    local point = questPointsTable[questID]
-    local angle = player.angle - HBD:GetWorldVector(point.instance, player.x, player.y, point.x, point.y)
+-- Signed angle (-PI..PI) between the player's facing and a world point.
+-- nil when the player position, heading or the vector is not available (HBD returns nil then).
+local function relativeAngle(instance, x, y)
+    if not (player.angle and player.x and player.y and x and y) then return end
+    local vector = HBD:GetWorldVector(instance, player.x, player.y, x, y)
+    if not vector then return end
+    local angle = player.angle - vector
     if angle < 0 then angle = angle + (2 * PI) end
     if angle > PI then angle = angle - (2 * PI) end
-	return angle
+    return angle
+end
+
+local function getPlayerFacingAngle(questID)
+	if not questID or not questPointsTable[questID] then return end
+    local point = questPointsTable[questID]
+    return relativeAngle(point.instance, point.x, point.y)
 end
 
 local function updateCompassHUD()
@@ -3935,6 +3942,9 @@ local function setQuestsIcons()
                 else
                     quest.frame:Hide()
                 end
+            elseif quest.frame then
+                -- no position or heading right now: hide instead of leaving the pointer frozen
+                quest.frame:Hide()
             end
         else
             if quest.frame then
@@ -4103,9 +4113,7 @@ local function setGroupIcons()
             local flipped = (differentZone and Options.GroupZoneOffset > 0 and Options.GroupZoneRotate == 1) or (not differentZone and Options.GroupOffset > 0 and Options.GroupRotate == 1)
             if v.active and player.angle then
                 if v.x and v.y and v.instance then
-                    local angle = player.angle - HBD:GetWorldVector(v.instance, player.x, player.y, v.x, v.y)
-                    if angle < 0 then angle = angle + (2 * PI) end
-                    if angle > PI then angle = angle - (2 * PI) end
+                    local angle = relativeAngle(v.instance, v.x, v.y)
                     if angle then
                         local visible = math.rad(Options.Degrees)/2
                         if angle < visible and angle > -visible then
@@ -4263,9 +4271,7 @@ local function setGatherMateNodes()
             local shown = false
             if node.visible and player.angle then
                 if node.x and node.y and node.instance then
-                    local angle = player.angle - HBD:GetWorldVector(node.instance, player.x, player.y, node.x, node.y)
-                    if angle < 0 then angle = angle + (2 * PI) end
-                    if angle > PI then angle = angle - (2 * PI) end
+                    local angle = relativeAngle(node.instance, node.x, node.y)
                     if angle then
                         local visible = math.rad(Options.Degrees)/2
                         if angle < visible and angle > -visible then
@@ -4636,12 +4642,10 @@ local function setPOITrackNodes()
                 if poi.x and poi.y and poi.instance then
                     poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
                     if Options.POITrackRadius == 0 or poi.wholeZone or (poi.distance and poi.distance <= Options.POITrackRadius) then
-                        local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
-                        -- normalize to -PI..PI before picking the icon closest to the heading
-                        if angle < 0 then angle = angle + (2 * PI) end
-                        if angle > PI then angle = angle - (2 * PI) end
+                        -- normalized to -PI..PI before picking the icon closest to the heading
+                        local angle = relativeAngle(poi.instance, poi.x, poi.y)
                         poi.angle = angle
-                        if abs(angle) < minAngle then
+                        if angle and abs(angle) < minAngle then
                             minAngle = abs(angle)
                             poiTrackHeading = poi
                         end
