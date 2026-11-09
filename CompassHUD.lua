@@ -4437,6 +4437,18 @@ local function poiTrackTypeByAtlas(poi, otherType)
     return poi.atlasName and poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode" and poiTypeEnum.PORTAL or otherType
 end
 
+-- Adds a minimap icon node for a game API record 'data' at zone position xZone, yZone of the
+-- current map: world coordinates, its frame and scale. The record itself becomes the node.
+local function addPOITrackNode(id, data, xZone, yZone, scale)
+    poiTrackPointTable[player.uiMapID][id] = data
+    data.instance = player.uiMapID
+    data.x, data.y = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+    data.frame = createPOITrackNode(data)
+    data.scale = scale
+    updatePOITrackNode(data)
+    return data
+end
+
 -- Returns the minimap icon node for an area POI, or nil when the game has no details for it (yet).
 local function setPOITrackNode(poiID, poiType)
 
@@ -4449,15 +4461,7 @@ local function setPOITrackNode(poiID, poiType)
             local options = Options.Pointers[pointerType]
             poi.atlasName = options.atlasID
         end
-        poiTrackPointTable[player.uiMapID][id] = poi
-        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
-        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
-        poiTrackPointTable[player.uiMapID][id].x = xWorld
-        poiTrackPointTable[player.uiMapID][id].y = yWorld
-        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
-        poiTrackPointTable[player.uiMapID][id].scale = 1.3
-        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
+        addPOITrackNode(id, poi, poi.position.x, poi.position.y, 1.3)
     end
     return poiTrackPointTable[player.uiMapID][id]
 end
@@ -4547,15 +4551,7 @@ local function setPOITrackNodes()
                 for _, poi in ipairs(portalPOIs) do
                     local id = poiTypeEnum.LINK .."_" .. poi.areaPoiID
                     if not poiTrackPointTable[player.uiMapID][id] then
-                        poiTrackPointTable[player.uiMapID][id] = poi
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
-                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID][id].x = xWorld
-                        poiTrackPointTable[player.uiMapID][id].y = yWorld
-                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
-                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        addPOITrackNode(id, poi, poi.position.x, poi.position.y, 1.3)
                     end
                     local node = poiTrackPointTable[player.uiMapID][id]
                     node.trackType = poiTrackTypeByAtlas(node, poiTypeEnum.LINK)
@@ -4568,15 +4564,7 @@ local function setPOITrackNodes()
                 for _, entrance in ipairs(dungeonEntrances) do
                     local id = poiTypeEnum.INSTANCE .. "_" .. entrance.areaPoiID
                     if not poiTrackPointTable[player.uiMapID][id] then
-                        poiTrackPointTable[player.uiMapID][id] = entrance
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
-                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID][id].x = xWorld
-                        poiTrackPointTable[player.uiMapID][id].y = yWorld
-                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
-                        poiTrackPointTable[player.uiMapID][id].scale = 1.3
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        addPOITrackNode(id, entrance, entrance.position.x, entrance.position.y, 1.3)
                     end
                     poiTrackPointTable[player.uiMapID][id].visible = true
                     poiTrackPointTable[player.uiMapID][id].trackType = poiTypeEnum.INSTANCE
@@ -4589,15 +4577,7 @@ local function setPOITrackNodes()
                 for _, taxi in ipairs(mapTaxis) do
                     local id = poiTypeEnum.TAXI .. "_" .. taxi.nodeID
                     if not poiTrackPointTable[player.uiMapID][id] then
-                        poiTrackPointTable[player.uiMapID][id] = taxi
-                        local xZone, yZone = poiTrackPointTable[player.uiMapID][id].position.x, poiTrackPointTable[player.uiMapID][id].position.y
-                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                        poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
-                        poiTrackPointTable[player.uiMapID][id].x = xWorld
-                        poiTrackPointTable[player.uiMapID][id].y = yWorld
-                        poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
-                        poiTrackPointTable[player.uiMapID][id].scale = 1.2
-                        updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        addPOITrackNode(id, taxi, taxi.position.x, taxi.position.y, 1.2)
                     end
                     poiTrackPointTable[player.uiMapID][id].trackType = poiTypeEnum.TAXI
                     if not isTaxiNodeUsable(taxi) then
@@ -4631,13 +4611,7 @@ local function setPOITrackNodes()
                         -- vignettes can move (e.g. wandering rares): refresh the position on every scan
                         local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(vignettePosition.x, vignettePosition.y, player.uiMapID)
                         if not node then
-                            node = vignetteInfo
-                            poiTrackPointTable[player.uiMapID][id] = node
-                            node.instance = player.uiMapID
-                            node.x, node.y = xWorld, yWorld
-                            node.frame = createPOITrackNode(node)
-                            node.scale = 1.3
-                            updatePOITrackNode(node)
+                            addPOITrackNode(id, vignetteInfo, vignettePosition.x, vignettePosition.y, 1.3)
                         else
                             node.x, node.y = xWorld, yWorld
                             node.frame.x, node.frame.y = xWorld, yWorld
@@ -4669,18 +4643,10 @@ local function setPOITrackNodes()
                     if isTask(wq.questID) and (wq.mapID == player.uiMapID) then
                         local id = "WorldQuest_" .. wq.questID
                         if not poiTrackPointTable[player.uiMapID][id] then
-                            poiTrackPointTable[player.uiMapID][id] = wq
-                            local xZone, yZone = poiTrackPointTable[player.uiMapID][id].x, poiTrackPointTable[player.uiMapID][id].y
-                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                            poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
-                            poiTrackPointTable[player.uiMapID][id].name = GetTitleForQuestID(wq.questID)
-                            poiTrackPointTable[player.uiMapID][id].x = xWorld
-                            poiTrackPointTable[player.uiMapID][id].y = yWorld
-                            poiTrackPointTable[player.uiMapID][id].atlasName = "completiondialog-warwithincampaign-worldquests-icon"
-                            poiTrackPointTable[player.uiMapID][id].circle = true
-                            poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
-                            poiTrackPointTable[player.uiMapID][id].scale = 1
-                            updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                            wq.name = GetTitleForQuestID(wq.questID)
+                            wq.atlasName = "completiondialog-warwithincampaign-worldquests-icon"
+                            wq.circle = true
+                            addPOITrackNode(id, wq, wq.x, wq.y, 1)
                         end
                         if not poiTrackPointTable[player.uiMapID][id].texture then
                             poiTrackPointTable[player.uiMapID][id].texture = getWQicon(wq.questID)
