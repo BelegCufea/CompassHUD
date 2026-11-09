@@ -4635,13 +4635,14 @@ local function setPOITrackNodes()
                     poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
                     if Options.POITrackRadius == 0 or poi.wholeZone or (poi.distance and poi.distance <= Options.POITrackRadius) then
                         local angle = player.angle - HBD:GetWorldVector(poi.instance, player.x, player.y, poi.x, poi.y)
+                        -- normalize to -PI..PI before picking the icon closest to the heading
+                        if angle < 0 then angle = angle + (2 * PI) end
+                        if angle > PI then angle = angle - (2 * PI) end
                         poi.angle = angle
                         if abs(angle) < minAngle then
                             minAngle = abs(angle)
                             poiTrackPointTable[player.uiMapID].heading = poi
                         end
-                        if angle < 0 then angle = angle + (2 * PI) end
-                        if angle > PI then angle = angle - (2 * PI) end
                         if angle then
                             local visible = math.rad(Options.Degrees)/2
                             if angle < visible and angle > -visible then
