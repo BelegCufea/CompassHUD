@@ -1882,10 +1882,11 @@ local SupertrackerOptions = {
                 },
                 HideTomTomAtTarget = {
                     type = "toggle",
-                    name = "Hide TomTom pointer at the tracked target",
+                    name = "Hide duplicate TomTom pointer",
                     desc = "If a TomTom waypoint is at the same place (within 10 yards) as the quest, map pin or POI the game is tracking, show only the game's pointer. The TomTom pointer comes back as soon as the game tracks something else.",
                     width = 1.5,
                     order = 67,
+                    hidden = function() return not TomTom end,
                 },
             },
         },
