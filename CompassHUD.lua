@@ -5032,7 +5032,7 @@ local TOMTOM_TITLE_CACHE_SECONDS = 1
 local tomTomTitleCache = {}
 local function getTomTomWaypointTitle(uiMapID, x, y)
     if not (TomTom and type(TomTom.waypoints) == "table" and uiMapID and x and y) then return end
-    -- OnEvent runs on frequent events (QUEST_LOG_UPDATE, ...): reuse the last result for the same pin for a moment
+    -- target lookups can still run several times a second: reuse the last result for the same pin for a moment
     local cache, now = tomTomTitleCache, GetTime()
     if cache.uiMapID == uiMapID and cache.x == x and cache.y == y and cache.expires and now < cache.expires then
         return cache.title
@@ -5093,7 +5093,7 @@ local function getQuestOfferInfo(questID, uiMapID)
     end
 end
 
-local function OnEvent(event,...)
+local function resolveSuperTrackedTarget(event,...)
     if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
     end
@@ -5228,6 +5228,30 @@ local function OnEvent(event,...)
         end
     end
     setQuestsIcons()
+end
+
+-- Events that can fire many times in a row (QUEST_LOG_UPDATE comes in bursts). They are merged
+-- into one target lookup shortly after the burst. Everything else, especially SUPER_TRACKING_CHANGED
+-- (the map pin cursor fallback needs the moment of the click), is handled right away.
+local BURST_EVENTS = {
+    QUEST_LOG_UPDATE = true,
+    QUEST_POI_UPDATE = true,
+    SUPER_TRACKING_PATH_UPDATED = true,
+}
+local BURST_DELAY = 0.2
+local burstPending = false
+
+local function OnEvent(event, ...)
+    if not BURST_EVENTS[event] then
+        resolveSuperTrackedTarget(event, ...)
+        return
+    end
+    if burstPending then return end
+    burstPending = true
+    C_Timer.After(BURST_DELAY, function()
+        burstPending = false
+        resolveSuperTrackedTarget(event)
+    end)
 end
 
 -- Re-applies all pointer fonts once. A pointer can be created before its font is usable: TomTom
