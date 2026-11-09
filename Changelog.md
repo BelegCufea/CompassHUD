@@ -9,6 +9,7 @@
 ## Fix
 
 - **Flightpoints** minimap tracking no longer shows the other faction's flight points, the same as the world map. **Only closest flightpoint** now picks the closest one you can actually use.
+- Possible Lua error when another addon removes a TomTom waypoint before any TomTom arrow was shown.
 - Supertracked available quests (**!** on the world map) now show the quest name, and the pointer uses the quest's real position instead of the mouse cursor position.
 
 # v1.6.5 (6.11.2026)

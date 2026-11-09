@@ -4828,7 +4828,7 @@ local function tomtomClearWaypoint(self, uid)
     if not uid then return end
     if type(uid) ~= "table" then return end
     local tomTomRemoved = TomTom:GetKey(uid)
-    if tomTomActive == tomTomRemoved then
+    if tomTomRemoved and tomTomActive == tomTomRemoved and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
     end
 end
