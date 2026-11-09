@@ -4280,11 +4280,16 @@ end
 -- Gathering nodes on the HUD. gatherMatePointTable holds only the nodes found by the latest scan
 -- (within the scanning radius of the player, keyed per node). Nodes that leave that set give their
 -- frame back to a pool, so neither the table nor the per-tick draw loop grows with the session.
-local gatherNodeFramePool = {}
-local gatherNodesSeen = {}
+-- (state kept in one table: the main chunk is close to Lua's limit of 200 local variables)
+local gatherNodes = {
+    framePool = {},
+    seen = {},          -- nodes found by the current scan
+    liteTypes = { "mining", "herbalism", "containers", "fishing" }, -- GatherLite node types
+    liteObjects = {},   -- object ID -> GatherLite object (GetNodeObject searches its whole list)
+}
 
 local function acquireGatherNodeFrame()
-    local frame = table.remove(gatherNodeFramePool)
+    local frame = table.remove(gatherNodes.framePool)
     if frame then
         return frame
     end
@@ -4321,13 +4326,13 @@ local function releaseGatherNode(key)
         -- per-target text state must not carry over to the next node using this frame
         frame.minDistance = nil
         frame.ttaLastDistance = nil
-        table.insert(gatherNodeFramePool, frame)
+        table.insert(gatherNodes.framePool, frame)
     end
 end
 
 -- Adds a node found by a scan (world coordinates, icon texture, title), or keeps the existing one.
 local function addGatherNode(key, xWorld, yWorld, icon, title)
-    gatherNodesSeen[key] = true
+    gatherNodes.seen[key] = true
     if gatherMatePointTable[key] then
         return
     end
@@ -4353,7 +4358,7 @@ local function scanGatherMate2(zoneX, zoneY)
             for coord, nodeID in gm:FindNearbyNode(player.uiMapID, zoneX, zoneY, dbType, Options.GatherMateRadius) do
                 local key = dbType .. ":" .. coord
                 if gatherMatePointTable[key] then
-                    gatherNodesSeen[key] = true
+                    gatherNodes.seen[key] = true
                 else
                     local xZone, yZone = gm:DecodeLoc(coord)
                     local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
@@ -4370,14 +4375,12 @@ end
 -- GatherLite node source (WoW: Forever), used when GatherMate2 is not loaded. GatherLite has no
 -- documented API: these are its own functions, each one checked, so a change in GatherLite means
 -- no nodes rather than Lua errors. Its node records are stable tables, so they serve as keys.
-local GATHERLITE_NODE_TYPES = { "mining", "herbalism", "containers", "fishing" }
-local gatherLiteObjects = {} -- object ID -> GatherLite object (GetNodeObject searches its whole list)
 
 local function getGatherLiteObject(gl, objectID)
-    local object = gatherLiteObjects[objectID]
+    local object = gatherNodes.liteObjects[objectID]
     if object == nil then
         object = gl:GetNodeObject(objectID) or false
-        gatherLiteObjects[objectID] = object
+        gatherNodes.liteObjects[objectID] = object
     end
     return object or nil
 end
@@ -4393,12 +4396,12 @@ local function scanGatherLite()
     end
     local radius = Options.GatherMateRadius
     local usePredefined = not (gl.db and gl.db.global and gl.db.global.usePredefined == false)
-    for _, nodeType in ipairs(GATHERLITE_NODE_TYPES) do
+    for _, nodeType in ipairs(gatherNodes.liteTypes) do
         -- follow GatherLite's own minimap tracking toggles, like GatherMate2's display filter
         if not gl.GetNodeTracking or gl:GetNodeTracking("minimap", nodeType) then
             for _, node in ipairs(gl:GetNearbyZoneNodes(nodeType, mapID, player.instance, zoneX, zoneY, radius) or {}) do
                 if gatherMatePointTable[node] then
-                    gatherNodesSeen[node] = true
+                    gatherNodes.seen[node] = true
                 elseif not (node.predefined and not usePredefined) and not (gl.IsIgnored and gl:IsIgnored(node.object)) then
                     if not (node.worldX and node.worldY and node.instance) then
                         gl:EnsureNodeWorld(node)
@@ -4436,7 +4439,7 @@ local function setGatherMateNodes()
         gatherMateThrottle = 0
         local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
         if x and y then
-            wipe(gatherNodesSeen)
+            wipe(gatherNodes.seen)
             if GatherMate2 then
                 scanGatherMate2(x, y)
             else
@@ -4444,7 +4447,7 @@ local function setGatherMateNodes()
             end
             -- nodes no longer in range (or on another map) give their frame back to the pool
             for key in pairs(gatherMatePointTable) do
-                if not gatherNodesSeen[key] then
+                if not gatherNodes.seen[key] then
                     releaseGatherNode(key)
                 end
             end
@@ -5185,7 +5188,6 @@ end
 -- Title of the TomTom waypoint at the same place as a user map pin.
 -- Some addons copy TomTom waypoints into a Blizzard user waypoint, which has no name.
 -- This works for any addon that sets the TomTom waypoint (Questie, BtWQuests, ...).
-local TOMTOM_TITLE_CACHE_SECONDS = 1
 local tomTomTitleCache = {}
 local function getTomTomWaypointTitle(uiMapID, x, y)
     if not (TomTom and type(TomTom.waypoints) == "table" and uiMapID and x and y) then return end
@@ -5206,7 +5208,7 @@ local function getTomTomWaypointTitle(uiMapID, x, y)
             end
         end
     end
-    cache.uiMapID, cache.x, cache.y, cache.title, cache.expires = uiMapID, x, y, bestTitle, now + TOMTOM_TITLE_CACHE_SECONDS
+    cache.uiMapID, cache.x, cache.y, cache.title, cache.expires = uiMapID, x, y, bestTitle, now + 1 -- reuse for one second
     return bestTitle
 end
 
@@ -5390,23 +5392,25 @@ end
 -- Events that can fire many times in a row (QUEST_LOG_UPDATE comes in bursts). They are merged
 -- into one target lookup shortly after the burst. Everything else, especially SUPER_TRACKING_CHANGED
 -- (the map pin cursor fallback needs the moment of the click), is handled right away.
-local BURST_EVENTS = {
+local burst = {
+    delay = 0.2,
+    pending = false,
+}
+burst.events = {
     QUEST_LOG_UPDATE = true,
     QUEST_POI_UPDATE = true,
     SUPER_TRACKING_PATH_UPDATED = true,
 }
-local BURST_DELAY = 0.2
-local burstPending = false
 
 local function OnEvent(event, ...)
-    if not BURST_EVENTS[event] then
+    if not burst.events[event] then
         resolveSuperTrackedTarget(event, ...)
         return
     end
-    if burstPending then return end
-    burstPending = true
-    C_Timer.After(BURST_DELAY, function()
-        burstPending = false
+    if burst.pending then return end
+    burst.pending = true
+    C_Timer.After(burst.delay, function()
+        burst.pending = false
         resolveSuperTrackedTarget(event)
     end)
 end
