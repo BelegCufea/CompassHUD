@@ -4855,7 +4855,7 @@ local function tomtomSetCrazyArrow(self, uid, dist, title)
     local questID = tomTom
     local questType = tomTom
     local completed = false
-    if string.find(title, "^Turn in: ") then
+    if title and title:find("^Turn in: ") then
         completed = true
     end
     updateQuest(questID, uid[2], uid[3], uid[1], questType, title, completed)
