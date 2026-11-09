@@ -4393,7 +4393,8 @@ local function scanGatherLite()
                         local distance = HBD:GetWorldDistance(player.instance, player.x, player.y, node.worldX, node.worldY)
                         local object = distance and distance <= radius and getGatherLiteObject(gl, node.object)
                         if object then
-                            local title = gl.translate and gl:translate(object.name) or object.name
+                            -- GatherLite's locale keys for node names are "node.<name>" (as in its own tooltips)
+                            local title = gl.translate and gl:translate("node." .. object.name) or object.name
                             addGatherNode(node, node.worldX, node.worldY, object.icon, title)
                         end
                     end
