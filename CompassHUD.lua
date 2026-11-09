@@ -4853,6 +4853,13 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
 
     if not questPointsTable[questID].frame then
         questPointsTable[questID].frame = createQuestIcon(questID, questType)
+    else
+        -- The frame is reused for this quest ID: re-check its pointer type, which can change once
+        -- classification or frequency data has loaded (it may have started as "Unknown pointer")
+        local pointerType = getPointerType(questID, questType)
+        if Options.Pointers[pointerType] then
+            questPointsTable[questID].frame.pointerType = pointerType
+        end
     end
     -- Disabled pointer categories get no frame. The target data above is kept, and the frame
     -- is created by the next update after the category is enabled again.
