@@ -6000,6 +6000,7 @@ end
 
 function Addon:RefreshConfig()
     Options = self.db.profile
+    self:UpdateDataBroker()
     self:UpdateHUDSettings()
 end
 
