@@ -31,5 +31,6 @@ Defaults.lua
 Util.lua
 Options.lua
 Compass.lua
+Markers\Common.lua
 CompassHUD.lua
 databroker.lua
