@@ -3628,12 +3628,14 @@ local function questPointerSetTexts(frame, dt)
         -- NEW: Detect if speed is a secret value using 12.0 API
         if not speed or issecretvalue(speed) then
             -- Fallback: calculate speed from distance change (original delta method)
-            frame.oldDistance = frame.distance
+            -- each delayed check keeps its own start distance (a shared frame field could be
+            -- overwritten by the next check before this one runs)
+            local startDistance = frame.distance
             C_Timer.After(1, function()
                 local currentDistance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
                 local deltaSpeed = 0
                 if currentDistance then
-                    deltaSpeed = math.abs(currentDistance - frame.oldDistance)
+                    deltaSpeed = math.abs(currentDistance - startDistance)
                 end
                 setTime(frame, currentDistance, deltaSpeed)
             end)
