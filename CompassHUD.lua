@@ -3615,7 +3615,8 @@ local function questPointerSetTexts(frame, dt)
     if frame.timeHidden then return end
     if frame.elapsed >= 1 then
         frame.elapsed = 0
-        local speed = GetUnitSpeed("player") or GetUnitSpeed("vehicle")
+        -- GetUnitSpeed returns 0 (truthy) when standing still, so "player or vehicle" never reached the vehicle
+        local speed = GetUnitSpeed(UnitInVehicle("player") and "vehicle" or "player")
         
         -- NEW: Detect if speed is a secret value using 12.0 API
         if not speed or issecretvalue(speed) then
