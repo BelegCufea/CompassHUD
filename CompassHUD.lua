@@ -629,7 +629,12 @@ Addon.Defaults = {
         HeadingFontPositionV   = 0,
         HeadingFontPositionH   = 0,
         HeadingStrataLevel     = 100,
-        UseCustomCompass                = true,
+        PointerFontCustom      = false,
+        PointerFont            = "Friz Quadrata TT",
+        PointerFontSize        = 12,
+        PointerFontFlags       = "",
+        PointerFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        UseCustomCompass             = true,
         CompassTextureTexture           = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\CompassHUD]],
         CompassCustomMainVisible        = true,
         CompassCustomSecondaryVisible   = true,
@@ -1097,6 +1102,70 @@ Addon.Options = {
                             softMax = 900,
                             step = 1,
                             bigStep = 10,
+                        },
+                        HeaderPointerFont = { type = "header", order = 200, name = "Pointer font", },
+                        PointerFontDesc = {
+                            type = "description",
+                            order = 201,
+                            name = "|cnACCOUNT_WIDE_FONT_COLOR:Default font for all pointer texts (supertracker, minimap tracking, party/raid names, GatherMate2 nodes). Texts with their own custom font enabled keep using it.|r",
+                            fontSize = "medium",
+                            width = "full",
+                        },
+                        PointerFontCustom = {
+                            type = "toggle",
+                            order = 210,
+                            name = "Use custom pointer font",
+                            desc = "If disabled, the game's default font (GameFontNormal) is used.",
+                            width = "full",
+                        },
+                        PointerFont = {
+                            type = "select",
+                            order = 220,
+                            name = "Font",
+                            width = 1,
+                            dialogControl = "LSM30_Font",
+                            values = AceGUIWidgetLSMlists['font'],
+                            disabled = function() return not Options.PointerFontCustom end,
+                        },
+                        PointerFontSize = {
+                            type = "range",
+                            order = 230,
+                            name = "Size",
+                            width = 3/4,
+                            min = 2,
+                            max = 36,
+                            step = 0.5,
+                            disabled = function() return not Options.PointerFontCustom end,
+                        },
+                        PointerFontFlags = {
+                            type = "select",
+                            order = 240,
+                            name = "Outline",
+                            width = 3/4,
+                            values = {
+                                [""] = "None",
+                                ["OUTLINE"] = "Normal",
+                                ["THICKOUTLINE"] = "Thick",
+                            },
+                            disabled = function() return not Options.PointerFontCustom end,
+                        },
+                        PointerFontColor = {
+                            type = "color",
+                            order = 250,
+                            name = "Color",
+                            width = 1/2,
+                            hasAlpha = true,
+                            get = function(info)
+                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                            end,
+                            set = function (info, r, g, b, a)
+                                Options[info[#info]].r = r
+                                Options[info[#info]].g = g
+                                Options[info[#info]].b = b
+                                Options[info[#info]].a = a
+                                Addon:UpdateHUDSettings()
+                            end,
+                            disabled = function() return not Options.PointerFontCustom end,
                         },
                         BlankVisibility = { type = "description", order = 499, fontSize = "small",name = "",width = "full", },
                         Visibility = {
@@ -3611,6 +3680,27 @@ local function retextureSuperTrackedFrame(questPointer)
     end
 end
 
+-- Applies font to a pointer text: its own custom font if enabled, else the global pointer font if enabled, else GameFontNormal.
+-- Pass color = false to leave the text color untouched (caller sets it).
+local function setPointerFont(fontString, scale, custom, font, size, flags, color)
+    if not custom then
+        if Options.PointerFontCustom then
+            font, size, flags, color = Options.PointerFont, Options.PointerFontSize, Options.PointerFontFlags, (color ~= false) and Options.PointerFontColor
+        else
+            local gameFont, gameSize, gameFlags = GameFontNormal:GetFont()
+            fontString:SetFont(gameFont, gameSize * scale, gameFlags)
+            if color ~= false then
+                fontString:SetTextColor(GameFontNormal:GetTextColor())
+            end
+            return
+        end
+    end
+    fontString:SetFont(LSM:Fetch("font", font), size * scale, flags)
+    if color then
+        fontString:SetTextColor(color.r, color.g, color.b, color.a)
+    end
+end
+
 local function updateQuestIcon(questPointer)
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
@@ -3620,34 +3710,9 @@ local function updateQuestIcon(questPointer)
     local size = textureHeight * (completed and options.textureAltScale or options.textureScale) * (questPointer.scaleMultiplier or 1.5)
     questPointer:SetSize(size, size)
 
-    local gameFontNormal = { fontColor = {}}
-    gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
-    gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
-
-    if options.distanceCustomFont then
-        local font = LSM:Fetch("font", options.distanceFont)
-        questPointer.DistanceText:SetFont(font, options.distanceFontSize * scale, options.distanceFontFlags)
-        questPointer.DistanceText:SetTextColor(options.distanceFontColor.r, options.distanceFontColor.g, options.distanceFontColor.b, options.distanceFontColor.a)
-    else
-        questPointer.DistanceText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        questPointer.DistanceText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
-    if options.ttaCustomFont then
-        local font = LSM:Fetch("font", options.ttaFont)
-        questPointer.TimeText:SetFont(font, options.ttaFontSize * scale, options.ttaFontFlags)
-        questPointer.TimeText:SetTextColor(options.ttaFontColor.r, options.ttaFontColor.g, options.ttaFontColor.b, options.ttaFontColor.a)
-    else
-        questPointer.TimeText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        questPointer.TimeText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
-    if options.questCustomFont then
-        local font = LSM:Fetch("font", options.questFont)
-        questPointer.QuestText:SetFont(font, options.questFontSize * scale, options.questFontFlags)
-        questPointer.QuestText:SetTextColor(options.questFontColor.r, options.questFontColor.g, options.questFontColor.b, options.questFontColor.a)
-    else
-        questPointer.QuestText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        questPointer.QuestText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
+    setPointerFont(questPointer.DistanceText, scale, options.distanceCustomFont, options.distanceFont, options.distanceFontSize, options.distanceFontFlags, options.distanceFontColor)
+    setPointerFont(questPointer.TimeText, scale, options.ttaCustomFont, options.ttaFont, options.ttaFontSize, options.ttaFontFlags, options.ttaFontColor)
+    setPointerFont(questPointer.QuestText, scale, options.questCustomFont, options.questFont, options.questFontSize, options.questFontFlags, options.questFontColor)
 
     local point = "TOP"
     local relativePoint = "BOTTOM"
@@ -3864,17 +3929,10 @@ local function updateGroupMemberTexts(unit)
     local flipped = (differentZone and Options.GroupZoneOffset > 0) or (not differentZone and Options.GroupOffset > 0)
     v.frame.Name:ClearAllPoints()
     v.frame.Name:SetPoint(flipped and "BOTTOM" or "TOP", v.frame, flipped and "TOP" or "BOTTOM", 0, v.type == "party" and Options.GroupPartyNameOffset or Options.GroupRaidNameOffset)
-    local gameFontNormal = { fontColor = {}}
-    gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
-    gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
-    v.frame.Name.text:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-    if v.type == "party" and Options.GroupPartyNameCustomFont then
-        local font = LSM:Fetch("font", Options.GroupPartyNameFont)
-        v.frame.Name.text:SetFont(font, Options.GroupPartyNameFontSize * scale, Options.GroupPartyNameFontFlags)
-    end
-    if v.type == "raid" and Options.GroupRaidNameCustomFont then
-        local font = LSM:Fetch("font", Options.GroupRaidNameFont)
-        v.frame.Name.text:SetFont(font, Options.GroupRaidNameFontSize * scale, Options.GroupRaidNameFontFlags)
+    if v.type == "raid" then
+        setPointerFont(v.frame.Name.text, scale, Options.GroupRaidNameCustomFont, Options.GroupRaidNameFont, Options.GroupRaidNameFontSize, Options.GroupRaidNameFontFlags, false)
+    else
+        setPointerFont(v.frame.Name.text, scale, Options.GroupPartyNameCustomFont, Options.GroupPartyNameFont, Options.GroupPartyNameFontSize, Options.GroupPartyNameFontFlags, false)
     end
     local nameTextColor = (v.type == "raid") and Options.GroupRaidNameFontColor or Options.GroupPartyNameFontColor
     if ((v.type == "party" and Options.GroupPartyNameClassColor) or (v.type == "raid" and Options.GroupRaidNameClassColor)) and v.classColor then
@@ -4033,34 +4091,9 @@ end
 local function updateGatherMateNode(node)
     local scale = Options.Scale * Options.VerticalScale * Options.GatherMateScale
     node.frame:SetSize(textureHeight * Options.GatherMateScale, textureHeight * Options.GatherMateScale)
-    local gameFontNormal = { fontColor = {}}
-    gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
-    gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
-
-    if Options.GatherMateDistanceCustomFont then
-        local font = LSM:Fetch("font", Options.GatherMateDistanceFont)
-        node.frame.DistanceText:SetFont(font, Options.GatherMateDistanceFontSize * scale, Options.GatherMateDistanceFontFlags)
-        node.frame.DistanceText:SetTextColor(Options.GatherMateDistanceFontColor.r, Options.GatherMateDistanceFontColor.g, Options.GatherMateDistanceFontColor.b, Options.GatherMateDistanceFontColor.a)
-    else
-        node.frame.DistanceText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        node.frame.DistanceText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
-    if Options.GatherMateTtaCustomFont then
-        local font = LSM:Fetch("font", Options.GatherMateTtaFont)
-        node.frame.TimeText:SetFont(font, Options.GatherMateTtaFontSize * scale, Options.GatherMateTtaFontFlags)
-        node.frame.TimeText:SetTextColor(Options.GatherMateTtaFontColor.r, Options.GatherMateTtaFontColor.g, Options.GatherMateTtaFontColor.b, Options.GatherMateTtaFontColor.a)
-    else
-        node.frame.TimeText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        node.frame.TimeText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
-    if Options.GatherMateTitleCustomFont then
-        local font = LSM:Fetch("font", Options.GatherMateTitleFont)
-        node.frame.Title:SetFont(font, Options.GatherMateTitleFontSize * scale, Options.GatherMateTitleFontFlags)
-        node.frame.Title:SetTextColor(Options.GatherMateTitleFontColor.r, Options.GatherMateTitleFontColor.g, Options.GatherMateTitleFontColor.b, Options.GatherMateTitleFontColor.a)
-    else
-        node.frame.Title:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        node.frame.Title:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
+    setPointerFont(node.frame.DistanceText, scale, Options.GatherMateDistanceCustomFont, Options.GatherMateDistanceFont, Options.GatherMateDistanceFontSize, Options.GatherMateDistanceFontFlags, Options.GatherMateDistanceFontColor)
+    setPointerFont(node.frame.TimeText, scale, Options.GatherMateTtaCustomFont, Options.GatherMateTtaFont, Options.GatherMateTtaFontSize, Options.GatherMateTtaFontFlags, Options.GatherMateTtaFontColor)
+    setPointerFont(node.frame.Title, scale, Options.GatherMateTitleCustomFont, Options.GatherMateTitleFont, Options.GatherMateTitleFontSize, Options.GatherMateTitleFontFlags, Options.GatherMateTitleFontColor)
 
     local point = "TOP"
     local relativePoint = "BOTTOM"
@@ -4195,34 +4228,9 @@ end
 local function updatePOITrackNode(poi)
     local scale = Options.Scale * Options.VerticalScale * Options.POITrackScale
     poi.frame:SetSize(textureHeight * Options.POITrackScale * (poi.scale or 1), textureHeight * Options.POITrackScale * (poi.scale or 1))
-    local gameFontNormal = { fontColor = {}}
-    gameFontNormal.font, gameFontNormal.fontSize, gameFontNormal.fontFlags = GameFontNormal:GetFont()
-    gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a = GameFontNormal:GetTextColor()
-
-    if Options.POITrackDistanceCustomFont then
-        local font = LSM:Fetch("font", Options.POITrackDistanceFont)
-        poi.frame.DistanceText:SetFont(font, Options.POITrackDistanceFontSize * scale, Options.POITrackDistanceFontFlags)
-        poi.frame.DistanceText:SetTextColor(Options.POITrackDistanceFontColor.r, Options.POITrackDistanceFontColor.g, Options.POITrackDistanceFontColor.b, Options.POITrackDistanceFontColor.a)
-    else
-        poi.frame.DistanceText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        poi.frame.DistanceText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
-    if Options.POITrackTtaCustomFont then
-        local font = LSM:Fetch("font", Options.POITrackTtaFont)
-        poi.frame.TimeText:SetFont(font, Options.POITrackTtaFontSize * scale, Options.POITrackTtaFontFlags)
-        poi.frame.TimeText:SetTextColor(Options.POITrackTtaFontColor.r, Options.POITrackTtaFontColor.g, Options.POITrackTtaFontColor.b, Options.POITrackTtaFontColor.a)
-    else
-        poi.frame.TimeText:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        poi.frame.TimeText:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
-    if Options.POITrackTitleCustomFont then
-        local font = LSM:Fetch("font", Options.POITrackTitleFont)
-        poi.frame.Title:SetFont(font, Options.POITrackTitleFontSize * scale, Options.POITrackTitleFontFlags)
-        poi.frame.Title:SetTextColor(Options.POITrackTitleFontColor.r, Options.POITrackTitleFontColor.g, Options.POITrackTitleFontColor.b, Options.POITrackTitleFontColor.a)
-    else
-        poi.frame.Title:SetFont(gameFontNormal.font, gameFontNormal.fontSize * scale, gameFontNormal.fontFlags)
-        poi.frame.Title:SetTextColor(gameFontNormal.fontColor.r, gameFontNormal.fontColor.g, gameFontNormal.fontColor.b, gameFontNormal.fontColor.a)
-    end
+    setPointerFont(poi.frame.DistanceText, scale, Options.POITrackDistanceCustomFont, Options.POITrackDistanceFont, Options.POITrackDistanceFontSize, Options.POITrackDistanceFontFlags, Options.POITrackDistanceFontColor)
+    setPointerFont(poi.frame.TimeText, scale, Options.POITrackTtaCustomFont, Options.POITrackTtaFont, Options.POITrackTtaFontSize, Options.POITrackTtaFontFlags, Options.POITrackTtaFontColor)
+    setPointerFont(poi.frame.Title, scale, Options.POITrackTitleCustomFont, Options.POITrackTitleFont, Options.POITrackTitleFontSize, Options.POITrackTitleFontFlags, Options.POITrackTitleFontColor)
 
     local point = "TOP"
     local relativePoint = "BOTTOM"
