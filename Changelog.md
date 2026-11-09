@@ -1,4 +1,4 @@
-# v1.6.5a (7.11.2026)
+# v1.7.0 (unreleased)
 
 ## New
 
@@ -13,7 +13,6 @@
 
 - **Flightpoints** minimap tracking no longer shows the other faction's flight points, the same as the world map. **Only closest flightpoint** now picks the closest one you can actually use.
 - Possible Lua error when another addon removes a TomTom waypoint before any TomTom arrow was shown.
-- Supertracked available quests (**!** on the world map) now show the quest name, and the pointer uses the quest's real position instead of the mouse cursor position.
 - Lua errors when a pointer category is disabled, when the player position is briefly unavailable, when the game has no details for a map POI, or when TomTom sets a waypoint without a title.
 - The minimap icon closest to your heading is now picked correctly around north, and the supertrack keybinding no longer acts on an icon that is gone.
 - Copying pointer settings no longer links the colors of the two pointer types.
@@ -37,6 +36,12 @@
 
 - Updated libraries: Ace3 (r1403), HereBeDragons (2.18), LibDBIcon-1.0 (57), LibSharedMedia-3.0 (12000005). The unused HereBeDragons-Pins is no longer loaded.
 - Less work per update: bursts of quest events are handled once, hidden texts skip their calculations, and party/raid markers are sorted only when positions refresh, and only gathering nodes within the scanning radius are kept (previously every node seen during the session, on every map, was processed on every update).
+
+# v1.6.5a (7.11.2026)
+
+## Fix
+
+- Supertracked available quests (**!** on the world map) now show the quest name, and the pointer uses the quest's real position instead of the mouse cursor position.
 
 # v1.6.5 (6.11.2026)
 
