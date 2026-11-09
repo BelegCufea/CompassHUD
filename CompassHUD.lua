@@ -1294,7 +1294,7 @@ Addon.Options = {
                                 PointerFontDesc = {
                                     type = "description",
                                     order = 1,
-                                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Default font for all pointer texts (supertracker, minimap tracking, party/raid names, GatherMate2 nodes). Texts with their own custom font enabled keep using it.|r",
+                                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Default font for all pointer texts (supertracker, minimap tracking, party/raid names, GatherMate2 nodes). Texts with their own custom font enabled keep using it. Party/raid names keep their own color setting.|r",
                                     fontSize = "medium",
                                     width = "full",
                                 },
