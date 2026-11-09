@@ -6001,6 +6001,9 @@ end
 function Addon:RefreshConfig()
     Options = self.db.profile
     self:UpdateDataBroker()
+    -- setGroupIcons stops early when the new profile hides party/raid markers, so hide the
+    -- current ones here; it shows them again on its next pass if they are enabled
+    self:HideGroupIcons()
     self:UpdateHUDSettings()
 end
 
