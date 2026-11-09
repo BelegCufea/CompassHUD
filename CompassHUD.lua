@@ -610,6 +610,7 @@ Addon.Defaults = {
         Visibility      = "[petbattle] hide; show",
         HideFar         = false,
         HideTomTomAtTarget = true,
+        HidePOIAtTarget = true,
         UseCurrentMap   = true,
         UseMeters       = false,
         RoundDistance   = false,
@@ -2054,6 +2055,13 @@ local POITrackOptions = {
                         Addon.db.profile.POITrackFilter[key] = value
                         Addon:UpdateHUDSettings()
                     end,
+                },
+                HidePOIAtTarget = {
+                    type = "toggle",
+                    name = "Hide icon at the tracked target",
+                    desc = "If an icon is at the same place (within 10 yards) as the quest, map pin or POI the game is tracking, show only the supertracker pointer. The icon comes back as soon as the game tracks something else. The keybind can still toggle its tracking.",
+                    width = "full",
+                    order = 915,
                 },
                 POITrackWholeZone = {
                     type = "multiselect",
@@ -3974,6 +3982,9 @@ end
 
 -- Two targets closer than this are the same place (e.g. an addon's TomTom waypoint and its map pin copy)
 local SAME_POINT_YARDS = 10
+-- The game's super-tracked target while its pointer is enabled and on the player's continent, else nil.
+-- Set by setQuestsIcons on every update; other marker types use it to avoid a second marker there.
+local shownGameTarget
 
 local function setQuestsIcons()
     local vignetteGUID = GetSuperTrackedVignette()
@@ -3996,8 +4007,12 @@ local function setQuestsIcons()
     -- A TomTom waypoint at the game's target (addons often set both) is shown once, as the game's
     -- pointer, if that one is enabled. Checked on every update, so the TomTom pointer is back as
     -- soon as the game tracks something else.
+    local target = activeID and questPointsTable[activeID]
+    shownGameTarget = target and target.x and target.y and target.frame and target.instance == playerInstance
+        and Options.Pointers[target.frame.pointerType].enabled and target or nil
+
     local hideTomTom = false
-    local tt, target = questPointsTable[tomTom], activeID and questPointsTable[activeID]
+    local tt = questPointsTable[tomTom]
     if Options.HideTomTomAtTarget and tt and tt.track and tt.x and tt.y and target and target.x and target.y
         and target.instance == tt.instance and target.frame and Options.Pointers[target.frame.pointerType].enabled then
         local distance = HBD:GetWorldDistance(target.instance, tt.x, tt.y, target.x, target.y)
@@ -4774,6 +4789,8 @@ local function setPOITrackNodes()
     -- the fade runs from OpacityMinRadius to the radius; no span (radius == min radius) means no fade instead of 0/0
     local opacitySpan = effectivePOITrackRadius - Options.POITrackOpacityMinRadius
     local opacityFactor = opacitySpan > 0 and (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / opacitySpan or 0
+    -- the game's tracked target, if minimap icons at its place should be hidden (see shownGameTarget)
+    local target = Options.HidePOIAtTarget and shownGameTarget
     for _, poi in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID] or {}) do
         if poi.frame then
             local shown = false
@@ -4793,6 +4810,14 @@ local function setPOITrackNodes()
                             if angle < visible and angle > -visible then
                                 poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
                                 shown = true
+                                -- already shown as the supertracker pointer: no second marker. It stays
+                                -- selectable above, so the keybinding can still toggle its tracking off.
+                                if target then
+                                    local distance = HBD:GetWorldDistance(poi.instance, poi.x, poi.y, target.x, target.y)
+                                    if distance and distance <= SAME_POINT_YARDS then
+                                        shown = false
+                                    end
+                                end
                             end
                         end
                     end

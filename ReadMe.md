@@ -57,7 +57,7 @@ Under the `Supertracker` submenu, you can configure visibility and behavior for 
 *General behavior settings:*</br>
 ![PointerGeneral](https://i.imgur.com/qWe8KPX.png)
 
-The general settings also include `Hide duplicate TomTom pointer` (on by default, shown when TomTom is loaded): when a TomTom waypoint is at the same place as the quest, map pin or POI the game is tracking, only the game's pointer is shown. The TomTom pointer comes back as soon as the game tracks something else.
+The general settings also include `Hide duplicate TomTom pointer` (on by default, shown when TomTom is loaded): when a TomTom waypoint is at the same place as the quest, map pin or POI the game is tracking, only the game's pointer is shown. The TomTom pointer comes back as soon as the game tracks something else. Minimap tracking has the same for its icons: `Hide icon at the tracked target` (on by default).
 
 *Choosing from pointer texture presets:*</br>
 ![PointerPresets](https://i.imgur.com/V1mzqaP.png)
