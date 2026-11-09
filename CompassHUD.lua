@@ -5082,8 +5082,11 @@ local function OnEvent(event,...)
                 ["STtypeID"] = STtypeID
             }
 
+            -- the pointer already shows this pin (from an earlier event)
+            local samePin = questPointsTable[selectedPin] and questPointsTable[selectedPin].moreArgs and questPointsTable[selectedPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[selectedPin].moreArgs.STtypeID == moreArgs.STtypeID
+
             -- try to get corrent uiMapID
-            if questPointsTable[selectedPin] and questPointsTable[selectedPin].moreArgs and questPointsTable[selectedPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[selectedPin].moreArgs.STtypeID == moreArgs.STtypeID then
+            if samePin then
                 uiMapID = questPointsTable[selectedPin].uiMapID
             elseif STtype == 0 and STtypeID and (not uiMapID or not poiCache[STtypeID] or not poiCache[STtypeID][uiMapID]) then
                 -- poiCache is keyed by areaPoiID: only area POIs (STtype 0) can be looked up there,
@@ -5124,10 +5127,13 @@ local function OnEvent(event,...)
 
             if poiInfo then
                 updateQuest(selectedPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName, nil, moreArgs)
-            elseif WorldMapFrame:IsVisible() then
+            elseif WorldMapFrame:IsVisible() and event == "SUPER_TRACKING_CHANGED" and not samePin then
+                -- No position from the game: approximate it with the cursor, but only right when the pin
+                -- was clicked. Later events (QUEST_LOG_UPDATE, ...) keep that position instead of
+                -- moving the target to wherever the cursor is then.
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
-                    updateQuest(selectedPin, x, y, uiMapID, selectedPin, title, completed)
+                    updateQuest(selectedPin, x, y, uiMapID, selectedPin, title, completed, nil, nil, moreArgs)
                 end
             end
         end
