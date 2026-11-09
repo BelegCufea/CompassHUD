@@ -4262,50 +4262,104 @@ local function updateGatherMateNode(node)
     node.frame.timeHidden = not Options.GatherMateShowTTA
 end
 
-local function updateGatherMate()
-    for _, nodes in pairs(gatherMatePointTable) do
-        for _, node in pairs(nodes) do
-            if not Options.GatherMateEnabled then
-                node.visible = false
-                if node.frame then
-                    node.frame:Hide()
+-- Gathering nodes on the HUD. gatherMatePointTable holds only the nodes found by the latest scan
+-- (within the scanning radius of the player, keyed per node). Nodes that leave that set give their
+-- frame back to a pool, so neither the table nor the per-tick draw loop grows with the session.
+local gatherNodeFramePool = {}
+local gatherNodesSeen = {}
+
+local function acquireGatherNodeFrame()
+    local frame = table.remove(gatherNodeFramePool)
+    if frame then
+        return frame
+    end
+    frame = CreateFrame("FRAME", nil, HUD)
+    frame:SetSize(textureHeight, textureHeight)
+    frame:SetPoint("CENTER")
+    frame.texture = frame:CreateTexture(nil, "ARTWORK")
+    frame.texture:SetAllPoints(frame)
+    frame:Hide()
+    frame.DistanceText = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    frame.DistanceText:SetJustifyV("TOP")
+    frame.DistanceText:SetSize(0, 16)
+    frame.DistanceText:SetParent(frame)
+    frame.TimeText = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    frame.TimeText:SetJustifyV("TOP")
+    frame.TimeText:SetSize(0, 16)
+    frame.TimeText:SetParent(frame)
+    frame.Title = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    frame.Title:SetJustifyV("TOP")
+    frame.Title:SetSize(0, 16)
+    frame.Title:SetParent(frame)
+    frame.type = "GatherMate"
+    frame.elapsed = 0
+    frame:SetScript("OnUpdate", questPointerSetTexts)
+    return frame
+end
+
+local function releaseGatherNode(key)
+    local node = gatherMatePointTable[key]
+    gatherMatePointTable[key] = nil
+    if node and node.frame then
+        local frame = node.frame
+        frame:Hide()
+        -- per-target text state must not carry over to the next node using this frame
+        frame.minDistance = nil
+        frame.ttaLastDistance = nil
+        table.insert(gatherNodeFramePool, frame)
+    end
+end
+
+-- Adds a node found by a scan (world coordinates, icon texture, title), or keeps the existing one.
+local function addGatherNode(key, xWorld, yWorld, icon, title)
+    gatherNodesSeen[key] = true
+    if gatherMatePointTable[key] then
+        return
+    end
+    local node = { visible = true, instance = player.uiMapID, x = xWorld, y = yWorld }
+    local frame = acquireGatherNodeFrame()
+    frame.texture:SetTexture(icon)
+    frame.Title:SetText(title or "")
+    frame.instance, frame.x, frame.y = node.instance, xWorld, yWorld
+    node.frame = frame
+    gatherMatePointTable[key] = node
+    updateGatherMateNode(node)
+end
+
+-- GatherMate2 node source. These are GatherMate2's long-standing public methods plus three of its
+-- tables; every one is checked, so a change in GatherMate2 means no nodes rather than Lua errors.
+local function scanGatherMate2(zoneX, zoneY)
+    local gm = GatherMate2
+    if not (gm and gm.db_types and gm.Visible and gm.nodeTextures and gm.FindNearbyNode and gm.DecodeLoc and gm.GetNameForNode) then
+        return
+    end
+    for _, dbType in pairs(gm.db_types) do
+        if gm.Visible[dbType] then
+            for coord, nodeID in gm:FindNearbyNode(player.uiMapID, zoneX, zoneY, dbType, Options.GatherMateRadius) do
+                local key = dbType .. ":" .. coord
+                if gatherMatePointTable[key] then
+                    gatherNodesSeen[key] = true
+                else
+                    local xZone, yZone = gm:DecodeLoc(coord)
+                    local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
+                    if xWorld and yWorld then
+                        local icon = gm.nodeTextures[dbType] and gm.nodeTextures[dbType][nodeID]
+                        addGatherNode(key, xWorld, yWorld, icon, gm:GetNameForNode(dbType, nodeID))
+                    end
                 end
-            end
-            if node.frame then
-                updateGatherMateNode(node)
             end
         end
     end
 end
 
-local function createGatherMateNode(nodeID, nodeType, data)
-    local gatherMateNode =  data.frame or CreateFrame("FRAME", nil, HUD)
-	gatherMateNode:SetSize(textureHeight, textureHeight)
-	gatherMateNode:SetPoint("CENTER");
-	gatherMateNode.texture = gatherMateNode:CreateTexture(nil, "ARTWORK")
-	gatherMateNode.texture:SetAllPoints(gatherMateNode)
-	gatherMateNode.texture:SetTexture(GatherMate2.nodeTextures[nodeType][nodeID])
-	gatherMateNode:Hide()
-    gatherMateNode.DistanceText = gatherMateNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    gatherMateNode.DistanceText:SetJustifyV("TOP")
-    gatherMateNode.DistanceText:SetSize(0, 16)
-    gatherMateNode.DistanceText:SetParent(gatherMateNode)
-    gatherMateNode.TimeText = gatherMateNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    gatherMateNode.TimeText:SetJustifyV("TOP")
-    gatherMateNode.TimeText:SetSize(0, 16)
-    gatherMateNode.TimeText:SetParent(gatherMateNode)
-    gatherMateNode.Title = gatherMateNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    gatherMateNode.Title:SetJustifyV("TOP")
-    gatherMateNode.Title:SetSize(0, 16)
-    gatherMateNode.Title:SetParent(gatherMateNode)
-    gatherMateNode.Title:SetText(GatherMate2:GetNameForNode(nodeType, nodeID))
-    gatherMateNode.type = "GatherMate"
-    gatherMateNode.instance = data.instance
-    gatherMateNode.x = data.x
-    gatherMateNode.y = data.y
-    gatherMateNode.elapsed = 0
-    gatherMateNode:SetScript("OnUpdate", questPointerSetTexts)
-	return gatherMateNode
+local function updateGatherMate()
+    for key, node in pairs(gatherMatePointTable) do
+        if not Options.GatherMateEnabled then
+            releaseGatherNode(key)
+        elseif node.frame then
+            updateGatherMateNode(node)
+        end
+    end
 end
 
 local function setGatherMateNodes()
@@ -4314,47 +4368,31 @@ local function setGatherMateNodes()
         gatherMateThrottle = 0
         local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
         if x and y then
-            for map, nodes in pairs(gatherMatePointTable) do
-                for coord, node in pairs(nodes) do
-                    gatherMatePointTable[map][coord].visible = false
-                end
-            end
-            for _, db_type in pairs(GatherMate2.db_types) do
-                if GatherMate2.Visible[db_type] then
-                    for coord, nodeID in GatherMate2:FindNearbyNode(player.uiMapID, x, y, db_type, Options.GatherMateRadius) do
-                        if not gatherMatePointTable[player.uiMapID] then
-                            gatherMatePointTable[player.uiMapID] = {}
-                        end
-                        if not gatherMatePointTable[player.uiMapID][coord] then
-                            local xZone, yZone = GatherMate2:DecodeLoc(coord)
-                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
-                            gatherMatePointTable[player.uiMapID][coord] = { visible = true, instance = player.uiMapID, x = xWorld, y = yWorld }
-                            gatherMatePointTable[player.uiMapID][coord].frame = createGatherMateNode(nodeID, db_type, gatherMatePointTable[player.uiMapID][coord])
-                            updateGatherMateNode(gatherMatePointTable[player.uiMapID][coord])
-                        end
-                        gatherMatePointTable[player.uiMapID][coord].visible = true
-                    end
+            wipe(gatherNodesSeen)
+            scanGatherMate2(x, y)
+            -- nodes no longer in range (or on another map) give their frame back to the pool
+            for key in pairs(gatherMatePointTable) do
+                if not gatherNodesSeen[key] then
+                    releaseGatherNode(key)
                 end
             end
         end
     end
-    for _, nodes in pairs(gatherMatePointTable) do
-        for _, node in pairs(nodes) do
-            local shown = false
-            if node.visible and player.angle then
-                if node.x and node.y and node.instance then
-                    local angle = relativeAngle(node.instance, node.x, node.y)
-                    if angle then
-                        local visible = math.rad(Options.Degrees)/2
-                        if angle < visible and angle > -visible then
-                            node.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.GatherMateOffset)
-                            shown = true
-                        end
+    for _, node in pairs(gatherMatePointTable) do
+        local shown = false
+        if node.visible and player.angle then
+            if node.x and node.y and node.instance then
+                local angle = relativeAngle(node.instance, node.x, node.y)
+                if angle then
+                    local visible = math.rad(Options.Degrees)/2
+                    if angle < visible and angle > -visible then
+                        node.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.GatherMateOffset)
+                        shown = true
                     end
                 end
             end
-            node.frame:SetShown(shown)
         end
+        node.frame:SetShown(shown)
     end
     HUD.gathermateNodes = gatherMatePointTable
 end
