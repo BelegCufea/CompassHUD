@@ -2056,13 +2056,6 @@ local POITrackOptions = {
                         Addon:UpdateHUDSettings()
                     end,
                 },
-                HidePOIAtTarget = {
-                    type = "toggle",
-                    name = "Hide icon at the tracked target",
-                    desc = "If an icon is at the same place (within 10 yards) as the quest, map pin or POI the game is tracking, show only the supertracker pointer. The icon comes back as soon as the game tracks something else. The keybind can still toggle its tracking.",
-                    width = "full",
-                    order = 915,
-                },
                 POITrackWholeZone = {
                     type = "multiselect",
                     name = "Bypass scanning radius",
@@ -2384,6 +2377,13 @@ local POITrackOptions = {
                         -- without this the change is lost at logout
                         SaveBindings(GetCurrentBindingSet())
                     end,
+                },
+                HidePOIAtTarget = {
+                    type = "toggle",
+                    name = "Hide icon at the tracked target",
+                    desc = "If an icon is at the same place (within 10 yards) as the quest, map pin or POI the game is tracking, show only the supertracker pointer. The icon comes back as soon as the game tracks something else. The keybind can still toggle its tracking.",
+                    width = "full",
+                    order = 20,
                 },
                 HeaderPOITrackTexture = {
                     type = "header",
