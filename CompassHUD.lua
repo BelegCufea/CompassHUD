@@ -3862,6 +3862,9 @@ local function updateQuestIcon(questPointer)
 
     questPointer.DistanceText:SetShown(options.showDistance)
     questPointer.TimeText:SetShown(options.showTTA)
+    -- lets questPointerSetTexts skip the speed/arrival work for a hidden time text. The distance is
+    -- always computed for quest pointers (minDistance: arrival at a supertracked vignette).
+    questPointer.timeHidden = not options.showTTA
     questPointer.QuestText:SetShown(options.showQuest)
 
     if pointer.circle then
@@ -4221,6 +4224,9 @@ local function updateGatherMateNode(node)
 
     node.frame.DistanceText:SetShown(Options.GatherMateShowDistance)
     node.frame.TimeText:SetShown(Options.GatherMateShowTTA)
+    -- lets questPointerSetTexts skip work for hidden texts
+    node.frame.distanceHidden = not Options.GatherMateShowDistance
+    node.frame.timeHidden = not Options.GatherMateShowTTA
     node.frame.Title:SetShown(Options.GatherMateShowTitle)
 end
 
