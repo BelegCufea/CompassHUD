@@ -25,5 +25,6 @@ Libs\libs.xml
 
 const.lua
 debug.lua
+Init.lua
 CompassHUD.lua
 databroker.lua

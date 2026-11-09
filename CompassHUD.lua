@@ -1,8 +1,13 @@
-local ADDON_NAME = ...
-local Addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
+local ADDON_NAME, Addon = ...
+-- shared environment of the addon's files (see Init.lua)
+setfenv(1, Addon.env)
 
-BINDING_HEADER_COMPASSHUD = "CompassHUD"
-BINDING_NAME_COMPASSHUD_SUPERTRACK = "Toggle Supertracking for Minimap icon"
+-- Lua built-ins used in update loops, local so they don't go through the shared environment
+local pairs, ipairs, next, type, select, tostring, tonumber = pairs, ipairs, next, type, select, tostring, tonumber
+local math, string, table, wipe = math, string, table, wipe
+
+_G.BINDING_HEADER_COMPASSHUD = "CompassHUD"
+_G.BINDING_NAME_COMPASSHUD_SUPERTRACK = "Toggle Supertracking for Minimap icon"
 
 local Const = Addon.CONST
 local Debug = Addon.DEBUG
@@ -14,7 +19,7 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local LSM               = LibStub("LibSharedMedia-3.0")
 local HBD               = LibStub("HereBeDragons-2.0")
 
-local copyPointersDialogName = ADDON_NAME .. "_copyPointers"
+copyPointersDialogName = ADDON_NAME .. "_copyPointers"
 StaticPopupDialogs[copyPointersDialogName] = {
     text = "Do you want to proceed?",
     button1 = "Yes",
@@ -79,15 +84,15 @@ local GetVignettePosition = C_VignetteInfo.GetVignettePosition
 local GetVignetteInfo = C_VignetteInfo.GetVignetteInfo
 local GetGlidingInfo = C_PlayerInfo.GetGlidingInfo
 
-local Options
-local HUD
-local timer = 0
-local groupThrottle = 0
-local gatherMateThrottle = 0
-local poiTrackThrottle = 0
-local player = {x = 0, y = 0, angle = 0}
-local tomTomActive
-local poiTypeEnum = {
+Options = nil
+HUD = nil
+timer = 0
+groupThrottle = 0
+gatherMateThrottle = 0
+poiTrackThrottle = 0
+player = {x = 0, y = 0, angle = 0}
+tomTomActive = nil
+poiTypeEnum = {
     DELVE = "Delve",
     RACE = "Race",
     EVENT = "Event",
@@ -99,16 +104,16 @@ local poiTypeEnum = {
     VIGNETTE = "Vignette",
     OTHER = "Other",
 }
-local poiCache = {}
-local poiCacheContinents = {}
-local questPointsTable = {}
-local groupPointsTable = {}
-local gatherMatePointTable = {}
-local poiTrackPointTable = {}
-local poiTrackHeading -- minimap icon closest to the facing direction, re-picked on every pass
-local poiTrackCurrentMap = nil
-local STtexture = {}
-local directions = {
+poiCache = {}
+poiCacheContinents = {}
+questPointsTable = {}
+groupPointsTable = {}
+gatherMatePointTable = {}
+poiTrackPointTable = {}
+poiTrackHeading = nil -- minimap icon closest to the facing direction, re-picked on every pass
+poiTrackCurrentMap = nil
+STtexture = {}
+directions = {
     [0] = {letter = "N" , main = true },
     [45] = {letter = "NE" , main = false },
     [90] = {letter = "E" , main = true },
@@ -120,23 +125,23 @@ local directions = {
     [360] = {letter = "N" , main = true },
 }
 
-local ADJ_FACTOR = 1 / math.rad(720)
-local defaultTextureWidth, defaultTextureHeight = 2048, 16
-local textureWidth, textureHeight = defaultTextureWidth, defaultTextureHeight
-local texturePosition = function() return textureWidth * ADJ_FACTOR end
-local adjCoord, currentFacing
+ADJ_FACTOR = 1 / math.rad(720)
+defaultTextureWidth, defaultTextureHeight = 2048, 16
+textureWidth, textureHeight = defaultTextureWidth, defaultTextureHeight
+texturePosition = function() return textureWidth * ADJ_FACTOR end
+adjCoord, currentFacing = nil, nil
 
-local questUnknown = -999
-local tomTom = -200
-local mapPin = -100
-local selectedPin = -110
+questUnknown = -999
+tomTom = -200
+mapPin = -100
+selectedPin = -110
 
-local defaultTexturePreset = "Classic"
-local texturePreset = defaultTexturePreset
-local questPointerIdent = "pointer_"
+defaultTexturePreset = "Classic"
+texturePreset = defaultTexturePreset
+questPointerIdent = "pointer_"
 
 -- some predefined textures fo poiners (not used in texturePresets)
-local pointerTextures = {
+pointerTextures = {
     ["Arrow Red"] = {
         atlasID = "MiniMap-DeadArrow",
         textureRotate = true,
@@ -248,7 +253,7 @@ local pointerTextures = {
 }
 
 -- "Quest" Classifications
-local questPointers = {
+questPointers = {
 	[tomTom] =  "TomTom",
 	[questUnknown] = "Unknown pointer",
     [mapPin] = "User map pin",
@@ -277,7 +282,7 @@ local questPointers = {
 -- In all other presets, if a member is omitted, the corresponding values from 'defaultTexturePreset' will be used.
 -- Currently, only the following parameters can be defined: 'atlasIDavailable', 'atlasIDturnin', 'textureScaleAvailable', 'textureScaleTurnin', 'textureRotateAvailable', and 'textureRotateTurnin'.
 -- If 'atlasIDturnin' and other '..Turnin' parameters are not defined, the corresponding 'available' parameter will be used instead.
-local texturePresets = {
+texturePresets = {
     [defaultTexturePreset] = {
         [tomTom] = {
             atlasIDavailable = "Rotating-MinimapGroupArrow",
@@ -572,7 +577,7 @@ local texturePresets = {
     },
 }
 
-local function addToLSM()
+function addToLSM()
     LSM:Register("background", "CompassHUD gradient", [[Interface\Addons\]].. ADDON_NAME .. [[\Media\CompassHUD-gradient]])
 end
 
@@ -785,7 +790,7 @@ Addon.Defaults = {
     },
 }
 
-local strataLevels = {
+strataLevels = {
     "BACKGROUND",
     "LOW",
     "MEDIUM",
@@ -796,12 +801,12 @@ local strataLevels = {
     "TOOLTIP",
 }
 
-local function round(n, decimals)
+function round(n, decimals)
     local power = 10 ^ (decimals or 0)
     return math.floor(n * power + 0.5) / power
 end
 
-local function getContinentMapID()
+function getContinentMapID()
     local mapID = GetBestMapForUnit("player")
     if not mapID then return nil end
 
@@ -816,7 +821,7 @@ local function getContinentMapID()
     end
 end
 
-local function cacheMapPOIs(mapPOIs, poiType, uiMapID)
+function cacheMapPOIs(mapPOIs, poiType, uiMapID)
     if mapPOIs and #mapPOIs > 0 then
         for _, poiID in ipairs(mapPOIs) do
             if poiID then
@@ -836,7 +841,7 @@ local function cacheMapPOIs(mapPOIs, poiType, uiMapID)
     end
 end
 
-local function cachePOIs()
+function cachePOIs()
     local continentID = getContinentMapID()
     if continentID and not poiCacheContinents[continentID] then
         local childrenInfo = GetMapChildrenInfo(continentID, 3, true)
@@ -857,7 +862,7 @@ local function cachePOIs()
     end
 end
 
-local function getPointerAtlasIDs()
+function getPointerAtlasIDs()
     local atlasIDs = {}
     for key, value in pairs(pointerTextures) do
         atlasIDs[value.atlasID] = key
@@ -865,7 +870,7 @@ local function getPointerAtlasIDs()
     return atlasIDs
 end
 
-local function getSortedPointerAtlasIDKeys()
+function getSortedPointerAtlasIDKeys()
     local sorting = {}
     local sortedKeys = {}
     for key, value in pairs(pointerTextures) do
@@ -878,7 +883,7 @@ local function getSortedPointerAtlasIDKeys()
     return sorting
 end
 
-local function getPointerTextureByAtlasID(atlasID)
+function getPointerTextureByAtlasID(atlasID)
     for _, pointerTexture in pairs(pointerTextures) do
         if pointerTexture.atlasID == atlasID then
             return pointerTexture
@@ -887,13 +892,13 @@ local function getPointerTextureByAtlasID(atlasID)
     return nil
 end
 
-local function getAtlasTexture(atlasID)
+function getAtlasTexture(atlasID)
     local atlasInfo = GetAtlasInfo(atlasID)
     if not atlasInfo then return nil end
     return atlasInfo.file
 end
 
-local function getAtlasCoords(atlasID)
+function getAtlasCoords(atlasID)
     local atlasInfo = GetAtlasInfo(atlasID)
     if not atlasInfo then return {0,0,0,1,1,0,1,1} end
     return {
@@ -908,7 +913,7 @@ local function getAtlasCoords(atlasID)
     }
 end
 
-local function getStrateLevels()
+function getStrateLevels()
     local values = {}
     for i, v in ipairs(strataLevels) do
         values[v] = i .. " - " .. v
@@ -917,7 +922,7 @@ local function getStrateLevels()
 end
 
 -- Mirrors the world map's flight point filter: hide nodes belonging to the opposite faction
-local function isTaxiNodeUsable(taxi)
+function isTaxiNodeUsable(taxi)
     local faction = taxi.faction
     if not faction or not Enum.FlightPathFaction then
         return true
@@ -935,7 +940,7 @@ local function isTaxiNodeUsable(taxi)
     return true
 end
 
-local function getPOITrackFilter()
+function getPOITrackFilter()
     local list = {}
     list[poiTypeEnum.TAXI] = "Flightpoints"
     list[poiTypeEnum.TAXI .. "_min"] = "  - only closest flightpoint"
@@ -951,13 +956,13 @@ local function getPOITrackFilter()
     return list
 end
 
-local function getPOITrackWholeZoneFilter()
+function getPOITrackWholeZoneFilter()
     local list = getPOITrackFilter()
     list[poiTypeEnum.TAXI .. "_min"] = nil
     return list
 end
 
-local function getPOIFrackWQFilter()
+function getPOIFrackWQFilter()
     local list = {}
     list["None"] = "None"
     list["All"] = "All"
@@ -1834,7 +1839,7 @@ Addon.Options = {
     },
 }
 
-local SupertrackerOptions = {
+SupertrackerOptions = {
     type = "group",
     order = 10,
     name = "Supertracker",
@@ -1907,7 +1912,7 @@ local SupertrackerOptions = {
     },
 }
 
-local TrackingOption = {
+TrackingOption = {
     type = "group",
     order = 20,
     name = "Minimap",
@@ -1921,7 +1926,7 @@ local TrackingOption = {
     args = {},
 }
 
-local POITrackOptions = {
+POITrackOptions = {
     type = "group",
     order = 10,
     name = "Minimap icons",
@@ -2414,7 +2419,7 @@ local POITrackOptions = {
     },
 }
 
-local GroupOptions = {
+GroupOptions = {
     type = "group",
     order = 110,
     name = "Party/Raid",
@@ -3042,7 +3047,7 @@ local GroupOptions = {
     },
 }
 
-local GatherMateOptions = {
+GatherMateOptions = {
     type = "group",
     order = 1010,
     name = "GatherMate2 / GatherLite",
@@ -3342,7 +3347,7 @@ local GatherMateOptions = {
     },
 }
 
-local function GetQuestPOIInfo(questID)
+function GetQuestPOIInfo(questID)
     local completed = IsQuestComplete(questID)
 
     -- try to get waypoint
@@ -3369,12 +3374,12 @@ local function GetQuestPOIInfo(questID)
     end
 end
 
-local function getMapId(questID)
+function getMapId(questID)
     local uiMapID = GetMapForQuestPOIs()
     if uiMapID and uiMapID > 0 then return uiMapID end
 end
 
-local function updatePlayerCoords()
+function updatePlayerCoords()
     if player.inInstance then return end
 
     player.x, player.y, player.instance = HBD:GetPlayerWorldPosition()
@@ -3384,7 +3389,7 @@ end
 
 -- Signed angle (-PI..PI) between the player's facing and a world point.
 -- nil when the player position, heading or the vector is not available (HBD returns nil then).
-local function relativeAngle(instance, x, y)
+function relativeAngle(instance, x, y)
     if not (player.angle and player.x and player.y and x and y) then return end
     local vector = HBD:GetWorldVector(instance, player.x, player.y, x, y)
     if not vector then return end
@@ -3394,13 +3399,13 @@ local function relativeAngle(instance, x, y)
     return angle
 end
 
-local function getPlayerFacingAngle(questID)
+function getPlayerFacingAngle(questID)
 	if not questID or not questPointsTable[questID] then return end
     local point = questPointsTable[questID]
     return relativeAngle(point.instance, point.x, point.y)
 end
 
-local function updateCompassHUD()
+function updateCompassHUD()
     local scale = Options.Scale * Options.VerticalScale
     -- middle HUD pointer texture
     HUD.pin = HUD.pin or HUD:CreateTexture(nil, "ARTWORK")
@@ -3600,7 +3605,7 @@ local function updateCompassHUD()
     HUD.groups = HUD.groups or {}
 end
 
-local function setTime(frame, distance, speed)
+function setTime(frame, distance, speed)
     if speed and speed > 0 then
         local eta = math.abs(distance / speed)
         local minutes = math.floor(eta / 60)
@@ -3612,7 +3617,7 @@ local function setTime(frame, distance, speed)
     end
 end
 
-local function questPointerSetTexts(frame, dt)
+function questPointerSetTexts(frame, dt)
     if player.inInstance then return end
     frame.elapsed = frame.elapsed + dt
     if frame.distanceHidden and frame.timeHidden then return end
@@ -3673,7 +3678,7 @@ local function questPointerSetTexts(frame, dt)
     end
 end
 
-local function getPointerCategory(questID, questType)
+function getPointerCategory(questID, questType)
     local category = questType or questUnknown
     if questType < 0 then
         return questPointers[category] and category or questUnknown
@@ -3688,19 +3693,19 @@ local function getPointerCategory(questID, questType)
     return category
 end
 
-local function getPointerType(questID, questType)
+function getPointerType(questID, questType)
     local questClassification = getPointerCategory(questID, questType)
     return questPointerIdent .. (questPointers[questClassification] and questClassification or questUnknown)
 end
 
-local function isTask(questID)
+function isTask(questID)
     local classification = GetQuestClassification(questID)
     return
         (classification == Enum.QuestClassification.BonusObjective)
         or (classification == Enum.QuestClassification.WorldQuest)
 end
 
-local function getWQicon(questID)
+function getWQicon(questID)
     local icon
     RequestPreloadRewardData(questID)
     local reward = GetQuestRewardCurrencyInfo(questID, 1, false)
@@ -3718,7 +3723,7 @@ end
 -- Blizzard super-tracked target (quest, user waypoint, or POI/vignette pin). Other entries in
 -- questPointsTable (earlier targets, TomTom) never touch it. When retexturing does not apply,
 -- the icon is handed back to the game once.
-local function updateSuperTrackedTexture(activeID)
+function updateSuperTrackedTexture(activeID)
     local questPoint = activeID and questPointsTable[activeID]
     local frame = questPoint and questPoint.frame
     local options = frame and Options.Pointers[frame.pointerType]
@@ -3806,7 +3811,7 @@ end
 
 -- Applies font to a pointer text: its own custom font if enabled, else the global pointer font if enabled, else GameFontNormal.
 -- Pass color = false to leave the text color untouched (caller sets it).
-local function setPointerFont(fontString, scale, custom, font, size, flags, color)
+function setPointerFont(fontString, scale, custom, font, size, flags, color)
     if not custom then
         if Options.PointerFontCustom then
             font, size, flags, color = Options.PointerFont, Options.PointerFontSize, Options.PointerFontFlags, (color ~= false) and Options.PointerFontColor
@@ -3827,14 +3832,14 @@ end
 
 -- Line height of a pointer text, from the font actually applied by setPointerFont (size already includes scale).
 -- Used to stack distance/time/title texts so they don't overlap whichever font is in effect.
-local function textLineHeight(fontString)
+function textLineHeight(fontString)
     local _, size = fontString:GetFont()
     return (size or 12) * 1.2
 end
 
 -- Stacks the distance, time and title texts of a GatherMate or minimap icon node below the icon,
 -- or above it when the icon row is flipped (positive offset). Shared by both node types.
-local function layoutNodeTexts(frame, flipped, showDistance, showTTA, showTitle, distanceOffset, ttaOffset, titleOffset)
+function layoutNodeTexts(frame, flipped, showDistance, showTTA, showTitle, distanceOffset, ttaOffset, titleOffset)
     local point = "TOP"
     local relativePoint = "BOTTOM"
     local distanceTextPosition = distanceOffset
@@ -3864,7 +3869,7 @@ local function layoutNodeTexts(frame, flipped, showDistance, showTTA, showTitle,
     frame.Title:SetShown(showTitle)
 end
 
-local function updateQuestIcon(questPointer)
+function updateQuestIcon(questPointer)
     local scale = Options.Scale * Options.VerticalScale
     local options = Options.Pointers[questPointer.pointerType]
     local pointer = questPointsTable[questPointer.questID]
@@ -3929,9 +3934,9 @@ end
 
 -- Frames of quest pointers whose quest is no longer tracked (see setQuestsIcons), for reuse:
 -- WoW never frees frames.
-local questFramePool = {}
+questFramePool = {}
 
-local function createQuestIcon(questID, questType)
+function createQuestIcon(questID, questType)
     local pointerType = getPointerType(questID, questType)
     if not Options.Pointers[pointerType] then
         return
@@ -4001,12 +4006,12 @@ local function createQuestIcon(questID, questType)
 end
 
 -- Two targets closer than this are the same place (e.g. an addon's TomTom waypoint and its map pin copy)
-local SAME_POINT_YARDS = 10
+SAME_POINT_YARDS = 10
 -- The game's super-tracked target while its pointer is enabled and on the player's continent, else nil.
 -- Set by setQuestsIcons on every update; other marker types use it to avoid a second marker there.
-local shownGameTarget
+shownGameTarget = nil
 
-local function setQuestsIcons()
+function setQuestsIcons()
     local vignetteGUID = GetSuperTrackedVignette()
     local supertrackingType = GetHighestPrioritySuperTrackingType()
     local isTrackingUserWaypoint = (supertrackingType == Enum.SuperTrackingType.UserWaypoint)
@@ -4114,7 +4119,7 @@ local function setQuestsIcons()
     updateSuperTrackedTexture(activeID)
 end
 
-local function createGroupMemberIcon(unit)
+function createGroupMemberIcon(unit)
     local groupPointer = CreateFrame("FRAME", nil, HUD)
     HUD.groups[unit] = groupPointer
 	groupPointer:SetSize(textureHeight, textureHeight)
@@ -4134,7 +4139,7 @@ local function createGroupMemberIcon(unit)
 	return groupPointer
 end
 
-local function updateGroupMemberTexts(unit)
+function updateGroupMemberTexts(unit)
     if not groupPointsTable or not groupPointsTable[unit] then return end
     local v = groupPointsTable[unit]
     local scale = Options.Scale * Options.VerticalScale
@@ -4174,7 +4179,7 @@ local function updateGroupMemberTexts(unit)
     end
 end
 
-local function updateGroupMember(unit)
+function updateGroupMember(unit)
     if not groupPointsTable[unit] then
         groupPointsTable[unit] = { type = string.gsub(unit, "%d+$", "")}
     end
@@ -4219,13 +4224,13 @@ local function updateGroupMember(unit)
     end
 end
 
-local function updateGroupTexts()
+function updateGroupTexts()
     for k, _ in pairs(groupPointsTable) do
         updateGroupMemberTexts(k)
     end
 end
 
-local function setGroupStrataLevels()
+function setGroupStrataLevels()
     local activeUnits = {}
     for unit, data in pairs(groupPointsTable) do
         if data.active and data.distance then
@@ -4240,7 +4245,7 @@ local function setGroupStrataLevels()
     end
 end
 
-local function setGroupIcons()
+function setGroupIcons()
     if not player.groupType or player.groupType == "none" then return end
     if player.groupType == "party" and not Options.GroupShowParty then return end
     if player.groupType == "raid" and not Options.GroupShowRaid then return end
@@ -4300,7 +4305,7 @@ local function setGroupIcons()
     end
 end
 
-local function updateGatherMateNode(node)
+function updateGatherMateNode(node)
     local scale = Options.Scale * Options.VerticalScale * Options.GatherMateScale
     node.frame:SetSize(textureHeight * Options.GatherMateScale, textureHeight * Options.GatherMateScale)
     setPointerFont(node.frame.DistanceText, scale, Options.GatherMateDistanceCustomFont, Options.GatherMateDistanceFont, Options.GatherMateDistanceFontSize, Options.GatherMateDistanceFontFlags, Options.GatherMateDistanceFontColor)
@@ -4319,14 +4324,14 @@ end
 -- (within the scanning radius of the player, keyed per node). Nodes that leave that set give their
 -- frame back to a pool, so neither the table nor the per-tick draw loop grows with the session.
 -- (state kept in one table: the main chunk is close to Lua's limit of 200 local variables)
-local gatherNodes = {
+gatherNodes = {
     framePool = {},
     seen = {},          -- nodes found by the current scan
     liteTypes = { "mining", "herbalism", "containers", "fishing" }, -- GatherLite node types
     liteObjects = {},   -- object ID -> GatherLite object (GetNodeObject searches its whole list)
 }
 
-local function acquireGatherNodeFrame()
+function acquireGatherNodeFrame()
     local frame = table.remove(gatherNodes.framePool)
     if frame then
         return frame
@@ -4355,7 +4360,7 @@ local function acquireGatherNodeFrame()
     return frame
 end
 
-local function releaseGatherNode(key)
+function releaseGatherNode(key)
     local node = gatherMatePointTable[key]
     gatherMatePointTable[key] = nil
     if node and node.frame then
@@ -4369,7 +4374,7 @@ local function releaseGatherNode(key)
 end
 
 -- Adds a node found by a scan (world coordinates, icon texture, title), or keeps the existing one.
-local function addGatherNode(key, xWorld, yWorld, icon, title)
+function addGatherNode(key, xWorld, yWorld, icon, title)
     gatherNodes.seen[key] = true
     if gatherMatePointTable[key] then
         return
@@ -4386,7 +4391,7 @@ end
 
 -- GatherMate2 node source. These are GatherMate2's long-standing public methods plus three of its
 -- tables; every one is checked, so a change in GatherMate2 means no nodes rather than Lua errors.
-local function scanGatherMate2(zoneX, zoneY)
+function scanGatherMate2(zoneX, zoneY)
     local gm = GatherMate2
     if not (gm and gm.db_types and gm.Visible and gm.nodeTextures and gm.FindNearbyNode and gm.DecodeLoc and gm.GetNameForNode) then
         return
@@ -4414,7 +4419,7 @@ end
 -- documented API: these are its own functions, each one checked, so a change in GatherLite means
 -- no nodes rather than Lua errors. Its node records are stable tables, so they serve as keys.
 
-local function getGatherLiteObject(gl, objectID)
+function getGatherLiteObject(gl, objectID)
     local object = gatherNodes.liteObjects[objectID]
     if object == nil then
         object = gl:GetNodeObject(objectID) or false
@@ -4423,7 +4428,7 @@ local function getGatherLiteObject(gl, objectID)
     return object or nil
 end
 
-local function scanGatherLite()
+function scanGatherLite()
     local gl = GatherLite
     if not (gl and gl.IsLoaded and gl.GetNearbyZoneNodes and gl.EnsureNodeWorld and gl.GetNodeObject) or not gl:IsLoaded() then
         return
@@ -4460,7 +4465,7 @@ local function scanGatherLite()
     end
 end
 
-local function updateGatherMate()
+function updateGatherMate()
     for key, node in pairs(gatherMatePointTable) do
         if not Options.GatherMateEnabled then
             releaseGatherNode(key)
@@ -4470,7 +4475,7 @@ local function updateGatherMate()
     end
 end
 
-local function setGatherMateNodes()
+function setGatherMateNodes()
     -- GatherMate2 if loaded, else GatherLite
     if not Options.GatherMateEnabled or not (GatherMate2 or GatherLite) then return end
     if gatherMateThrottle and gatherMateThrottle >= Options.GatherMateInterval then
@@ -4510,7 +4515,7 @@ local function setGatherMateNodes()
     HUD.gathermateNodes = gatherMatePointTable
 end
 
-local function updatePOITrackNode(poi)
+function updatePOITrackNode(poi)
     local scale = Options.Scale * Options.VerticalScale * Options.POITrackScale
     poi.frame:SetSize(textureHeight * Options.POITrackScale * (poi.scale or 1), textureHeight * Options.POITrackScale * (poi.scale or 1))
     setPointerFont(poi.frame.DistanceText, scale, Options.POITrackDistanceCustomFont, Options.POITrackDistanceFont, Options.POITrackDistanceFontSize, Options.POITrackDistanceFontFlags, Options.POITrackDistanceFontColor)
@@ -4522,7 +4527,7 @@ local function updatePOITrackNode(poi)
         Options.POITrackDistanceOffset, Options.POITrackTtaOffset, Options.POITrackTitleOffset)
 end
 
-local function updatePoiTrack()
+function updatePoiTrack()
     for _, pois in pairs(poiTrackPointTable) do
         for _, poi in pairs(pois) do
             if not Options.POITrackEnabled then
@@ -4538,17 +4543,17 @@ local function updatePoiTrack()
     end
 end
 
-local POI_TRACK_WORLD_QUEST = "WorldQuest" -- world quests have their own bypass toggle
+POI_TRACK_WORLD_QUEST = "WorldQuest" -- world quests have their own bypass toggle
 
 -- Minimap icon frames are reused: WoW never frees frames, so icons that go away (vignettes, world
 -- quests) hand theirs back to this pool instead of leaving it behind.
 -- (kept in one table: the main chunk is close to Lua's limit of 200 local variables)
-local poiNodes = {
+poiNodes = {
     framePool = {},
     seen = {}, -- vignettes and world quests the game reported in the current scan
 }
 
-local function createPOITrackNode(data)
+function createPOITrackNode(data)
     local poiTrackNode = data.frame or table.remove(poiNodes.framePool)
     if not poiTrackNode then
         poiTrackNode = CreateFrame("FRAME", nil, HUD)
@@ -4626,7 +4631,7 @@ end
 
 -- Each minimap icon node remembers its filter type (poi.trackType). It decides the "Bypass scanning
 -- radius" setting at draw time, so a change of that setting applies right away.
-local function poiTrackBypassesRadius(poi)
+function poiTrackBypassesRadius(poi)
     if poi.trackType == POI_TRACK_WORLD_QUEST then
         return Options.POITrackWQWholeZone
     end
@@ -4634,13 +4639,13 @@ local function poiTrackBypassesRadius(poi)
 end
 
 -- Area POIs and map links with a "TaxiNode..." atlas are portals (flight-path-like map links)
-local function poiTrackTypeByAtlas(poi, otherType)
+function poiTrackTypeByAtlas(poi, otherType)
     return poi.atlasName and poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode" and poiTypeEnum.PORTAL or otherType
 end
 
 -- Adds a minimap icon node for a game API record 'data' at zone position xZone, yZone of the
 -- current map: world coordinates, its frame and scale. The record itself becomes the node.
-local function addPOITrackNode(id, data, xZone, yZone, scale)
+function addPOITrackNode(id, data, xZone, yZone, scale)
     poiTrackPointTable[player.uiMapID][id] = data
     data.instance = player.uiMapID
     data.x, data.y = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
@@ -4651,7 +4656,7 @@ local function addPOITrackNode(id, data, xZone, yZone, scale)
 end
 
 -- Returns the minimap icon node for an area POI, or nil when the game has no details for it (yet).
-local function setPOITrackNode(poiID, poiType)
+function setPOITrackNode(poiID, poiType)
 
     local id = poiType .. "_" .. poiID
     if not poiTrackPointTable[player.uiMapID][id] then
@@ -4670,7 +4675,7 @@ local function setPOITrackNode(poiID, poiType)
     return poiTrackPointTable[player.uiMapID][id]
 end
 
-local function setPOITrackNodes()
+function setPOITrackNodes()
     if not Options.POITrackEnabled then return end
     if poiTrackThrottle and poiTrackThrottle >= Options.POITrackInterval then
         if poiTrackCurrentMap ~= player.uiMapID then
@@ -4958,7 +4963,7 @@ local function setPOITrackNodes()
     HUD.minimapIcons = poiTrackPointTable
 end
 
-local function updateHeading()
+function updateHeading()
     if HUD.heading and HUD.heading.text and player.angle then
         local heading = (360 - (player.angle * (180 / math.pi))) % 360
         if Options.HeadingDecimals >= 0 then
@@ -4978,7 +4983,7 @@ local function updateHeading()
     end
 end
 
-local function updateHUD(force)
+function updateHUD(force)
     local facing = GetPlayerFacing() or 0
     if force or facing ~= currentFacing then
         local coord = (facing < PI and 0.5 or 1) - (facing * ADJ_FACTOR)
@@ -5000,7 +5005,7 @@ end
 -- Sets a quest pointer's texture from its target data and pointer type settings:
 -- the world map texture/atlas if enabled (per type, or per target via moreArgs), else the type's atlas.
 -- Shared by updateQuest and updatePointerTextures so a settings change gives the same result as an event.
-local function applyPointerTexture(entry)
+function applyPointerTexture(entry)
     local frame = entry.frame
     local options = Options.Pointers[frame.pointerType]
     local moreArgs = entry.moreArgs
@@ -5021,7 +5026,7 @@ local function applyPointerTexture(entry)
     end
 end
 
-local function updatePointerTextures()
+function updatePointerTextures()
     for _, v in pairs(questPointsTable) do
         -- no frame: the pointer category is disabled
         if v.frame and Options.Pointers[v.frame.pointerType] then
@@ -5031,7 +5036,7 @@ local function updatePointerTextures()
     end
 end
 
-local function onUpdate(_, elapsed)
+function onUpdate(_, elapsed)
     if player.inInstance then return end
 
     timer = timer + elapsed
@@ -5043,7 +5048,7 @@ local function onUpdate(_, elapsed)
     updateHUD(false)
 end
 
-local function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName, texture, moreArgs)
+function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName, texture, moreArgs)
     if type(questPointsTable[questID]) ~= "table" then
         questPointsTable[questID] = {}
     end
@@ -5110,7 +5115,7 @@ local function updateQuest(questID, x, y, uiMapID, questType, title, completed, 
     updateQuestIcon(questPointsTable[questID].frame)
 end
 
-local function tomtomSetCrazyArrow(self, uid, dist, title)
+function tomtomSetCrazyArrow(self, uid, dist, title)
     if not Options.Pointers[questPointerIdent .. tomTom].enabled then return end
     if not uid then return end
     if type(uid) ~= "table" then return end
@@ -5125,7 +5130,7 @@ local function tomtomSetCrazyArrow(self, uid, dist, title)
     questPointsTable[tomTom].track = true
 end
 
-local function tomtomClearWaypoint(self, uid)
+function tomtomClearWaypoint(self, uid)
     if not uid then return end
     if type(uid) ~= "table" then return end
     local tomTomRemoved = TomTom:GetKey(uid)
@@ -5134,7 +5139,7 @@ local function tomtomClearWaypoint(self, uid)
     end
 end
 
-local function supertrackPOITrack()
+function supertrackPOITrack()
     if not Options.POITrackEnabled then return end
     if not player.uiMapID or not poiTrackPointTable[player.uiMapID] then
         return
@@ -5204,12 +5209,12 @@ end
 -- Effective HUD visibility: outside an instance and the Visibility macro condition says "show".
 -- Both the zone handler and the attribute driver go through this, so neither overrides the other.
 -- Before the driver has set the attribute (nil) the HUD counts as shown.
-local function shouldShowHUD()
+function shouldShowHUD()
     local state = HUD:GetAttribute("state-hudvisibility")
     return (state == nil or state == "show") and not player.inInstance
 end
 
-local function createHUD()
+function createHUD()
     HUD = CreateFrame('Frame', ADDON_NAME, UIParent, "BackdropTemplate")
     HUD:SetPoint("CENTER")
     HUD:SetClampedToScreen(true)
@@ -5229,8 +5234,8 @@ end
 -- Title of the TomTom waypoint at the same place as a user map pin.
 -- Some addons copy TomTom waypoints into a Blizzard user waypoint, which has no name.
 -- This works for any addon that sets the TomTom waypoint (Questie, BtWQuests, ...).
-local tomTomTitleCache = {}
-local function getTomTomWaypointTitle(uiMapID, x, y)
+tomTomTitleCache = {}
+function getTomTomWaypointTitle(uiMapID, x, y)
     if not (TomTom and type(TomTom.waypoints) == "table" and uiMapID and x and y) then return end
     -- target lookups can still run several times a second: reuse the last result for the same pin for a moment
     local cache, now = tomTomTitleCache, GetTime()
@@ -5256,8 +5261,8 @@ end
 -- Name and position of an available quest ("!" quest offer pin).
 -- GetTitleForQuestID is often empty for quests not in the quest log, so the
 -- name comes from the world map pin, or from the data that the pin is built from.
-local questOfferCache = {}
-local function getQuestOfferInfo(questID, uiMapID)
+questOfferCache = {}
+function getQuestOfferInfo(questID, uiMapID)
     -- The pin on the open world map already holds the quest name and its position
     if WorldMapFrame:IsVisible() then
         for pin in WorldMapFrame:EnumerateAllPins() do
@@ -5293,7 +5298,7 @@ local function getQuestOfferInfo(questID, uiMapID)
     end
 end
 
-local function resolveSuperTrackedTarget(event,...)
+function resolveSuperTrackedTarget(event,...)
     if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and questPointsTable[tomTom] then
         questPointsTable[tomTom].track = false
     end
@@ -5433,7 +5438,7 @@ end
 -- Events that can fire many times in a row (QUEST_LOG_UPDATE comes in bursts). They are merged
 -- into one target lookup shortly after the burst. Everything else, especially SUPER_TRACKING_CHANGED
 -- (the map pin cursor fallback needs the moment of the click), is handled right away.
-local burst = {
+burst = {
     delay = 0.2,
     pending = false,
 }
@@ -5443,7 +5448,7 @@ burst.events = {
     SUPER_TRACKING_PATH_UPDATED = true,
 }
 
-local function OnEvent(event, ...)
+function OnEvent(event, ...)
     if not burst.events[event] then
         resolveSuperTrackedTarget(event, ...)
         return
@@ -5460,8 +5465,8 @@ end
 -- restores a saved waypoint at login, possibly before the addon that registers the chosen font with
 -- LibSharedMedia has done so (LSM:Fetch then returns the default font). Called when a font is
 -- registered and after a loading screen; a burst of calls is merged into one refresh on the next frame.
-local fontRefreshPending = false
-local function schedulePointerFontRefresh()
+fontRefreshPending = false
+function schedulePointerFontRefresh()
     if fontRefreshPending then return end
     fontRefreshPending = true
     C_Timer.After(0, function()
@@ -5477,19 +5482,19 @@ local function schedulePointerFontRefresh()
     end)
 end
 
-local function onMediaRegistered(_, mediatype)
+function onMediaRegistered(_, mediatype)
     if mediatype == "font" then
         schedulePointerFontRefresh()
     end
 end
 
-local function OnGroup(event, ...)
+function OnGroup(event, ...)
     local groupType = (IsInRaid() and "raid") or  (IsInGroup() and "party") or "none"
     if groupType ~= (player.groupType or "") then Addon:HideGroupIcons() end
     player.groupType = groupType
 end
 
-local function OnZoneChange(event, ...)
+function OnZoneChange(event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
         schedulePointerFontRefresh()
     end
