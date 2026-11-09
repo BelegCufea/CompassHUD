@@ -17,6 +17,16 @@ Addon.env = setmetatable({
     ADDON_NAME = ADDON_NAME,
 }, { __index = _G })
 
+-- WoW API functions that return objects with a mixin (positions as Vector2DMixin, colors as
+-- ColorMixin, ...) look the mixin up in the calling function's environment directly, without the
+-- _G fallback ("unable to find mixin or metatable"). Copy Blizzard's mixins into the shared
+-- environment; they are defined before addons load, and these are references to the same tables.
+for name, value in pairs(_G) do
+    if type(name) == "string" and type(value) == "table" and name:sub(-5) == "Mixin" then
+        rawset(Addon.env, name, value)
+    end
+end
+
 -- Keybinding labels (Bindings.xml). Set here, first: Options.lua reads them while it loads.
 BINDING_HEADER_COMPASSHUD = "CompassHUD"
 BINDING_NAME_COMPASSHUD_SUPERTRACK = "Toggle Supertracking for Minimap icon"
