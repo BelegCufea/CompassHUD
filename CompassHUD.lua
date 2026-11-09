@@ -3927,13 +3927,33 @@ local function updateQuestIcon(questPointer)
     end
 end
 
+-- Frames of quest pointers whose quest is no longer tracked (see setQuestsIcons), for reuse:
+-- WoW never frees frames.
+local questFramePool = {}
+
 local function createQuestIcon(questID, questType)
     local pointerType = getPointerType(questID, questType)
     if not Options.Pointers[pointerType] then
         return
     end
     if not Options.Pointers[pointerType].enabled then return end
-    local questPointer = CreateFrame("FRAME", nil, HUD)
+    local questPointer = table.remove(questFramePool)
+    if questPointer then
+        -- a reused frame: everything else is set by updateQuest/updateQuestIcon
+        HUD.pointers[questID] = questPointer
+        questPointer.questID = questID
+        questPointer.pointerType = pointerType
+        questPointer:SetSize(textureHeight, textureHeight)
+        questPointer:ClearAllPoints()
+        questPointer:SetPoint("CENTER")
+        questPointer:Hide()
+        questPointer.texture:SetAtlas(Options.Pointers[pointerType].atlasID)
+        questPointer.arrowTexture:Hide()
+        questPointer.elapsed = 0
+        updateQuestIcon(questPointer)
+        return questPointer
+    end
+    questPointer = CreateFrame("FRAME", nil, HUD)
     HUD.pointers[questID] = questPointer
 	questPointer.questID = questID
     questPointer.pointerType = pointerType
@@ -4020,6 +4040,23 @@ local function setQuestsIcons()
     end
 
 	for questID, quest in pairs(questPointsTable) do
+        -- A quest that is no longer the tracked one is dropped (it was tracked once and stayed for the
+        -- session); its frame is reused. Tracking it again creates a new entry on the next event.
+        if questID > 0 and questID ~= trackedQuest then
+            questPointsTable[questID] = nil
+            if quest.frame then
+                local frame = quest.frame
+                frame:Hide()
+                frame.minDistance = nil
+                frame.ttaLastDistance = nil
+                HUD.pointers[questID] = nil
+                table.insert(questFramePool, frame)
+            end
+            quest = nil
+        end
+        if not quest then
+            -- dropped above
+        else
         local questHide = (questID == tomTom) and hideTomTom
         if quest.moreArgs and quest.moreArgs.vignetteGUID and quest.moreArgs.vignetteGUID == vignetteGUID and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
             questHide = true
@@ -4071,6 +4108,7 @@ local function setQuestsIcons()
 			    quest.frame:Hide()
             end
 		end
+        end -- not dropped
 	end
 
     updateSuperTrackedTexture(activeID)
