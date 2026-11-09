@@ -2348,12 +2348,16 @@ local POITrackOptions = {
                         return GetBindingKey("COMPASSHUD_SUPERTRACK")
                     end,
                     set = function(_, key)
+                        -- bindings can't be changed in combat
+                        if InCombatLockdown() then return end
                         local oldKey1, oldKey2 = GetBindingKey("COMPASSHUD_SUPERTRACK")
                         if oldKey1 then SetBinding(oldKey1) end
                         if oldKey2 then SetBinding(oldKey2) end
                         if key and key ~= "" then
                             SetBinding(key, "COMPASSHUD_SUPERTRACK")
                         end
+                        -- without this the change is lost at logout
+                        SaveBindings(GetCurrentBindingSet())
                     end,
                 },
                 HeaderPOITrackTexture = {
