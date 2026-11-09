@@ -34,5 +34,6 @@ Compass.lua
 Markers\Common.lua
 Markers\Quest.lua
 Markers\Group.lua
+Markers\Gathering.lua
 CompassHUD.lua
 databroker.lua
