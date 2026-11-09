@@ -3686,69 +3686,94 @@ local function getWQicon(questID)
     return icon
 end
 
-local function retextureSuperTrackedFrame(questPointer)
-    STtexture.questID = questPointer.questID
-    STtexture.pointer = nil
-    STtexture.atlas = nil
+-- The game's SuperTracker icon (SuperTrackedFrame) is changed from one place only, for the active
+-- Blizzard super-tracked target (quest, user waypoint, or POI/vignette pin). Other entries in
+-- questPointsTable (earlier targets, TomTom) never touch it. When retexturing does not apply,
+-- the icon is handed back to the game once.
+local function updateSuperTrackedTexture(activeID)
+    local questPoint = activeID and questPointsTable[activeID]
+    local frame = questPoint and questPoint.frame
+    local options = frame and Options.Pointers[frame.pointerType]
+    local moreArgs = questPoint and questPoint.moreArgs
+    local icon = SuperTrackedFrame.Icon
 
-    local questPoint = questPointsTable[STtexture.questID]
-    local moreArgs = questPoint.moreArgs
-    if not questPoint or not questPoint.frame then return end
-
-    local options = Options.Pointers[questPoint.frame.pointerType]
     if not (options and (options.stRetexture or (moreArgs and moreArgs.stRetexture)) and IsSuperTrackingAnything()) then
-        -- Clean up if not retexturing
-        if STtexture.mask then
-            SuperTrackedFrame.Icon:RemoveMaskTexture(STtexture.mask)
-            STtexture.mask:Hide()
-        end
-        if STtexture.border then
-            STtexture.border:Hide()
+        if STtexture.applied then
+            if STtexture.masked then
+                icon:RemoveMaskTexture(STtexture.mask)
+                STtexture.masked = false
+            end
+            if STtexture.mask then
+                STtexture.mask:Hide()
+            end
+            if STtexture.border then
+                STtexture.border:Hide()
+            end
+            icon:SetScale(1)
+            if STtexture.iconSize then
+                icon:SetSize(STtexture.iconSize, STtexture.iconSize)
+            end
+            -- let the game set its own icon again
+            if SuperTrackedFrame.UpdateIcon then
+                SuperTrackedFrame:UpdateIcon()
+            end
+            STtexture.applied = false
         end
         return
     end
 
     -- === Ensure mask and border exist ===
     if not STtexture.iconSize then
-        STtexture.iconSize = SuperTrackedFrame.Icon:GetWidth()
+        STtexture.iconSize = icon:GetWidth()
     end
 
     if not STtexture.mask then
         STtexture.mask = SuperTrackedFrame:CreateMaskTexture()
         STtexture.mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        STtexture.mask:SetAllPoints(SuperTrackedFrame.Icon)
+        STtexture.mask:SetAllPoints(icon)
         STtexture.mask:Hide()
     end
 
     if not STtexture.border then
         STtexture.border = SuperTrackedFrame:CreateTexture(nil, "OVERLAY", nil, 1)
         STtexture.border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
-        STtexture.border:SetAllPoints(SuperTrackedFrame.Icon)
+        STtexture.border:SetAllPoints(icon)
         STtexture.border:Hide()
     end
 
-    -- === Determine texture or atlas ===
+    -- === Texture or atlas, same choice as applyPointerTexture ===
+    -- (re-applied on every update, because the game resets the icon on its own events)
     if questPoint.texture and options.worldmapTexture then
-        STtexture.pointer = questPoint.texture
+        icon:SetTexture(questPoint.texture)
     elseif questPoint.atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
-        STtexture.atlas = questPoint.atlasName
+        icon:SetAtlas(questPoint.atlasName)
     else
-        STtexture.atlas = questPoint.completed and options.atlasAltID or options.atlasID
+        icon:SetAtlas(questPoint.completed and options.atlasAltID or options.atlasID)
     end
 
-    -- === Apply or remove mask/border ===
-    STtexture.scale = (questPoint.completed and options.textureAltScale or options.textureScale) * (questPointer.scaleMultiplier or 1)
+    local scale = (questPoint.completed and options.textureAltScale or options.textureScale) * (frame.scaleMultiplier or 1)
+    icon:SetSize(STtexture.iconSize, STtexture.iconSize)
+    icon:SetScale(scale)
+
+    -- === Apply or remove mask/border (runs every HUD tick: add/remove the mask only on change) ===
     if questPoint.circle then
-        SuperTrackedFrame.Icon:AddMaskTexture(STtexture.mask)
-        STtexture.mask:SetScale(STtexture.scale or 1)
-        STtexture.border:SetScale(STtexture.scale or 1)
+        if not STtexture.masked then
+            icon:AddMaskTexture(STtexture.mask)
+            STtexture.masked = true
+        end
+        STtexture.mask:SetScale(scale)
+        STtexture.border:SetScale(scale)
         STtexture.mask:Show()
         STtexture.border:Show()
     else
-        SuperTrackedFrame.Icon:RemoveMaskTexture(STtexture.mask)
+        if STtexture.masked then
+            icon:RemoveMaskTexture(STtexture.mask)
+            STtexture.masked = false
+        end
         STtexture.mask:Hide()
         STtexture.border:Hide()
     end
+    STtexture.applied = true
 end
 
 -- Applies font to a pointer text: its own custom font if enabled, else the global pointer font if enabled, else GameFontNormal.
@@ -3837,8 +3862,6 @@ local function updateQuestIcon(questPointer)
         questPointer.mask:Hide()
         questPointer.border:Hide()
     end
-
-    retextureSuperTrackedFrame(questPointer)
 end
 
 local function createQuestIcon(questID, questType)
@@ -3959,18 +3982,12 @@ local function setQuestsIcons()
 		end
 	end
 
-    if STtexture.pointer or STtexture.atlas then
-        if STtexture.pointer then
-            SuperTrackedFrame.Icon:SetTexture(STtexture.pointer)
-        elseif STtexture.atlas then
-            SuperTrackedFrame.Icon:SetAtlas(STtexture.atlas)
-        end
-
-        SuperTrackedFrame.Icon:SetSize(STtexture.iconSize, STtexture.iconSize)
-        SuperTrackedFrame.Icon:SetScale(STtexture.scale or 1)
-    end
-
-
+    -- the game's own super-tracked target (TomTom is not one of them)
+    local activeID = (trackedQuest and trackedQuest > 0 and trackedQuest)
+        or (isTrackingUserWaypoint and mapPin)
+        or (isTrackingPOI and selectedPin)
+        or nil
+    updateSuperTrackedTexture(activeID)
 end
 
 local function createGroupMemberIcon(unit)
