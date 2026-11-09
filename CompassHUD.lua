@@ -1,3 +1,5 @@
+-- Core: the HUD frame, update loop, super-tracked target resolution, events, TomTom hooks and the
+-- addon lifecycle (OnInitialize/OnEnable/OnDisable). Marker types live in Markers/, settings in Options.lua.
 local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
@@ -9,70 +11,25 @@ local math, string, table, wipe = math, string, table, wipe
 _G.BINDING_HEADER_COMPASSHUD = "CompassHUD"
 _G.BINDING_NAME_COMPASSHUD_SUPERTRACK = "Toggle Supertracking for Minimap icon"
 
-local Const = Addon.CONST
-local Debug = Addon.DEBUG
-
-local AceDBOptions      = LibStub("AceDBOptions-3.0")
-local AceConfig         = LibStub("AceConfig-3.0")
-local AceConfigDialog   = LibStub("AceConfigDialog-3.0")
-local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local LSM               = LibStub("LibSharedMedia-3.0")
 local HBD               = LibStub("HereBeDragons-2.0")
 
 local GetPlayerFacing = GetPlayerFacing
-local GetQuestsOnMap = C_QuestLog.GetQuestsOnMap
-local GetLogIndexForQuestID = C_QuestLog.GetLogIndexForQuestID
-local GetQuestInfo = C_QuestLog.GetInfo
 local GetTitleForQuestID = C_QuestLog.GetTitleForQuestID
-local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
-local GetNextWaypoint = C_QuestLog.GetNextWaypoint
-local GetNextWaypointForMap = C_QuestLog.GetNextWaypointForMap
-local GetQuestAdditionalHighlights = C_QuestLog.GetQuestAdditionalHighlights
-local IsQuestComplete = C_QuestLog.IsComplete
-local GetQuestRewardCurrencyInfo = C_QuestLog.GetQuestRewardCurrencyInfo
-local GetNumWorldQuestWatches = C_QuestLog.GetNumWorldQuestWatches
-local GetQuestIDForWorldQuestWatchIndex = C_QuestLog.GetQuestIDForWorldQuestWatchIndex
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
-local IsTaskQuestActive = C_TaskQuest.IsActive
-local RequestPreloadRewardData = C_TaskQuest.RequestPreloadRewardData
 local GetWorldQuestsOnMap = C_TaskQuest.GetQuestsOnMap
 local GetTaskQuestInfoByQuestID = C_TaskQuest.GetQuestInfoByQuestID
 local GetAvailableQuestLines = C_QuestLine and C_QuestLine.GetAvailableQuestLines
-local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
-local GetMapInfo = C_Map.GetMapInfo
 local GetUserWaypoint = C_Map.GetUserWaypoint
-local GetBestMapForUnit = C_Map.GetBestMapForUnit
-local GetMapLinksForMap = C_Map.GetMapLinksForMap
-local CanSetUserWaypointOnMap = C_Map.CanSetUserWaypointOnMap
-local SetUserWaypoint = C_Map.SetUserWaypoint
-local GetMapChildrenInfo = C_Map.GetMapChildrenInfo
-local ClearUserWaypoint = C_Map.ClearUserWaypoint
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
-local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
 local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
-local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
-local IsSuperTrackingAnything = C_SuperTrack.IsSuperTrackingAnything
-local SetSuperTrackedQuestID = C_SuperTrack.SetSuperTrackedQuestID
-local SetSuperTrackedMapPin = C_SuperTrack.SetSuperTrackedMapPin
-local SetSuperTrackedUserWaypoint = C_SuperTrack.SetSuperTrackedUserWaypoint
-local SetSuperTrackedVignette = C_SuperTrack.SetSuperTrackedVignette
-local GetAreaPOIForMap =  C_AreaPoiInfo.GetAreaPOIForMap
-local GetDelvesForMap =  C_AreaPoiInfo.GetDelvesForMap
-local GetEventsForMap =  C_AreaPoiInfo.GetEventsForMap
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
-local GetQuestHubsForMap = C_AreaPoiInfo.GetQuestHubsForMap
-local GetDragonridingRacesForMap = C_AreaPoiInfo.GetDragonridingRacesForMap
-local GetDungeonEntrancesForMap = C_EncounterJournal.GetDungeonEntrancesForMap
-local GetClassColor = C_ClassColor.GetClassColor
-local GetAtlasInfo = C_Texture.GetAtlasInfo
 local GetTaxiNodesForMap = C_TaxiMap.GetTaxiNodesForMap
-local GetVignettes = C_VignetteInfo.GetVignettes
 local GetVignettePosition = C_VignetteInfo.GetVignettePosition
 local GetVignetteInfo = C_VignetteInfo.GetVignetteInfo
-local GetGlidingInfo = C_PlayerInfo.GetGlidingInfo
 
 function updateHeading()
     if HUD.heading and HUD.heading.text and player.angle then
