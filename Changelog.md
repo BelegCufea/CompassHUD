@@ -28,6 +28,13 @@
 - A TomTom waypoint restored at login now uses the configured pointer font instead of the default one.
 - Quests whose type was not known yet when first tracked switch to the right pointer type.
 - Party members without class info get the party name color, not the raid one.
+- Arrival time shows `***` while moving away from the target instead of a time that is never reached.
+- Changing **Bypass scanning radius** applies immediately.
+
+## Misc
+
+- Updated libraries: Ace3 (r1403), HereBeDragons (2.18), LibDBIcon-1.0 (57), LibSharedMedia-3.0 (12000005). The unused HereBeDragons-Pins is no longer loaded.
+- Less work per update: bursts of quest events are handled once, hidden texts skip their calculations, and party/raid markers are sorted only when positions refresh.
 
 # v1.6.5 (6.11.2026)
 
