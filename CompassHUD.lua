@@ -4655,7 +4655,10 @@ local function setPOITrackNode(poiID, poiType)
 
     local id = poiType .. "_" .. poiID
     if not poiTrackPointTable[player.uiMapID][id] then
-        local poi = poiCache[poiID] and poiCache[poiID][player.uiMapID] and poiCache[poiID][player.uiMapID].poi or GetAreaPOIInfo(player.uiMapID, poiID)
+        -- current game data first; the continent cache (filled once per session) only as a fallback,
+        -- so an event or other dynamic POI does not keep details from when the continent was cached
+        local poi = GetAreaPOIInfo(player.uiMapID, poiID)
+            or (poiCache[poiID] and poiCache[poiID][player.uiMapID] and poiCache[poiID][player.uiMapID].poi)
         if not (poi and poi.position) then return end
         if not poi.atlasName then
             local pointerType = getPointerType(nil, selectedPin)
