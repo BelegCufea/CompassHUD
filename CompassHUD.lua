@@ -609,6 +609,7 @@ Addon.Defaults = {
         LineColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         Visibility      = "[petbattle] hide; show",
         HideFar         = false,
+        HideTomTomAtTarget = true,
         UseCurrentMap   = true,
         UseMeters       = false,
         RoundDistance   = false,
@@ -1878,6 +1879,13 @@ local SupertrackerOptions = {
                     desc = "If the tracked quest or map pin is located in a different zone, the pointer will attempt to use map-suggested transitions (e.g., portals, entrances) instead of pointing directly to the marker.",
                     width = 1.5,
                     order = 66,
+                },
+                HideTomTomAtTarget = {
+                    type = "toggle",
+                    name = "Hide TomTom pointer at the tracked target",
+                    desc = "If a TomTom waypoint is at the same place (within 10 yards) as the quest, map pin or POI the game is tracking, show only the game's pointer. The TomTom pointer comes back as soon as the game tracks something else.",
+                    width = 1.5,
+                    order = 67,
                 },
             },
         },
@@ -3963,6 +3971,9 @@ local function createQuestIcon(questID, questType)
 	return questPointer
 end
 
+-- Two targets closer than this are the same place (e.g. an addon's TomTom waypoint and its map pin copy)
+local SAME_POINT_YARDS = 10
+
 local function setQuestsIcons()
     local vignetteGUID = GetSuperTrackedVignette()
     local supertrackingType = GetHighestPrioritySuperTrackingType()
@@ -3974,8 +3985,26 @@ local function setQuestsIcons()
     if trackedQuest and isTask(trackedQuest) and not IsTaskQuestActive(trackedQuest) then
         trackedQuest = 0
     end
+
+    -- the game's own super-tracked target (TomTom is not one of them)
+    local activeID = (trackedQuest and trackedQuest > 0 and trackedQuest)
+        or (isTrackingUserWaypoint and mapPin)
+        or (isTrackingPOI and selectedPin)
+        or nil
+
+    -- A TomTom waypoint at the game's target (addons often set both) is shown once, as the game's
+    -- pointer, if that one is enabled. Checked on every update, so the TomTom pointer is back as
+    -- soon as the game tracks something else.
+    local hideTomTom = false
+    local tt, target = questPointsTable[tomTom], activeID and questPointsTable[activeID]
+    if Options.HideTomTomAtTarget and tt and tt.track and tt.x and tt.y and target and target.x and target.y
+        and target.instance == tt.instance and target.frame and Options.Pointers[target.frame.pointerType].enabled then
+        local distance = HBD:GetWorldDistance(target.instance, tt.x, tt.y, target.x, target.y)
+        hideTomTom = distance ~= nil and distance <= SAME_POINT_YARDS
+    end
+
 	for questID, quest in pairs(questPointsTable) do
-        local questHide = false
+        local questHide = (questID == tomTom) and hideTomTom
         if quest.moreArgs and quest.moreArgs.vignetteGUID and quest.moreArgs.vignetteGUID == vignetteGUID and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
             questHide = true
             ClearAllSuperTracked()
@@ -4028,11 +4057,6 @@ local function setQuestsIcons()
 		end
 	end
 
-    -- the game's own super-tracked target (TomTom is not one of them)
-    local activeID = (trackedQuest and trackedQuest > 0 and trackedQuest)
-        or (isTrackingUserWaypoint and mapPin)
-        or (isTrackingPOI and selectedPin)
-        or nil
     updateSuperTrackedTexture(activeID)
 end
 
@@ -4980,7 +5004,6 @@ end
 -- Title of the TomTom waypoint at the same place as a user map pin.
 -- Some addons copy TomTom waypoints into a Blizzard user waypoint, which has no name.
 -- This works for any addon that sets the TomTom waypoint (Questie, BtWQuests, ...).
-local SAME_POINT_YARDS = 10
 local TOMTOM_TITLE_CACHE_SECONDS = 1
 local tomTomTitleCache = {}
 local function getTomTomWaypointTitle(uiMapID, x, y)

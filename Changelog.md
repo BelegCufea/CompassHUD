@@ -6,6 +6,7 @@
 - Global **Pointer font** (font, size, outline, color) on the **Appearance** tab. It applies to every pointer text that has no custom font of its own: supertracker, minimap icons, party/raid names and GatherMate2 nodes. Party/raid names keep their own color (class or custom). It is **off** by default, so the game font is used as before.
 - **Bypass scanning radius** for every minimap icon type (**Minimap icons → Filter**). Selected types are shown in the whole zone, the same as the existing World Quests option. Vignettes are only reported by the game near the player, so for them it has little effect.
 - Option **Show distances as whole numbers** (**General**). Off by default, so distances under 1000 keep their decimal.
+- Option **Hide TomTom pointer at the tracked target** (**Supertracker → General**), **on by default**. Addons such as Questie or BtWQuests often set both a TomTom waypoint and a game map pin for the same place, which showed two pointers. Now only the game's pointer is shown while both are within 10 yards; the TomTom pointer comes back as soon as the game tracks something else. Turn the option off to get the previous behavior.
 
 ## Fix
 
