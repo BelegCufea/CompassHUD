@@ -5446,6 +5446,65 @@ function Addon:ConstructDefaultsAndOptions()
     local pointersDefaults = {}
     local pointersOptionsArgs = {}
 
+    -- Fills the preview rows of the Presets page for the selected texture preset.
+    -- Built when the preset changes (and once at start), not in the option's get, so reading
+    -- the setting does not itself request another options refresh.
+    local function buildPresetPreviews()
+        local previews = Addon.Options.args.Supertracker.args.Pointers.args.Presets.args.Preview.args
+        wipe(previews)
+        for k, v in pairs(questPointers) do
+            local preset = texturePresets[texturePreset][k]
+            local default = texturePresets[defaultTexturePreset][k]
+            local reference = preset and preset.reference and texturePresets[texturePreset][preset.reference]
+            local atlasID = preset and (preset.atlasIDavailable or (reference and reference.atlasIDavailable)) or default.atlasIDavailable
+            local atlasAltID = preset and (preset.atlasIDturnin or (reference and reference.atlasIDturnin)) or default.atlasIDturnin or (reference and reference.atlasIDavailable) or default.atlasIDavailable
+            previews["AvailablePreview_"..k] = {
+                type = "description",
+                order = k*10,
+                name = "",
+                width = 1/6,
+                image = function()
+                    if atlasID then
+                        return getAtlasTexture(atlasID)
+                    end
+                    return nil
+                end,
+                imageWidth = 24,
+                imageHeight = 24,
+                imageCoords = function(info)
+                    if atlasID then
+                        return getAtlasCoords(atlasID)
+                    end
+                end,
+            }
+            previews["TurnInPreview_"..k] = {
+                type = "description",
+                order = k*10+1,
+                name = "",
+                width = 1/6,
+                image = function()
+                    if atlasID then
+                        return getAtlasTexture(atlasAltID)
+                    end
+                    return nil
+                end,
+                imageWidth = 24,
+                imageHeight = 24,
+                imageCoords = function(info)
+                    if atlasID then
+                        return getAtlasCoords(atlasAltID)
+                    end
+                end,
+            }
+            previews["QuestType_"..k] = {
+                type = "description",
+                order = k*10+5,
+                name = v,
+                width = 5/6,
+            }
+        end
+    end
+
     -- presets
     pointersOptionsArgs["Presets"] = {
         type = "group",
@@ -5464,63 +5523,13 @@ function Addon:ConstructDefaultsAndOptions()
                     return val
                 end,
                 get = function(info)
-                    local previews = Addon.Options.args.Supertracker.args.Pointers.args.Presets.args.Preview.args
-                    wipe(previews)
-                    for k, v in pairs(questPointers) do
-                        local preset = texturePresets[texturePreset][k]
-                        local default = texturePresets[defaultTexturePreset][k]
-                        local reference = preset and preset.reference and texturePresets[texturePreset][preset.reference]
-                        local atlasID = preset and (preset.atlasIDavailable or (reference and reference.atlasIDavailable)) or default.atlasIDavailable
-                        local atlasAltID = preset and (preset.atlasIDturnin or (reference and reference.atlasIDturnin)) or default.atlasIDturnin or (reference and reference.atlasIDavailable) or default.atlasIDavailable
-                        previews["AvailablePreview_"..k] = {
-                            type = "description",
-                            order = k*10,
-                            name = "",
-                            width = 1/6,
-                            image = function()
-                                if atlasID then
-                                    return getAtlasTexture(atlasID)
-                                end
-                                return nil
-                            end,
-                            imageWidth = 24,
-                            imageHeight = 24,
-                            imageCoords = function(info)
-                                if atlasID then
-                                    return getAtlasCoords(atlasID)
-                                end
-                            end,
-                        }
-                        previews["TurnInPreview_"..k] = {
-                            type = "description",
-                            order = k*10+1,
-                            name = "",
-                            width = 1/6,
-                            image = function()
-                                if atlasID then
-                                    return getAtlasTexture(atlasAltID)
-                                end
-                                return nil
-                            end,
-                            imageWidth = 24,
-                            imageHeight = 24,
-                            imageCoords = function(info)
-                                if atlasID then
-                                    return getAtlasCoords(atlasAltID)
-                                end
-                            end,
-                        }
-                        previews["QuestType_"..k] = {
-                            type = "description",
-                            order = k*10+5,
-                            name = v,
-                            width = 5/6,
-                        }
-                    end
-                    AceConfigRegistry:NotifyChange(Const.METADATA.NAME)
                     return texturePreset
                 end,
-                set = function(info, value) texturePreset = value end,
+                set = function(info, value)
+                    texturePreset = value
+                    buildPresetPreviews()
+                    AceConfigRegistry:NotifyChange(Const.METADATA.NAME)
+                end,
             },
             Set = {
                 type = "execute",
@@ -6088,6 +6097,7 @@ function Addon:ConstructDefaultsAndOptions()
     TrackingOption.args.Group = GroupOptions
     TrackingOption.args.GatherMate = GatherMateOptions
     self.Options.args.Supertracker = SupertrackerOptions
+    buildPresetPreviews()
     self.Options.args.TrackingIntegrations = TrackingOption
     self.Options.args.Profiles = AceDBOptions:GetOptionsTable(self.db)
     self.Options.args.Profiles.order = 900
