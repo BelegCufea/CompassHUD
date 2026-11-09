@@ -4497,49 +4497,94 @@ local function updatePoiTrack()
     end
 end
 
+local POI_TRACK_WORLD_QUEST = "WorldQuest" -- world quests have their own bypass toggle
+
+-- Minimap icon frames are reused: WoW never frees frames, so icons that go away (vignettes, world
+-- quests) hand theirs back to this pool instead of leaving it behind.
+-- (kept in one table: the main chunk is close to Lua's limit of 200 local variables)
+local poiNodes = {
+    framePool = {},
+    seen = {}, -- vignettes and world quests the game reported in the current scan
+}
+
 local function createPOITrackNode(data)
-    local poiTrackNode =  data.frame or CreateFrame("FRAME", nil, HUD)
-	poiTrackNode:SetSize(textureHeight, textureHeight)
-	poiTrackNode:SetPoint("CENTER");
-	poiTrackNode.texture = poiTrackNode:CreateTexture(nil, "ARTWORK")
-	poiTrackNode.texture:SetAllPoints(poiTrackNode)
-    poiTrackNode.texture:SetAtlas(data.atlasName)
-    poiTrackNode.texture:SetSize(textureHeight, textureHeight)
-    if data.circle then
-        poiTrackNode.texture:SetSize(textureHeight, textureHeight)
+    local poiTrackNode = data.frame or table.remove(poiNodes.framePool)
+    if not poiTrackNode then
+        poiTrackNode = CreateFrame("FRAME", nil, HUD)
+        poiTrackNode.texture = poiTrackNode:CreateTexture(nil, "ARTWORK")
+        poiTrackNode.texture:SetAllPoints(poiTrackNode)
         poiTrackNode.mask = poiTrackNode:CreateMaskTexture()
         poiTrackNode.mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         poiTrackNode.mask:SetAllPoints(poiTrackNode.texture)
-        poiTrackNode.texture:AddMaskTexture(poiTrackNode.mask)
         poiTrackNode.border = poiTrackNode:CreateTexture(nil, "OVERLAY", nil, 1)
         poiTrackNode.border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
         poiTrackNode.border:SetAllPoints(poiTrackNode.texture)
+        poiTrackNode.DistanceText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+        poiTrackNode.DistanceText:SetJustifyV("TOP")
+        poiTrackNode.DistanceText:SetSize(0, 16)
+        poiTrackNode.DistanceText:SetParent(poiTrackNode)
+        poiTrackNode.TimeText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+        poiTrackNode.TimeText:SetJustifyV("TOP")
+        poiTrackNode.TimeText:SetSize(0, 16)
+        poiTrackNode.TimeText:SetParent(poiTrackNode)
+        poiTrackNode.Title = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+        poiTrackNode.Title:SetJustifyV("TOP")
+        poiTrackNode.Title:SetSize(0, 16)
+        poiTrackNode.Title:SetParent(poiTrackNode)
+        poiTrackNode.type = "poiTrack"
+        poiTrackNode:SetScript("OnUpdate", questPointerSetTexts)
     end
-    poiTrackNode.DistanceText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    poiTrackNode.DistanceText:SetJustifyV("TOP")
-    poiTrackNode.DistanceText:SetSize(0, 16)
-    poiTrackNode.DistanceText:SetParent(poiTrackNode)
-    poiTrackNode.TimeText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    poiTrackNode.TimeText:SetJustifyV("TOP")
-    poiTrackNode.TimeText:SetSize(0, 16)
-    poiTrackNode.TimeText:SetParent(poiTrackNode)
-    poiTrackNode.Title = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    poiTrackNode.Title:SetJustifyV("TOP")
-    poiTrackNode.Title:SetSize(0, 16)
-    poiTrackNode.Title:SetParent(poiTrackNode)
+    poiTrackNode:SetSize(textureHeight, textureHeight)
+    poiTrackNode:ClearAllPoints()
+    poiTrackNode:SetPoint("CENTER")
+    poiTrackNode:Hide()
+    poiTrackNode.texture:SetAtlas(data.atlasName)
+    poiTrackNode.texture:SetSize(textureHeight, textureHeight)
+    -- round icon with a border (world quests); a reused frame may have had it or not
+    if data.circle then
+        if not poiTrackNode.masked then
+            poiTrackNode.texture:AddMaskTexture(poiTrackNode.mask)
+            poiTrackNode.masked = true
+        end
+        poiTrackNode.border:Show()
+    else
+        if poiTrackNode.masked then
+            poiTrackNode.texture:RemoveMaskTexture(poiTrackNode.mask)
+            poiTrackNode.masked = false
+        end
+        poiTrackNode.border:Hide()
+    end
     poiTrackNode.Title:SetText(data.name)
-    poiTrackNode.type = "poiTrack"
     poiTrackNode.instance = data.instance
     poiTrackNode.x = data.x
     poiTrackNode.y = data.y
     poiTrackNode.elapsed = 0
-    poiTrackNode:SetScript("OnUpdate", questPointerSetTexts)
+    poiTrackNode.minDistance = nil
+    poiTrackNode.ttaLastDistance = nil
 	return poiTrackNode
+end
+
+-- Vignettes and world quests come and go; other minimap icon types are fixed per map.
+function poiNodes.isTransient(poi)
+    return poi.trackType == poiTypeEnum.VIGNETTE or poi.trackType == POI_TRACK_WORLD_QUEST
+end
+
+-- Removes a minimap icon node and puts its frame back into the pool.
+function poiNodes.release(pois, id)
+    local poi = pois[id]
+    pois[id] = nil
+    if poi == poiTrackHeading then
+        poiTrackHeading = nil
+    end
+    if poi and poi.frame then
+        poi.frame:Hide()
+        table.insert(poiNodes.framePool, poi.frame)
+        poi.frame = nil
+    end
 end
 
 -- Each minimap icon node remembers its filter type (poi.trackType). It decides the "Bypass scanning
 -- radius" setting at draw time, so a change of that setting applies right away.
-local POI_TRACK_WORLD_QUEST = "WorldQuest" -- world quests have their own bypass toggle
 local function poiTrackBypassesRadius(poi)
     if poi.trackType == POI_TRACK_WORLD_QUEST then
         return Options.POITrackWQWholeZone
@@ -4587,8 +4632,11 @@ local function setPOITrackNodes()
         if poiTrackCurrentMap ~= player.uiMapID then
             for map, pois in pairs(poiTrackPointTable) do
                 if map ~= player.uiMapID then
-                    for _, poi in pairs(pois) do
-                        if poi.frame then
+                    for id, poi in pairs(pois) do
+                        if poiNodes.isTransient(poi) then
+                            -- will be scanned again when the player comes back
+                            poiNodes.release(pois, id)
+                        elseif poi.frame then
                             poi.visible = false
                             poi.frame:Hide()
                         end
@@ -4600,6 +4648,7 @@ local function setPOITrackNodes()
         for poiID, _ in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID]  or {}) do
             poiTrackPointTable[player.uiMapID][poiID].visible = false
         end
+        wipe(poiNodes.seen)
         local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
         if x and y then
             if not poiTrackPointTable[player.uiMapID] then
@@ -4733,6 +4782,7 @@ local function setPOITrackNodes()
                         end
                         poiTrackPointTable[player.uiMapID][id].visible = true
                         poiTrackPointTable[player.uiMapID][id].trackType = poiTypeEnum.VIGNETTE
+                        poiNodes.seen[id] = true
                     end
                 end
             end
@@ -4776,7 +4826,17 @@ local function setPOITrackNodes()
                             poiTrackPointTable[player.uiMapID][id].visible = true
                         end
                         poiTrackPointTable[player.uiMapID][id].trackType = POI_TRACK_WORLD_QUEST
+                        poiNodes.seen[id] = true
                     end
+                end
+            end
+
+            -- vignettes and world quests the game no longer reports (killed, looted, expired,
+            -- filtered out) are removed, so this map's list does not grow during the session
+            local pois = poiTrackPointTable[player.uiMapID]
+            for id, poi in pairs(pois) do
+                if poiNodes.isTransient(poi) and not poiNodes.seen[id] then
+                    poiNodes.release(pois, id)
                 end
             end
         end
