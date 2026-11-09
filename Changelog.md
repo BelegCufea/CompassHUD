@@ -7,6 +7,7 @@
 - **Bypass scanning radius** for every minimap icon type (**Minimap icons → Filter**). Selected types are shown in the whole zone, the same as the existing World Quests option. Vignettes are only reported by the game near the player, so for them it has little effect.
 - Option **Show distances as whole numbers** (**General**). Off by default, so distances under 1000 keep their decimal.
 - Option **Hide duplicate TomTom pointer** (**Supertracker → General**, shown when TomTom is loaded), **on by default**. Addons such as Questie or BtWQuests often set both a TomTom waypoint and a game map pin for the same place, which showed two pointers. Now only the game's pointer is shown while both are within 10 yards; the TomTom pointer comes back as soon as the game tracks something else. Turn the option off to get the previous behavior.
+- **GatherLite** support (WoW: Forever): gathering nodes come from GatherLite when GatherMate2 is not loaded. The settings section is now called **GatherMate2 / GatherLite**; node types follow GatherLite's minimap tracking toggles.
 
 ## Fix
 
@@ -35,7 +36,7 @@
 ## Misc
 
 - Updated libraries: Ace3 (r1403), HereBeDragons (2.18), LibDBIcon-1.0 (57), LibSharedMedia-3.0 (12000005). The unused HereBeDragons-Pins is no longer loaded.
-- Less work per update: bursts of quest events are handled once, hidden texts skip their calculations, and party/raid markers are sorted only when positions refresh.
+- Less work per update: bursts of quest events are handled once, hidden texts skip their calculations, and party/raid markers are sorted only when positions refresh, and only gathering nodes within the scanning radius are kept (previously every node seen during the session, on every map, was processed on every update).
 
 # v1.6.5 (6.11.2026)
 

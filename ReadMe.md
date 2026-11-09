@@ -100,7 +100,7 @@ In the `Party/Raid` section, you can configure the visibility of party and raid 
 
 Additional sections support integrations with other addons (off by default).
 
-For example, if you have `GatherMate2`, you can display possible gathering node locations on the HUD.
+For example, if you have `GatherMate2`, you can display possible gathering node locations on the HUD. In WoW: Forever, `GatherLite` works the same way when GatherMate2 is not loaded.
 
 ### Miscelaneous
 

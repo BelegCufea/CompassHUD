@@ -1312,7 +1312,7 @@ Addon.Options = {
                                 PointerFontDesc = {
                                     type = "description",
                                     order = 1,
-                                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Default font for all pointer texts (supertracker, minimap tracking, party/raid names, GatherMate2 nodes). Texts with their own custom font enabled keep using it. Party/raid names keep their own color setting.|r",
+                                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Default font for all pointer texts (supertracker, minimap tracking, party/raid names, gathering nodes). Texts with their own custom font enabled keep using it. Party/raid names keep their own color setting.|r",
                                     fontSize = "medium",
                                     width = "full",
                                 },
@@ -3037,7 +3037,7 @@ local GroupOptions = {
 local GatherMateOptions = {
     type = "group",
     order = 1010,
-    name = "GatherMate2 addon",
+    name = "GatherMate2 / GatherLite",
     childGroups = "tab",
     args = {
         Settings = {
@@ -3048,7 +3048,7 @@ local GatherMateOptions = {
                 ModuleDescription = {
                     type = "description",
                     order = 0,
-                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This module will display potential locations of gathering nodes.|r",
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This module will display potential locations of gathering nodes from GatherMate2, or from GatherLite when GatherMate2 is not loaded. Node types follow the addon's own display settings (GatherMate2 node filter, GatherLite minimap tracking).|r",
                     fontSize = "medium",
                 },                GatherMateEnabled = {
                     type = "toggle",
@@ -4352,6 +4352,57 @@ local function scanGatherMate2(zoneX, zoneY)
     end
 end
 
+-- GatherLite node source (WoW: Forever), used when GatherMate2 is not loaded. GatherLite has no
+-- documented API: these are its own functions, each one checked, so a change in GatherLite means
+-- no nodes rather than Lua errors. Its node records are stable tables, so they serve as keys.
+local GATHERLITE_NODE_TYPES = { "mining", "herbalism", "containers", "fishing" }
+local gatherLiteObjects = {} -- object ID -> GatherLite object (GetNodeObject searches its whole list)
+
+local function getGatherLiteObject(gl, objectID)
+    local object = gatherLiteObjects[objectID]
+    if object == nil then
+        object = gl:GetNodeObject(objectID) or false
+        gatherLiteObjects[objectID] = object
+    end
+    return object or nil
+end
+
+local function scanGatherLite()
+    local gl = GatherLite
+    if not (gl and gl.IsLoaded and gl.GetNearbyZoneNodes and gl.EnsureNodeWorld and gl.GetNodeObject) or not gl:IsLoaded() then
+        return
+    end
+    local zoneX, zoneY, mapID = HBD:GetPlayerZonePosition(true)
+    if not (zoneX and zoneY and mapID and player.instance and player.x and player.y) then
+        return
+    end
+    local radius = Options.GatherMateRadius
+    local usePredefined = not (gl.db and gl.db.global and gl.db.global.usePredefined == false)
+    for _, nodeType in ipairs(GATHERLITE_NODE_TYPES) do
+        -- follow GatherLite's own minimap tracking toggles, like GatherMate2's display filter
+        if not gl.GetNodeTracking or gl:GetNodeTracking("minimap", nodeType) then
+            for _, node in ipairs(gl:GetNearbyZoneNodes(nodeType, mapID, player.instance, zoneX, zoneY, radius) or {}) do
+                if gatherMatePointTable[node] then
+                    gatherNodesSeen[node] = true
+                elseif not (node.predefined and not usePredefined) and not (gl.IsIgnored and gl:IsIgnored(node.object)) then
+                    if not (node.worldX and node.worldY and node.instance) then
+                        gl:EnsureNodeWorld(node)
+                    end
+                    if node.instance == player.instance and node.worldX and node.worldY then
+                        -- GatherLite returns whole index cells: keep only nodes within the radius
+                        local distance = HBD:GetWorldDistance(player.instance, player.x, player.y, node.worldX, node.worldY)
+                        local object = distance and distance <= radius and getGatherLiteObject(gl, node.object)
+                        if object then
+                            local title = gl.translate and gl:translate(object.name) or object.name
+                            addGatherNode(node, node.worldX, node.worldY, object.icon, title)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function updateGatherMate()
     for key, node in pairs(gatherMatePointTable) do
         if not Options.GatherMateEnabled then
@@ -4363,13 +4414,18 @@ local function updateGatherMate()
 end
 
 local function setGatherMateNodes()
-    if not Options.GatherMateEnabled or not GatherMate2 then return end
+    -- GatherMate2 if loaded, else GatherLite
+    if not Options.GatherMateEnabled or not (GatherMate2 or GatherLite) then return end
     if gatherMateThrottle and gatherMateThrottle >= Options.GatherMateInterval then
         gatherMateThrottle = 0
         local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
         if x and y then
             wipe(gatherNodesSeen)
-            scanGatherMate2(x, y)
+            if GatherMate2 then
+                scanGatherMate2(x, y)
+            else
+                scanGatherLite()
+            end
             -- nodes no longer in range (or on another map) give their frame back to the pool
             for key in pairs(gatherMatePointTable) do
                 if not gatherNodesSeen[key] then
