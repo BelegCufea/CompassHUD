@@ -4577,15 +4577,20 @@ local function setPOITrackNodes()
                     local vignettePosition = GetVignettePosition(vignetteGUID, player.uiMapID)
                     if vignetteInfo and vignettePosition then
                         local id = poiTypeEnum.VIGNETTE .. "_" .. vignetteInfo.vignetteGUID
-                        if not poiTrackPointTable[player.uiMapID][id] then
-                            poiTrackPointTable[player.uiMapID][id] = vignetteInfo
-                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(vignettePosition.x, vignettePosition.y, player.uiMapID)
-                            poiTrackPointTable[player.uiMapID][id].instance = player.uiMapID
-                            poiTrackPointTable[player.uiMapID][id].x = xWorld
-                            poiTrackPointTable[player.uiMapID][id].y = yWorld
-                            poiTrackPointTable[player.uiMapID][id].frame = createPOITrackNode(poiTrackPointTable[player.uiMapID][id])
-                            poiTrackPointTable[player.uiMapID][id].scale = 1.3
-                            updatePOITrackNode(poiTrackPointTable[player.uiMapID][id])
+                        local node = poiTrackPointTable[player.uiMapID][id]
+                        -- vignettes can move (e.g. wandering rares): refresh the position on every scan
+                        local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(vignettePosition.x, vignettePosition.y, player.uiMapID)
+                        if not node then
+                            node = vignetteInfo
+                            poiTrackPointTable[player.uiMapID][id] = node
+                            node.instance = player.uiMapID
+                            node.x, node.y = xWorld, yWorld
+                            node.frame = createPOITrackNode(node)
+                            node.scale = 1.3
+                            updatePOITrackNode(node)
+                        else
+                            node.x, node.y = xWorld, yWorld
+                            node.frame.x, node.frame.y = xWorld, yWorld
                         end
                         poiTrackPointTable[player.uiMapID][id].visible = true
                         poiTrackPointTable[player.uiMapID][id].wholeZone = Options.POITrackWholeZone[poiTypeEnum.VIGNETTE]
