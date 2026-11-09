@@ -11,6 +11,20 @@
 - **Flightpoints** minimap tracking no longer shows the other faction's flight points, the same as the world map. **Only closest flightpoint** now picks the closest one you can actually use.
 - Possible Lua error when another addon removes a TomTom waypoint before any TomTom arrow was shown.
 - Supertracked available quests (**!** on the world map) now show the quest name, and the pointer uses the quest's real position instead of the mouse cursor position.
+- Lua errors when a pointer category is disabled, when the player position is briefly unavailable, when the game has no details for a map POI, or when TomTom sets a waypoint without a title.
+- The minimap icon closest to your heading is now picked correctly around north, and the supertrack keybinding no longer acts on an icon that is gone.
+- Copying pointer settings no longer links the colors of the two pointer types.
+- Switching, copying or resetting a profile now updates the minimap button and compartment entry, and hides party/raid markers the new profile turns off.
+- Crossing a zone no longer shows the HUD when the **Visibility** condition says hide.
+- Moving vignettes (e.g. wandering rares) are followed instead of staying at the first position.
+- A supertracked map pin without position data no longer follows the mouse cursor on later events.
+- The keybinding set in the options is saved and survives logout.
+- Disabling World Quest Tracker for a session no longer resets the **World Quests** filter to All.
+- Arrival time uses vehicle speed in a vehicle and skyriding speed while gliding.
+- Completed quest pointers with a world map texture show the side arrow instead of rotating.
+- Pointer textures stay the same after a settings change for waypoints made from minimap icons.
+- Quests whose type was not known yet when first tracked switch to the right pointer type.
+- Party members without class info get the party name color, not the raid one.
 
 # v1.6.5 (6.11.2026)
 
