@@ -4925,8 +4925,15 @@ end
 -- Some addons copy TomTom waypoints into a Blizzard user waypoint, which has no name.
 -- This works for any addon that sets the TomTom waypoint (Questie, BtWQuests, ...).
 local SAME_POINT_YARDS = 10
+local TOMTOM_TITLE_CACHE_SECONDS = 1
+local tomTomTitleCache = {}
 local function getTomTomWaypointTitle(uiMapID, x, y)
     if not (TomTom and type(TomTom.waypoints) == "table" and uiMapID and x and y) then return end
+    -- OnEvent runs on frequent events (QUEST_LOG_UPDATE, ...): reuse the last result for the same pin for a moment
+    local cache, now = tomTomTitleCache, GetTime()
+    if cache.uiMapID == uiMapID and cache.x == x and cache.y == y and cache.expires and now < cache.expires then
+        return cache.title
+    end
     local bestTitle, bestDistance
     for _, mapWaypoints in pairs(TomTom.waypoints) do
         for _, uid in pairs(mapWaypoints) do
@@ -4939,6 +4946,7 @@ local function getTomTomWaypointTitle(uiMapID, x, y)
             end
         end
     end
+    cache.uiMapID, cache.x, cache.y, cache.title, cache.expires = uiMapID, x, y, bestTitle, now + TOMTOM_TITLE_CACHE_SECONDS
     return bestTitle
 end
 
