@@ -42,9 +42,10 @@ Find the `CompassHUD` addon in the `Options` -> `AddOns` section of the game men
 
 ### HUD settings
 
-- The `General` panel contains basic global settings. For many of these settings, there is a tooltip shown while hovering over the them.
-  The `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one.</br>
+- The `General` panel contains basic global settings. For many of these settings, there is a tooltip shown while hovering over the them.</br>
 ![Settings](https://i.imgur.com/W5uhfbJ.png)
+
+- The `Appearance` panel styles the HUD frame (border, background, edge line). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one.
 
 - The `Compass HUD` panel lets you choose between the default texture or customize your own strip with posibility to show/hide/edit several elements.</br>
 ![Custom](https://i.imgur.com/ElQIDGp.png)

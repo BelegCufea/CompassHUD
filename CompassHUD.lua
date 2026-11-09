@@ -1103,70 +1103,6 @@ Addon.Options = {
                             step = 1,
                             bigStep = 10,
                         },
-                        HeaderPointerFont = { type = "header", order = 200, name = "Pointer font", },
-                        PointerFontDesc = {
-                            type = "description",
-                            order = 201,
-                            name = "|cnACCOUNT_WIDE_FONT_COLOR:Default font for all pointer texts (supertracker, minimap tracking, party/raid names, GatherMate2 nodes). Texts with their own custom font enabled keep using it.|r",
-                            fontSize = "medium",
-                            width = "full",
-                        },
-                        PointerFontCustom = {
-                            type = "toggle",
-                            order = 210,
-                            name = "Use custom pointer font",
-                            desc = "If disabled, the game's default font (GameFontNormal) is used.",
-                            width = "full",
-                        },
-                        PointerFont = {
-                            type = "select",
-                            order = 220,
-                            name = "Font",
-                            width = 1,
-                            dialogControl = "LSM30_Font",
-                            values = AceGUIWidgetLSMlists['font'],
-                            disabled = function() return not Options.PointerFontCustom end,
-                        },
-                        PointerFontSize = {
-                            type = "range",
-                            order = 230,
-                            name = "Size",
-                            width = 3/4,
-                            min = 2,
-                            max = 36,
-                            step = 0.5,
-                            disabled = function() return not Options.PointerFontCustom end,
-                        },
-                        PointerFontFlags = {
-                            type = "select",
-                            order = 240,
-                            name = "Outline",
-                            width = 3/4,
-                            values = {
-                                [""] = "None",
-                                ["OUTLINE"] = "Normal",
-                                ["THICKOUTLINE"] = "Thick",
-                            },
-                            disabled = function() return not Options.PointerFontCustom end,
-                        },
-                        PointerFontColor = {
-                            type = "color",
-                            order = 250,
-                            name = "Color",
-                            width = 1/2,
-                            hasAlpha = true,
-                            get = function(info)
-                                return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
-                            end,
-                            set = function (info, r, g, b, a)
-                                Options[info[#info]].r = r
-                                Options[info[#info]].g = g
-                                Options[info[#info]].b = b
-                                Options[info[#info]].a = a
-                                Addon:UpdateHUDSettings()
-                            end,
-                            disabled = function() return not Options.PointerFontCustom end,
-                        },
                         BlankVisibility = { type = "description", order = 499, fontSize = "small",name = "",width = "full", },
                         Visibility = {
                             type = "input",
@@ -1325,6 +1261,77 @@ Addon.Options = {
                                         Options[info[#info]].a = a
                                         Addon:UpdateHUDSettings()
                                     end,
+                                },
+                            },
+                        },
+                        PointerFontGroup = {
+                            type = "group",
+                            order = 90,
+                            name = "Pointer font",
+                            inline = true,
+                            args = {
+                                PointerFontDesc = {
+                                    type = "description",
+                                    order = 1,
+                                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Default font for all pointer texts (supertracker, minimap tracking, party/raid names, GatherMate2 nodes). Texts with their own custom font enabled keep using it.|r",
+                                    fontSize = "medium",
+                                    width = "full",
+                                },
+                                PointerFontCustom = {
+                                    type = "toggle",
+                                    order = 10,
+                                    name = "Use custom pointer font",
+                                    desc = "If disabled, the game's default font (GameFontNormal) is used.",
+                                    width = "full",
+                                },
+                                PointerFont = {
+                                    type = "select",
+                                    order = 20,
+                                    name = "Font",
+                                    width = 1,
+                                    dialogControl = "LSM30_Font",
+                                    values = AceGUIWidgetLSMlists['font'],
+                                    disabled = function() return not Options.PointerFontCustom end,
+                                },
+                                PointerFontSize = {
+                                    type = "range",
+                                    order = 30,
+                                    name = "Size",
+                                    width = 3/4,
+                                    min = 2,
+                                    max = 36,
+                                    step = 0.5,
+                                    disabled = function() return not Options.PointerFontCustom end,
+                                },
+                                PointerFontFlags = {
+                                    type = "select",
+                                    order = 40,
+                                    name = "Outline",
+                                    width = 3/4,
+                                    values = {
+                                        [""] = "None",
+                                        ["OUTLINE"] = "Normal",
+                                        ["THICKOUTLINE"] = "Thick",
+                                    },
+                                    disabled = function() return not Options.PointerFontCustom end,
+                                },
+                                PointerFontColor = {
+                                    type = "color",
+                                    order = 50,
+                                    name = "Color",
+                                    width = 1/2,
+                                    hasAlpha = true,
+                                    get = function(info)
+                                        return Options[info[#info]].r, Options[info[#info]].g, Options[info[#info]].b, Options[info[#info]].a
+                                    end,
+                                    set = function (info, r, g, b, a)
+                                        Options[info[#info]].r = r
+                                        Options[info[#info]].g = g
+                                        Options[info[#info]].b = b
+                                        Options[info[#info]].a = a
+                                        Addon:UpdateHUDSettings()
+                                    end,
+                                    disabled = function() return not Options.PointerFontCustom end,
                                 },
                             },
                         },
