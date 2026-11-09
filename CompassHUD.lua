@@ -5191,7 +5191,8 @@ function Addon:CopyPointerSettings(from, to, what)
     dialog.OnAccept =  function ()
         for k, v in pairs(Addon.db.profile.Pointers[from]) do
             if k ~= "name" and k ~= "value" and k ~= "enabled" and k ~= "worldmapTexture" and optionNames[k] then
-                Addon.db.profile.Pointers[to][k] = v
+                -- copy tables (colors), so the two pointer types can be edited independently afterwards
+                Addon.db.profile.Pointers[to][k] = type(v) == "table" and CopyTable(v) or v
             end
         end
         AceConfigRegistry:NotifyChange(Const.METADATA.NAME)
