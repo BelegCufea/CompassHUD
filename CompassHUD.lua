@@ -4603,18 +4603,20 @@ local function setPOITrackNodes()
             end
 
             local mapWQ = GetWorldQuestsOnMap(player.uiMapID)
-            if Options.POITrackWQFilter ~= "None" and mapWQ then
+            -- local copy: falling back to "All" while World Quest Tracker is not loaded must not change the saved setting
+            local wqFilter = Options.POITrackWQFilter
+            if wqFilter ~= "None" and mapWQ then
                 local trackedWQ = {}
-                if Options.POITrackWQFilter == "Tracked" then
+                if wqFilter == "Tracked" then
                     for i = 1, GetNumWorldQuestWatches() do
                         trackedWQ[GetQuestIDForWorldQuestWatchIndex(i)] = true
                     end
-                elseif Options.POITrackWQFilter == "WQTracker" and WorldQuestTrackerAddon then
+                elseif wqFilter == "WQTracker" and WorldQuestTrackerAddon then
                     for _, wq in ipairs(WorldQuestTrackerAddon.QuestTrackList or {}) do
                         trackedWQ[wq.questID] = true
                     end
-                elseif Options.POITrackWQFilter == "WQTracker" then
-                    Options.POITrackWQFilter = "All"
+                elseif wqFilter == "WQTracker" then
+                    wqFilter = "All"
                 end
 
                 for _, wq in ipairs(mapWQ) do
@@ -4641,7 +4643,7 @@ local function setPOITrackNodes()
                                 poiTrackNode.texture:SetTexture(poiTrackPointTable[player.uiMapID][id].texture)
                             end
                         end
-                        if Options.POITrackWQFilter ~= "All" and not trackedWQ[wq.questID] then
+                        if wqFilter ~= "All" and not trackedWQ[wq.questID] then
                             poiTrackPointTable[player.uiMapID][id].visible = false
                         else
                             poiTrackPointTable[player.uiMapID][id].visible = true
