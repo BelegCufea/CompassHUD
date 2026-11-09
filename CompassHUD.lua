@@ -611,6 +611,7 @@ Addon.Defaults = {
         HideFar         = false,
         UseCurrentMap   = true,
         UseMeters       = false,
+        RoundDistance   = false,
         HeadingEnabled         = false,
         HeadingDecimals        = 0,
         HeadingTrueNorth       = true,
@@ -1040,6 +1041,13 @@ Addon.Options = {
                             desc = "If enabled, distances will be shown in meters instead of yards. (1 yard = 0.9144 meters)",
                             width = "full",
                             order = 28,
+                        },
+                        RoundDistance = {
+                            type = "toggle",
+                            name = "Show distances as whole numbers",
+                            desc = "If enabled, distances under 1000 are rounded to whole yards/meters instead of showing a decimal (e.g. 46 instead of 45.6).",
+                            width = "full",
+                            order = 28.5,
                         },
                         BlankInterval = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
                         Interval = {
@@ -3600,7 +3608,12 @@ local function questPointerSetTexts(frame, dt)
         frame.minDistance = frame.distance
     end
     frame:Show()
-    frame.DistanceText:SetText(BreakUpLargeNumbers(frame.distance * (Options.UseMeters and 0.9144 or 1)))
+    local distance = frame.distance * (Options.UseMeters and 0.9144 or 1)
+    if Options.RoundDistance then
+        -- BreakUpLargeNumbers shows a decimal below 1000 for non-integer values
+        distance = math.floor(distance + 0.5)
+    end
+    frame.DistanceText:SetText(BreakUpLargeNumbers(distance))
     if frame.timeHidden then return end
     if frame.elapsed >= 1 then
         frame.elapsed = 0
