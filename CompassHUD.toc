@@ -27,5 +27,6 @@ const.lua
 debug.lua
 Init.lua
 Data.lua
+Defaults.lua
 CompassHUD.lua
 databroker.lua
