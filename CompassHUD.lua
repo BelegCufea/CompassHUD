@@ -6084,7 +6084,9 @@ function Addon:OnEnable()
     player.realm = GetRealmName()
 
     self:UpdateHUDSettings()
-    HUD:SetScript('OnUpdate', onUpdate)
+    -- also needed after a runtime re-enable: the visibility driver only fires on a change,
+    -- and OnDisable hid the HUD
+    self:SetVisibility(shouldShowHUD())
 
     self:RegisterEvent("PLAYER_ENTERING_WORLD", OnZoneChange)
     self:RegisterEvent("PLAYER_MAP_CHANGED", OnZoneChange)
@@ -6112,8 +6114,14 @@ function Addon:OnEnable()
     self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
 end
 
+-- AceEvent and AceHook drop their own registrations on disable; this cleans up what the addon owns.
 function Addon:OnDisable()
-    HUD:SetScript('OnUpdate', nil)
+    -- stop the visibility driver first, or its next change would show the HUD again
+    UnregisterAttributeDriver(HUD, 'state-hudvisibility')
+    -- hiding the HUD also stops the OnUpdate scripts of all marker frames (they are its children)
+    self:SetVisibility(false)
+    -- hand the SuperTracker icon back to the game
+    updateSuperTrackedTexture(nil)
 end
 
 function Addon:OnInitialize()
