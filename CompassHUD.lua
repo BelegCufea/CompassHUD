@@ -4668,7 +4668,9 @@ local function setPOITrackNodes()
     local minAngle = 360
     poiTrackHeading = nil
     local effectivePOITrackRadius = Options.POITrackRadius == 0 and Options.POITrackOpacityMaxRadius or Options.POITrackRadius
-    local opacityFactor = (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / (effectivePOITrackRadius - Options.POITrackOpacityMinRadius)
+    -- the fade runs from OpacityMinRadius to the radius; no span (radius == min radius) means no fade instead of 0/0
+    local opacitySpan = effectivePOITrackRadius - Options.POITrackOpacityMinRadius
+    local opacityFactor = opacitySpan > 0 and (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / opacitySpan or 0
     for _, poi in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID] or {}) do
         if poi.frame then
             local shown = false
