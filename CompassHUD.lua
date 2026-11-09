@@ -4992,6 +4992,7 @@ end
 -- Name and position of an available quest ("!" quest offer pin).
 -- GetTitleForQuestID is often empty for quests not in the quest log, so the
 -- name comes from the world map pin, or from the data that the pin is built from.
+local questOfferCache = {}
 local function getQuestOfferInfo(questID, uiMapID)
     -- The pin on the open world map already holds the quest name and its position
     if WorldMapFrame:IsVisible() then
@@ -5104,7 +5105,18 @@ local function OnEvent(event,...)
 
             -- Offer
             if STtype == 1 then
-                local name, x, y, mapID, atlasName = getQuestOfferInfo(STtypeID, uiMapID)
+                -- A found offer does not move: reuse it until another pin is supertracked,
+                -- instead of scanning all map pins again on every QUEST_LOG_UPDATE
+                local cached = questOfferCache.questID == STtypeID and questOfferCache
+                local name, x, y, mapID, atlasName
+                if cached then
+                    name, x, y, mapID, atlasName = cached.name, cached.x, cached.y, cached.mapID, cached.atlasName
+                else
+                    name, x, y, mapID, atlasName = getQuestOfferInfo(STtypeID, uiMapID)
+                    if x and y and mapID then
+                        questOfferCache = { questID = STtypeID, name = name, x = x, y = y, mapID = mapID, atlasName = atlasName }
+                    end
+                end
                 title = name or GetTitleForQuestID(STtypeID)
                 if x and y and mapID then
                     uiMapID = mapID
