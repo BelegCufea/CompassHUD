@@ -67,7 +67,7 @@ Most settings have a tooltip with more details when you hover over them.
 
 ![Custom](https://i.imgur.com/ElQIDGp.png)
 
-- The `Speech` tab (accessibility) reads out the name of the marker you are facing with the game's text to speech: the minimap icon closest to your heading, the Questie icon closest to your heading and/or the supertracked target, optionally with the distance. A marker is read once when you turn to it and have faced it for a short delay; you can set the facing angle, the delay, the voice (any voice the game offers), rate and volume, and test it. Text to speech is played outside the game's sound channels, so it has its own volume.
+- The `Speech` tab (accessibility) reads out the name of the marker you are facing with the game's text to speech: the minimap icon, Questie icon or gathering node closest to your heading and/or the supertracked target, optionally with the distance. A marker is read once when you turn to it and have faced it for a short delay; you can set the facing angle, the delay, the voice (any voice the game offers), rate and volume, and test it. Text to speech is played outside the game's sound channels, so it has its own volume.
 
 ### Supertracker
 
@@ -121,7 +121,7 @@ Members on a different map (another continent, behind a portal, underground, ...
 
 #### Addon integrations
 
-- **GatherMate2 / GatherLite** (off by default): possible gathering node locations within a scanning radius. Node types follow GatherMate2's own display filter. In WoW: Forever, `GatherLite` works the same way when GatherMate2 is not loaded, following GatherLite's minimap tracking toggles.
+- **GatherMate2 / GatherLite** (off by default): possible gathering node locations within a scanning radius. Node types follow GatherMate2's own display filter. In WoW: Forever, `GatherLite` works the same way when GatherMate2 is not loaded, following GatherLite's minimap tracking toggles. Its settings work like the Questie ones below: its own or the Minimap icons settings, opacity by distance, texts visibility angle, and optionally the supertrack keybinding and text to speech for the node you face.
 - **Questie** (experimental, off by default, shown when Questie is loaded): the icons Questie places on the minimap: available quests, quest turn-ins, quest objectives and the townsfolk chosen in Questie's minimap menu. Which icons appear is decided by Questie's own settings. By default it uses the Minimap icons settings (scanning radius, update throttle, position, scale, opacity, texts); with `Use minimap icons settings` off it has its own. The name can show the kind of icon in parentheses, e.g. "Innkeeper Farley (Innkeeper)". With `Use supertracker keybinding` the minimap icons' supertrack keybinding also tracks the Questie icon you face (the quest itself for turn-ins and objectives, else a waypoint with the icon's name and look). Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.
 - **TomTom**: the TomTom arrow's waypoint is shown as its own pointer type.
 - **World Quest Tracker**: its tracked quests can be used as the world quest filter for minimap icons.

@@ -536,21 +536,20 @@ function setPOITrackNodes()
     HUD.minimapIcons = poiTrackPointTable
 end
 
--- The icon the supertrack keybinding acts on: the minimap icon or (with its option) the Questie
--- icon closest to the facing direction, whichever is closer.
+-- The icon the supertrack keybinding acts on: the minimap icon or a node of a marker module with
+-- "Use supertracker keybinding" (Questie, GatherMate), whichever is closest to the facing direction.
 local function faceTrackedIcon()
-    local poi = Options.POITrackEnabled and poiTrackHeading
-    if poi and not (poi.visible and poi.instance == player.uiMapID and poi.angle) then
-        poi = nil
+    local best = Options.POITrackEnabled and poiTrackHeading
+    if best and not (best.visible and best.instance == player.uiMapID and best.angle) then
+        best = nil
     end
-    local questie = Options.QuestieEnabled and Options.QuestieSupertrack and questieNodes.heading
-    if questie and not (questie.frame and questie.instance == player.uiMapID and questie.angle) then
-        questie = nil
+    for _, module in ipairs(markerModules) do
+        local node = markerModuleHeading(module, "Supertrack")
+        if node and (not best or math.abs(node.angle) < math.abs(best.angle)) then
+            best = node
+        end
     end
-    if poi and questie then
-        return math.abs(questie.angle) < math.abs(poi.angle) and questie or poi
-    end
-    return poi or questie
+    return best
 end
 
 function supertrackPOITrack()

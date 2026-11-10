@@ -22,6 +22,7 @@ gatherNodes = {
     liteTypes = { "mining", "herbalism", "containers", "fishing" }, -- GatherLite node types
     liteObjects = {},   -- object ID -> GatherLite object (GetNodeObject searches its whole list)
 }
+table.insert(markerModules, gatherNodes)
 
 -- Adds a node found by a scan (world coordinates, icon texture, title), or keeps the existing one.
 function addGatherNode(key, xWorld, yWorld, icon, title)

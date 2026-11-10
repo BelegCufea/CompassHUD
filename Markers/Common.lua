@@ -326,6 +326,20 @@ end
 --   title     optional function(node) -> text of the name line (default node.name)
 ------------------------------------------------------------------------------------------------
 
+-- The integration marker modules, for features that look at all of them (supertrack keybinding,
+-- speech). Filled by each module file when it loads.
+markerModules = {}
+
+-- The node of a module closest to the facing direction, if the module is on and 'option'
+-- (e.g. "Supertrack", or "Speech" for Speech<prefix>) is enabled for it.
+function markerModuleHeading(module, option)
+    local enabled = option == "Speech" and Options["Speech" .. module.prefix] or Options[module.prefix .. option]
+    local node = Options[module.prefix .. "Enabled"] and enabled and module.heading
+    if node and node.frame and node.angle and node.instance == player.uiMapID then
+        return node
+    end
+end
+
 -- A module setting: its own (<prefix><name>) or, with "Use minimap icons settings"
 -- (<prefix>UseMinimapSettings), the minimap icons' one (POITrack<name>).
 function markerSetting(module, name)

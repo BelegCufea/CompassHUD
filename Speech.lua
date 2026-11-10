@@ -70,9 +70,13 @@ function updateSpeech()
         candidate, name, distance = poi, poi.name, poi.distance
     end
 
-    local questie = Options.SpeechQuestie and Options.QuestieEnabled and questieNodes.heading
-    if questie and questie.name and questie.angle and questie.frame and questie.frame:IsShown() and math.abs(questie.angle) < limit then
-        candidate, name, distance = questie, questieTitle(questie), questie.distance
+    -- marker modules (Questie, GatherMate) with text to speech on
+    for _, module in ipairs(markerModules) do
+        local node = markerModuleHeading(module, "Speech")
+        if node and node.name and node.frame:IsShown() and math.abs(node.angle) < limit then
+            limit = math.abs(node.angle)
+            candidate, name, distance = node, module.title and module.title(node) or node.name, node.distance
+        end
     end
 
     local now = GetTime()

@@ -991,6 +991,15 @@ Addon.Options = {
                             hidden = function() return not questieLoaded() end,
                             disabled = function() return not Options.SpeechEnabled end,
                         },
+                        SpeechGatherMate = {
+                            type = "toggle",
+                            order = 36,
+                            name = "Gathering nodes",
+                            desc = "Nodes of the Minimap tracking -> GatherMate2 / GatherLite module (it must be enabled).",
+                            width = 1,
+                            hidden = function() return not (GatherMate2 or GatherLite) end,
+                            disabled = function() return not Options.SpeechEnabled end,
+                        },
                         SpeechDistance = {
                             type = "toggle",
                             order = 40,

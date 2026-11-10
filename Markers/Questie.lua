@@ -91,6 +91,7 @@ function questieTitle(node)
     return node.name or ""
 end
 questieNodes.title = questieTitle
+table.insert(markerModules, questieNodes)
 
 -- One Questie minimap icon frame -> one node, if it is on this map, shown by Questie and in range.
 local function addIcon(frameName, category)
