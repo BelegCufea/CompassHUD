@@ -45,6 +45,7 @@ poiTrackPointTable = {}
 poiTrackHeading = nil -- minimap icon closest to the facing direction, re-picked on every pass
 poiTrackCurrentMap = nil
 STtexture = { last = {} } -- SuperTracker retexture state; last = what was applied to the icon
+editModeActive = false -- the game's Edit Mode is open (EditMode.lua)
 directions = {
     [0] = {letter = "N" , main = true },
     [45] = {letter = "NE" , main = false },

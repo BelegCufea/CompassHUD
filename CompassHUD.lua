@@ -106,6 +106,8 @@ end
 -- Both the zone handler and the attribute driver go through this, so neither overrides the other.
 -- Before the driver has set the attribute (nil) the HUD counts as shown.
 function shouldShowHUD()
+    -- always shown while the game's Edit Mode is open, so it can be found and moved (EditMode.lua)
+    if editModeActive then return true end
     local state = HUD:GetAttribute("state-hudvisibility")
     return (state == nil or state == "show") and not player.inInstance
 end
@@ -570,6 +572,7 @@ function Addon:OnEnable()
     -- and OnDisable hid the HUD
     self:SetVisibility(shouldShowHUD())
 
+    registerEditMode()
     self:RegisterEvent("PLAYER_ENTERING_WORLD", OnZoneChange)
     self:RegisterEvent("PLAYER_MAP_CHANGED", OnZoneChange)
     self:RegisterEvent("ZONE_CHANGED_NEW_AREA", OnZoneChange)

@@ -37,4 +37,5 @@ Markers\Group.lua
 Markers\Gathering.lua
 Markers\POI.lua
 CompassHUD.lua
+EditMode.lua
 databroker.lua

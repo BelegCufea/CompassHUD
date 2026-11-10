@@ -2,6 +2,7 @@
 
 ## New
 
+- **Edit Mode** support: while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged to a new place, even when **Lock compass** is on. Clicking it opens the CompassHUD options (#25).
 - The compass size can be set in pixels: **General → Size by: Pixels** shows **Width (pixels)** and **Height (pixels)** (border included, before the overall Scale), starting from the current size. **Field of View** then keeps the width and changes how many degrees fit in it (#24).
 - Option **Marker scale** (**General**): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass **Height**; existing profiles keep their current marker size (#24).
 - The **General** tab fits without scrolling: related settings sit side by side (**Scale**, **Marker scale** and a new **Reset size** button that sets Scale, Width, Height and Marker scale back to 100%; **Size by**, **Width** and **Height**; **Strata** and **Position in Strata**).
