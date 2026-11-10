@@ -182,6 +182,12 @@ function getPOITrackFilter()
     list[poiTypeEnum.RACE] = "Dragonriding races"
     list[poiTypeEnum.QUEST] = "Quests (from the quest log)"
     list[poiTypeEnum.QUEST .. "_complete"] = "  - only ready to turn in"
+    if questieLoaded() then
+        list[poiTypeEnum.QUESTIE_AVAILABLE] = "Questie: available quests"
+        list[poiTypeEnum.QUESTIE_COMPLETE] = "Questie: quest turn-ins"
+        list[poiTypeEnum.QUESTIE_OBJECTIVE] = "Questie: quest objectives"
+        list[poiTypeEnum.QUESTIE_TOWNSFOLK] = "Questie: townsfolk (chosen in Questie's menu)"
+    end
     return list
 end
 

@@ -135,10 +135,10 @@ function createPOITrackNode(data)
 	return poiTrackNode
 end
 
--- Vignettes, world quests and quests come and go; other minimap icon types are fixed per map.
+-- Vignettes, world quests, quests and Questie icons come and go; other minimap icon types are fixed per map.
 function poiNodes.isTransient(poi)
     return poi.trackType == poiTypeEnum.VIGNETTE or poi.trackType == POI_TRACK_WORLD_QUEST
-        or poi.trackType == poiTypeEnum.QUEST
+        or poi.trackType == poiTypeEnum.QUEST or poi.questieData ~= nil
 end
 
 -- Removes a minimap icon node and puts its frame back into the pool.
@@ -447,6 +447,8 @@ function setPOITrackNodes()
             -- vignettes, world quests and quests the game no longer reports (killed, looted,
             -- expired, turned in, filtered out) are removed, so this map's list does not grow
             local pois = poiTrackPointTable[player.uiMapID]
+            -- icons Questie places on the minimap (Markers/Questie.lua)
+            setQuestieNodes(pois)
             for id, poi in pairs(pois) do
                 if poiNodes.isTransient(poi) and not poiNodes.seen[id] then
                     poiNodes.release(pois, id)
