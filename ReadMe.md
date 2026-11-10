@@ -19,7 +19,7 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 - Plethora of markers to be displayed on the compass:
   - the quest, map pin, POI or vignette you are tracking (supertracking), each quest type with its own look,
   - TomTom waypoints,
-  - minimap icons (flight points, area POIs, delves, events, dungeon entrances, vignettes, world quests, ...),
+  - minimap icons (flight points, area POIs, delves, events, dungeon entrances, vignettes, world quests, quests from your quest log, ...),
   - party and raid members,
   - gathering nodes from GatherMate2 (or GatherLite in WoW: Forever).
 - Name, distance (yards or meters) and time to arrival for markers.
@@ -103,7 +103,7 @@ Under the `Minimap tracking` submenu, you'll find settings for icons usually sho
 
 The `Minimap icons` section covers standard WoW minimap icons (off by default). It has four tabs:
 - `General`: scanning radius, update throttle, position, scale, and an opacity gradient based on distance.
-- `Filter`: which icon types are shown. Flight points of the other faction are hidden, and you can show only the closest flight point. `Bypass scanning radius` shows selected types in the whole zone. World quests can be filtered to none, all, tracked ones or those tracked by World Quest Tracker.
+- `Filter`: which icon types are shown. Flight points of the other faction are hidden, and you can show only the closest flight point. `Quests` shows the quests in your quest log that have a place on the current map (objective area, or the turn-in when complete), optionally only those ready to turn in. `Bypass scanning radius` shows selected types in the whole zone. World quests can be filtered to none, all, tracked ones or those tracked by World Quest Tracker.
 - `Texts`: name, distance and time to arrival, shown for all icons or only for the one you're facing.
 - `Supertracking`: a keybind that sets the icon you are facing as the game's tracked target (press again to clear it), `Hide icon at the tracked target` (on by default: while an icon is tracked, only its supertracker pointer is shown), and the texture used when a user waypoint has to be created.
 

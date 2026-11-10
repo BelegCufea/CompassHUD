@@ -180,12 +180,15 @@ function getPOITrackFilter()
     list[poiTypeEnum.VIGNETTE] = "Vignettes"
     list[poiTypeEnum.OTHER] = "Miscellaneous"
     list[poiTypeEnum.RACE] = "Dragonriding races"
+    list[poiTypeEnum.QUEST] = "Quests (from the quest log)"
+    list[poiTypeEnum.QUEST .. "_complete"] = "  - only ready to turn in"
     return list
 end
 
 function getPOITrackWholeZoneFilter()
     local list = getPOITrackFilter()
     list[poiTypeEnum.TAXI .. "_min"] = nil
+    list[poiTypeEnum.QUEST .. "_complete"] = nil
     return list
 end
 

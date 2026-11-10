@@ -219,6 +219,8 @@ Addon.Defaults = {
             [poiTypeEnum.OTHER] = true,
             [poiTypeEnum.VIGNETTE] = false,
             [poiTypeEnum.RACE] = false,
+            [poiTypeEnum.QUEST] = false,
+            [poiTypeEnum.QUEST.."_complete"] = false,
         },
         POITrackWholeZone          = {},
         POITrackWQFilter           = "All",

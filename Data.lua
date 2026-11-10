@@ -34,6 +34,7 @@ poiTypeEnum = {
     INSTANCE = "Instance",
     LINK = "Link",
     VIGNETTE = "Vignette",
+    QUEST = "Quest",
     OTHER = "Other",
 }
 poiCache = {}

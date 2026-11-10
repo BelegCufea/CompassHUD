@@ -8,6 +8,8 @@ local math, string, table, wipe = math, string, table, wipe
 
 local HBD               = LibStub("HereBeDragons-2.0")
 local GetTitleForQuestID = C_QuestLog.GetTitleForQuestID
+local GetQuestsOnMap = C_QuestLog.GetQuestsOnMap
+local IsQuestComplete = C_QuestLog.IsComplete
 local GetNumWorldQuestWatches = C_QuestLog.GetNumWorldQuestWatches
 local GetQuestIDForWorldQuestWatchIndex = C_QuestLog.GetQuestIDForWorldQuestWatchIndex
 local GetWorldQuestsOnMap = C_TaskQuest.GetQuestsOnMap
@@ -133,9 +135,10 @@ function createPOITrackNode(data)
 	return poiTrackNode
 end
 
--- Vignettes and world quests come and go; other minimap icon types are fixed per map.
+-- Vignettes, world quests and quests come and go; other minimap icon types are fixed per map.
 function poiNodes.isTransient(poi)
     return poi.trackType == poiTypeEnum.VIGNETTE or poi.trackType == POI_TRACK_WORLD_QUEST
+        or poi.trackType == poiTypeEnum.QUEST
 end
 
 -- Removes a minimap icon node and puts its frame back into the pool.
@@ -403,8 +406,46 @@ function setPOITrackNodes()
                 end
             end
 
-            -- vignettes and world quests the game no longer reports (killed, looted, expired,
-            -- filtered out) are removed, so this map's list does not grow during the session
+            -- quests in the quest log with a place on this map (objective area, or the turn-in when
+            -- complete). World quests and bonus objectives have their own type above.
+            local mapQuests = Options.POITrackFilter[poiTypeEnum.QUEST] and GetQuestsOnMap(player.uiMapID)
+            if mapQuests then
+                local onlyComplete = Options.POITrackFilter[poiTypeEnum.QUEST .. "_complete"]
+                local pois = poiTrackPointTable[player.uiMapID]
+                for _, quest in ipairs(mapQuests) do
+                    local questID = quest.questID
+                    if questID and quest.x and quest.y and not isTask(questID) then
+                        local id = poiTypeEnum.QUEST .. "_" .. questID
+                        local completed = IsQuestComplete(questID) and true or false
+                        local node = pois[id]
+                        if node and node.completed ~= completed then
+                            -- completed or no longer: other icon, build the node again
+                            poiNodes.release(pois, id)
+                            node = nil
+                        end
+                        if not node then
+                            -- same icons as the supertracker pointer of this quest type
+                            local options = Options.Pointers[getPointerType(questID, 0)]
+                            local atlas = options and (completed and options.atlasAltID or options.atlasID)
+                            quest.name = GetTitleForQuestID(questID)
+                            quest.completed = completed
+                            quest.atlasName = atlas or (completed and "QuestTurnin" or "QuestNormal")
+                            node = addPOITrackNode(id, quest, quest.x, quest.y, 1)
+                        else
+                            -- the place changes with the objectives: refresh it on every scan
+                            local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(quest.x, quest.y, player.uiMapID)
+                            node.x, node.y = xWorld, yWorld
+                            node.frame.x, node.frame.y = xWorld, yWorld
+                        end
+                        node.trackType = poiTypeEnum.QUEST
+                        node.visible = completed or not onlyComplete
+                        poiNodes.seen[id] = true
+                    end
+                end
+            end
+
+            -- vignettes, world quests and quests the game no longer reports (killed, looted,
+            -- expired, turned in, filtered out) are removed, so this map's list does not grow
             local pois = poiTrackPointTable[player.uiMapID]
             for id, poi in pairs(pois) do
                 if poiNodes.isTransient(poi) and not poiNodes.seen[id] then

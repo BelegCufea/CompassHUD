@@ -2,6 +2,7 @@
 
 ## New
 
+- Minimap icon type **Quests (from the quest log)** (**Minimap icons → Filter**, off by default): quests in your quest log that have a place on the current map, with the same icons as their supertracker pointers. An option shows only quests **ready to turn in**. World quests and bonus objectives keep their own type; the quest you track is hidden by **Hide icon at the tracked target** as usual, and the supertrack keybinding tracks the quest you are facing (#20).
 - **Edit Mode** support: while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged to a new place, even when **Lock compass** is on. Clicking it opens the CompassHUD options (#25).
 - The compass size can be set in pixels: **General → Size by: Pixels** shows **Width (pixels)** and **Height (pixels)** (border included, before the overall Scale), starting from the current size. **Field of View** then keeps the width and changes how many degrees fit in it (#24).
 - Option **Marker scale** (**General**): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass **Height**; existing profiles keep their current marker size (#24).
