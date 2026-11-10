@@ -141,6 +141,15 @@ function poiNodes.isTransient(poi)
         or poi.trackType == poiTypeEnum.QUEST or poi.questieData ~= nil
 end
 
+-- Whether the game's user waypoint 'point' (UiMapPoint) is the one set for the remembered icon
+-- 'tracked' (poiNodes.tracked). The game stores the position slightly rounded, so it is compared
+-- with a small tolerance (a ten-thousandth of the map, below a yard on most maps).
+function isTrackedWaypoint(point, tracked)
+    return tracked and point and point.uiMapID == tracked.instance and point.position
+        and math.abs(point.position.x - tracked.xZone) < 0.0001
+        and math.abs(point.position.y - tracked.yZone) < 0.0001
+end
+
 -- Removes a minimap icon node and puts its frame back into the pool.
 function poiNodes.release(pois, id)
     local poi = pois[id]
@@ -575,16 +584,15 @@ function supertrackPOITrack()
             end
             SetSuperTrackedVignette(poi.vignetteGUID)
         elseif CanSetUserWaypointOnMap(poi.instance) then
-            local poiTracked = { atlasName = poi.atlasName, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance, questID = poi.questID }
+            -- remembered, so the supertracker pointer of the waypoint gets the icon's name and look
+            local poiTracked = { atlasName = poi.atlasName, texture = poi.texture, name = poi.name, x = poi.x, y = poi.y, instance = poi.instance, questID = poi.questID }
             poiTracked.xZone, poiTracked.yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, poi.instance, false)
             local pos = CreateVector2D(poiTracked.xZone, poiTracked.yZone)
             local mapPoint = UiMapPoint.CreateFromVector2D(poiTracked.instance, pos)
-            poiTrackPointTable[player.uiMapID].tracked = poiTracked
+            poiNodes.tracked = poiTracked
             if stType == Enum.SuperTrackingType.UserWaypoint then
                 local userWaypoint = GetUserWaypoint()
-                if userWaypoint and userWaypoint.uiMapID == poiTracked.instance and
-                    math.floor(userWaypoint.position.x * 100000000 + 0.5) == math.floor(poiTracked.xZone * 100000000 + 0.5) and
-                    math.floor(userWaypoint.position.y * 100000000 + 0.5) == math.floor(poiTracked.yZone * 100000000 + 0.5) then
+                if userWaypoint and isTrackedWaypoint(userWaypoint, poiTracked) then
                     ClearUserWaypoint()
                     ClearAllSuperTracked()
                     return

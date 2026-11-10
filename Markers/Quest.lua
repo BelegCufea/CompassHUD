@@ -277,7 +277,7 @@ function applyPointerTexture(entry)
     entry.overrideRotation = false
     entry.circle = entry.category == Enum.QuestClassification.WorldQuest
     frame.scaleMultiplier = 1.5
-    if entry.texture and options.worldmapTexture then
+    if entry.texture and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         frame.texture:SetTexture(entry.texture)
         entry.overrideRotation = true
         frame.scaleMultiplier = 1

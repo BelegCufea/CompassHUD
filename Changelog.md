@@ -3,9 +3,7 @@
 ## New
 
 - **Questie** support (experimental): the icons Questie places on the minimap can be shown on the compass: minimap icon type **Questie icons** (**Minimap icons → Filter**, shown when Questie is loaded, off by default). Which icons are shown (available quests, turn-ins, objectives, townsfolk such as innkeepers, trainers or mailboxes) is decided by Questie's own settings and menus. Questie has no public API for its icons, so a Questie update may turn this off until CompassHUD is updated (#23).
-
 - **Speech** tab (accessibility, off by default): reads out the name of the marker in front of you with the game's text to speech. Each marker is read once, when you turn to face it. Covers minimap icons and the supertracked target, optionally with the distance. Settings for the facing angle, a delay (so turning past markers does not read them all), the voice (any voice the game offers), rate and volume, and a **Test** button (#21).
-
 - Minimap icon type **Quests (from the quest log)** (**Minimap icons → Filter**, off by default): quests in your quest log that have a place on the current map, with the same icons as their supertracker pointers. An option shows only quests **ready to turn in**. World quests and bonus objectives keep their own type; the quest you track is hidden by **Hide icon at the tracked target** as usual, and the supertrack keybinding tracks the quest you are facing (#20).
 - **Edit Mode** support: while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged to a new place, even when **Lock compass** is on. Clicking it opens the CompassHUD options (#25).
 - The compass size can be set in pixels: **General → Size by: Pixels** shows **Width (pixels)** and **Height (pixels)** (border included, before the overall Scale), starting from the current size. **Field of View** then keeps the width and changes how many degrees fit in it (#24).
@@ -15,6 +13,7 @@
 
 ## Fix
 
+- A minimap icon set as a waypoint with the supertrack keybinding now gives the supertracker pointer its name (it was usually lost, the game stores the waypoint position slightly rounded), and with **Icon texture** (**Minimap icons → Supertracking**) also its icon when that is a texture, e.g. world quest rewards.
 - The HUD is no longer hidden in every instance, only where the game does not give the player facing (dungeons, raids). It should now show in instances that have a facing, e.g. the housing neighborhoods Founder's Point and Razorwing Shore (#19).
 - The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded (#22).
 

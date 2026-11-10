@@ -224,13 +224,12 @@ function resolveSuperTrackedTarget(event,...)
         if superTrackingType == Enum.SuperTrackingType.UserWaypoint then
             local point = GetUserWaypoint()
             if point then
-                local poiTracked = poiTrackPointTable[player.uiMapID] and poiTrackPointTable[player.uiMapID].tracked
-                local mult = 100000000
-                local name, atlasName
-                if poiTracked and math.floor(point.position.x * mult + 0.5) == math.floor(poiTracked.xZone * mult + 0.5) and
-                    math.floor(point.position.y * mult + 0.5) == math.floor(poiTracked.yZone * mult + 0.5) then
-                    name, atlasName = poiTracked.name, poiTracked.atlasName
-                    updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, atlasName, nil, {
+                -- a waypoint set by the supertrack keybinding for a minimap icon: its name and look
+                local poiTracked = poiNodes.tracked
+                local name
+                if isTrackedWaypoint(point, poiTracked) then
+                    name = poiTracked.name
+                    updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, poiTracked.atlasName, poiTracked.texture, {
                         ["stRetexture"] = Options.POITrackSTRetexture,
                         ["worldmapTexture"] = Options.POITrackWorldmapTexture,
                     })

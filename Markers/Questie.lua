@@ -61,6 +61,7 @@ local function addQuestieIcon(pois, frameName)
         }, xZone, yZone, 1)
         local texture = icon.texture and icon.texture:GetTexture()
         if texture then
+            node.texture = texture -- also used by the supertracker pointer of a waypoint set for it
             node.frame.texture:SetTexture(texture)
         end
     else

@@ -196,7 +196,7 @@ function updateSuperTrackedTexture(activeID)
 
     -- === Texture or atlas, same choice as applyPointerTexture ===
     local texture, atlas
-    if questPoint.texture and options.worldmapTexture then
+    if questPoint.texture and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         texture = questPoint.texture
     elseif questPoint.atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         atlas = questPoint.atlasName
