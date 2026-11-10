@@ -38,4 +38,5 @@ Markers\Gathering.lua
 Markers\POI.lua
 CompassHUD.lua
 EditMode.lua
+Speech.lua
 databroker.lua

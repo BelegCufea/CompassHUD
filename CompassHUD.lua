@@ -64,6 +64,7 @@ function updateHUD(force)
     setGroupIcons()
     setGatherMateNodes()
     setPOITrackNodes()
+    updateSpeech()
 end
 
 function onUpdate(_, elapsed)

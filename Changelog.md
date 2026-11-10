@@ -2,6 +2,8 @@
 
 ## New
 
+- **Speech** tab (accessibility, off by default): reads out the name of the marker you are facing with the game's text to speech, when you turn to a different one. Covers minimap icons and the supertracked target, optionally with the distance. Settings for the facing angle, a delay (so turning past markers does not read them all), the voice (any voice the game offers), rate and volume, and a **Test** button (#21).
+
 - Minimap icon type **Quests (from the quest log)** (**Minimap icons → Filter**, off by default): quests in your quest log that have a place on the current map, with the same icons as their supertracker pointers. An option shows only quests **ready to turn in**. World quests and bonus objectives keep their own type; the quest you track is hidden by **Hide icon at the tracked target** as usual, and the supertrack keybinding tracks the quest you are facing (#20).
 - **Edit Mode** support: while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged to a new place, even when **Lock compass** is on. Clicking it opens the CompassHUD options (#25).
 - The compass size can be set in pixels: **General → Size by: Pixels** shows **Width (pixels)** and **Height (pixels)** (border included, before the overall Scale), starting from the current size. **Field of View** then keeps the width and changes how many degrees fit in it (#24).
