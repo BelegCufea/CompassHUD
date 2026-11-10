@@ -43,6 +43,9 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 *- Setting numerical heading display options:*</br>
 ![Heading](https://i.imgur.com/CxlBmpL.png)
 
+*- Questie's icons (quest givers, turn-ins, townsfolk) on the compass:*</br>
+![QuestieInAction](https://i.imgur.com/hFhwTuZ.png)
+
 
 ## Configuration
 
@@ -59,7 +62,7 @@ Most settings have a tooltip with more details when you hover over them.
   - `Visibility State`: a macro condition deciding when the HUD is shown (default `[petbattle] hide; show`); the HUD is always hidden in instances where the game gives no player facing (dungeons, raids),
   - center the HUD horizontally or reset its position.
 
-![Settings](https://i.imgur.com/W5uhfbJ.png)
+![Settings](https://i.imgur.com/wym5Vc0.png)
 
 - The `Appearance` tab styles the HUD frame (central pin, opacity, border, background, edge line). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one. Party/raid names keep their own color setting. `Max title width` cuts off long titles of the supertracker, minimap icon and gathering node pointers with "..." (0 = no limit).
 
@@ -68,6 +71,8 @@ Most settings have a tooltip with more details when you hover over them.
 ![Custom](https://i.imgur.com/ElQIDGp.png)
 
 - The `Speech` tab (accessibility) reads out the name of what is in front of you on the compass, with the game's text to speech: the supertracked target, minimap icons, Questie icons and/or gathering nodes (the one closest to the direction you are facing), optionally with the distance. Each one is read once, when you turn to it and have faced it for a short delay; you can set the facing angle, the delay, the voice (any voice the game offers), rate and volume, and test it. `Only read out names shown on the compass` limits it to what currently shows its name (with a texts visibility angle: the one icon showing its texts). Text to speech is played outside the game's sound channels, so it has its own volume.
+
+![Speech](https://i.imgur.com/GxYMsDN.png)
 
 ### Supertracker
 
@@ -110,7 +115,9 @@ The `Minimap icons` section covers standard WoW minimap icons (off by default). 
 - `Texts`: name, distance and time to arrival, shown for all icons or only for the one you're facing (`Texts visibility angle`). With an angle set here, for Questie or for gathering nodes, only one icon of them all shows its texts: the one closest to the direction you are facing.
 - `Supertracking`: a keybind that sets the icon you are facing as the game's tracked target (press again to clear it), `Hide icon at the tracked target` (on by default: while an icon is tracked, only its supertracker pointer is shown), and the texture used when a user waypoint has to be created. A waypoint keeps the icon's name, and with `Icon texture` its icon. Questie icons and gathering nodes can use the same keybind (`Use supertracker keybinding` in their sections).
 
-![MinimapIcons](https://i.imgur.com/FvCUD2R.png)
+*Filter tab, `Places` and `Quests`:*</br>
+![MinimapIconsPlaces](https://i.imgur.com/AyYAzuF.png)
+![MinimapIconsQuests](https://i.imgur.com/avo0S4y.png)
 
 #### Party/Raid
 
@@ -125,6 +132,10 @@ Members on a different map (another continent, behind a portal, underground, ...
 - **Questie** (experimental, off by default, shown when Questie is loaded): the icons Questie places on the minimap: available quests, quest turn-ins, quest objectives and the townsfolk chosen in Questie's minimap menu. Which icons appear is decided by Questie's own settings. By default it uses the Minimap icons settings (scanning radius, update throttle, position, scale, opacity, texts); with `Use minimap icons settings` off it has its own. The name can show the kind of icon in parentheses, e.g. "Innkeeper Farley (Innkeeper)". With `Use supertracker keybinding` the minimap icons' supertrack keybinding also tracks the Questie icon you face (the quest itself for turn-ins and objectives, else a waypoint with the icon's name and look). Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.
 - **TomTom**: the TomTom arrow's waypoint is shown as its own pointer type.
 - **World Quest Tracker**: its tracked quests can be used as the world quest filter for minimap icons.
+
+*Questie icons on the compass, and their settings:*</br>
+![QuestieInAction](https://i.imgur.com/hFhwTuZ.png)
+![QuestieSettings](https://i.imgur.com/qHnkZhv.png)
 
 ### Miscellaneous
 
