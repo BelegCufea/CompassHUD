@@ -123,124 +123,149 @@ Addon.Options = {
                             bigStep = 5,
                         },
                         BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
-                        Scale = {
-                            type = "range",
-                            name = "Scale",
+                        SizeGroup = {
+                            type = "group",
                             order = 70,
-                            min = 0.01,
-                            max = 5,
-                            softMin = 0.2,
-                            softMax = 3,
-                            step = 0.01,
-                            bigStep = 0.05,
-                            isPercent = true,
+                            name = "Size",
+                            inline = true,
+                            args = {
+                                SizeMode = {
+                                    type = "select",
+                                    name = "Size by",
+                                    desc = "Scale: width and height in percent of the default size.\nPixels: exact width and height of the compass, border included (before the overall Scale).\nThe markers keep their own size (Marker size) either way.",
+                                    order = 1,
+                                    values = { SCALE = "Scale", PIXELS = "Pixels" },
+                                    sorting = { "SCALE", "PIXELS" },
+                                    style = "dropdown",
+                                    set = function(info, value)
+                                        if value == "PIXELS" and Options.SizeMode ~= "PIXELS" then
+                                            -- start from the current size
+                                            Options.Width = round(HUD:GetWidth())
+                                            Options.Height = round(HUD:GetHeight())
+                                        end
+                                        Options.SizeMode = value
+                                        Addon:UpdateHUDSettings()
+                                    end,
+                                },
+                                ResetSize = {
+                                    type = "execute",
+                                    name = "Reset size",
+                                    desc = "Sets Scale, Width, Height and Marker size back to their defaults (100%, Size by: Scale).",
+                                    order = 2,
+                                    confirm = true,
+                                    confirmText = "Reset the compass and marker size to the defaults?",
+                                    func = function()
+                                        Options.SizeMode = "SCALE"
+                                        Options.Scale = 1
+                                        Options.HorizontalScale = 1
+                                        Options.VerticalScale = 1
+                                        Options.IconScale = 1
+                                        Addon:UpdateHUDSettings()
+                                    end,
+                                },
+                                BlankSize = { type = "description", order = 3, fontSize = "small",name = "",width = "full", },
+                                Scale = {
+                                    type = "range",
+                                    name = "Scale",
+                                    desc = "Overall scale of the compass and everything on it.",
+                                    order = 10,
+                                    min = 0.01,
+                                    max = 5,
+                                    softMin = 0.2,
+                                    softMax = 3,
+                                    step = 0.01,
+                                    bigStep = 0.05,
+                                    isPercent = true,
+                                },
+                                Width = {
+                                    type = "range",
+                                    name = "Width (pixels)",
+                                    order = 20,
+                                    min = 20,
+                                    max = 4000,
+                                    softMin = 100,
+                                    softMax = 2500,
+                                    step = 1,
+                                    hidden = function() return Options.SizeMode ~= "PIXELS" end,
+                                },
+                                Height = {
+                                    type = "range",
+                                    name = "Height (pixels)",
+                                    order = 30,
+                                    min = 4,
+                                    max = 300,
+                                    softMin = 8,
+                                    softMax = 100,
+                                    step = 1,
+                                    hidden = function() return Options.SizeMode ~= "PIXELS" end,
+                                },
+                                HorizontalScale = {
+                                    type = "range",
+                                    name = "Width",
+                                    order = 20,
+                                    hidden = function() return Options.SizeMode == "PIXELS" end,
+                                    min = 0.01,
+                                    max = 5,
+                                    softMin = 0.2,
+                                    softMax = 3,
+                                    step = 0.01,
+                                    isPercent = true,
+                                },
+                                VerticalScale = {
+                                    type = "range",
+                                    name = "Height",
+                                    order = 30,
+                                    hidden = function() return Options.SizeMode == "PIXELS" end,
+                                    min = 0.01,
+                                    max = 5,
+                                    softMin = 0.2,
+                                    softMax = 3,
+                                    step = 0.01,
+                                    isPercent = true,
+                                },
+                                BlankMarker = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
+                                IconScale = {
+                                    type = "range",
+                                    name = "Marker size",
+                                    desc = "Size of all markers on the compass (supertracker pointers, minimap icons, party/raid members, gathering nodes) and their texts. Separate from the compass size; each marker type has its own scale on top of this.",
+                                    order = 40,
+                                    min = 0.01,
+                                    max = 5,
+                                    softMin = 0.2,
+                                    softMax = 3,
+                                    step = 0.01,
+                                    isPercent = true,
+                                },
+                            },
                         },
-                        SizeMode = {
-                            type = "select",
-                            name = "Size by",
-                            desc = "Scale: width and height in percent of the default size.\nPixels: exact width and height of the compass, border included (before the overall Scale).\nThe markers keep their own size (Marker size) either way.",
-                            order = 75,
-                            values = { SCALE = "Scale", PIXELS = "Pixels" },
-                            sorting = { "SCALE", "PIXELS" },
-                            style = "dropdown",
-                            set = function(info, value)
-                                if value == "PIXELS" and Options.SizeMode ~= "PIXELS" then
-                                    -- start from the current size
-                                    Options.Width = round(HUD:GetWidth())
-                                    Options.Height = round(HUD:GetHeight())
-                                end
-                                Options.SizeMode = value
-                                Addon:UpdateHUDSettings()
-                            end,
-                        },
-                        Width = {
-                            type = "range",
-                            name = "Width (pixels)",
-                            order = 80,
-                            min = 20,
-                            max = 4000,
-                            softMin = 100,
-                            softMax = 2500,
-                            step = 1,
-                            hidden = function() return Options.SizeMode ~= "PIXELS" end,
-                        },
-                        Height = {
-                            type = "range",
-                            name = "Height (pixels)",
-                            order = 90,
-                            min = 4,
-                            max = 300,
-                            softMin = 8,
-                            softMax = 100,
-                            step = 1,
-                            hidden = function() return Options.SizeMode ~= "PIXELS" end,
-                        },
-                        HorizontalScale = {
-                            type = "range",
-                            name = "Width",
-                            order = 80,
-                            hidden = function() return Options.SizeMode == "PIXELS" end,
-                            min = 0.01,
-                            max = 5,
-                            softMin = 0.2,
-                            softMax = 3,
-                            step = 0.01,
-                            isPercent = true,
-                            set = function(info, value)
-                                Options[info[#info]] = value
-                                textureWidth = defaultTextureWidth * value
-                                Addon:UpdateHUDSettings()
-                            end,
-                        },
-                        VerticalScale = {
-                            type = "range",
-                            name = "Height",
-                            order = 90,
-                            hidden = function() return Options.SizeMode == "PIXELS" end,
-                            min = 0.01,
-                            max = 5,
-                            softMin = 0.2,
-                            softMax = 3,
-                            step = 0.01,
-                            isPercent = true,
-                            set = function(info, value)
-                                Options[info[#info]] = value
-                                textureHeight = defaultTextureHeight * value
-                                Addon:UpdateHUDSettings()
-                            end,
-                        },
-                        IconScale = {
-                            type = "range",
-                            name = "Marker size",
-                            desc = "Size of all markers on the compass (supertracker pointers, minimap icons, party/raid members, gathering nodes) and their texts. Separate from the compass size; each marker type has its own scale on top of this.",
-                            order = 95,
-                            min = 0.01,
-                            max = 5,
-                            softMin = 0.2,
-                            softMax = 3,
-                            step = 0.01,
-                            isPercent = true,
-                        },
-                        Strata = {
-                            type = "select",
-                            name = "Strata",
+                        StrataGroup = {
+                            type = "group",
                             order = 100,
-                            values = function()
-                                return getStrateLevels()
-                            end,
-                            sorting = strataLevels,
-                            style = "dropdown",
-                        },
-                        Level  = {
-                            type = "range",
-                            name = "Position in Strata",
-                            order = 110,
-                            min = 0,
-                            max = 900,
-                            softMin = 0,
-                            softMax = 900,
-                            step = 1,
-                            bigStep = 10,
+                            name = "Frame strata",
+                            inline = true,
+                            args = {
+                                Strata = {
+                                    type = "select",
+                                    name = "Strata",
+                                    order = 1,
+                                    values = function()
+                                        return getStrateLevels()
+                                    end,
+                                    sorting = strataLevels,
+                                    style = "dropdown",
+                                },
+                                Level  = {
+                                    type = "range",
+                                    name = "Position in Strata",
+                                    order = 2,
+                                    min = 0,
+                                    max = 900,
+                                    softMin = 0,
+                                    softMax = 900,
+                                    step = 1,
+                                    bigStep = 10,
+                                },
+                            },
                         },
                         BlankVisibility = { type = "description", order = 499, fontSize = "small",name = "",width = "full", },
                         Visibility = {
