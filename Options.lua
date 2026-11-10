@@ -982,6 +982,15 @@ Addon.Options = {
                             width = 1,
                             disabled = function() return not Options.SpeechEnabled end,
                         },
+                        SpeechQuestie = {
+                            type = "toggle",
+                            order = 35,
+                            name = "Questie icons",
+                            desc = "Icons of the Minimap tracking -> Questie module (it must be enabled).",
+                            width = 1,
+                            hidden = function() return not questieLoaded() end,
+                            disabled = function() return not Options.SpeechEnabled end,
+                        },
                         SpeechDistance = {
                             type = "toggle",
                             order = 40,
@@ -2654,6 +2663,13 @@ QuestieOptions = {
                     order = 12,
                     name = "Show the type after the name",
                     desc = "Adds the kind of icon in parentheses after the name, e.g. \"Innkeeper Farley (Innkeeper)\" or \"Princess Must Die! (Turn-in)\".",
+                    width = "full",
+                },
+                QuestieSupertrack = {
+                    type = "toggle",
+                    order = 13,
+                    name = "Use supertracker keybinding",
+                    desc = "The supertrack keybinding of the minimap icons (Minimap icons -> Supertracking) also tracks the Questie icon you face: the quest itself for turn-ins and objectives, else a waypoint with the icon's name.",
                     width = "full",
                 },
                 QuestieUseMinimapSettings = {

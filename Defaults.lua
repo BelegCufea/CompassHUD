@@ -84,6 +84,7 @@ Addon.Defaults = {
         SpeechEnabled          = false,
         SpeechPOI              = true,
         SpeechSupertracked     = true,
+        SpeechQuestie          = true,
         SpeechDistance         = false,
         SpeechDegrees          = 10,
         SpeechDelay            = 0.5,
@@ -189,6 +190,7 @@ Addon.Defaults = {
         QuestieEnabled               = false,
         QuestieUseMinimapSettings    = true,
         QuestieShowType              = true,
+        QuestieSupertrack            = true,
         QuestieRadius                = 1000, -- 0 = whole zone
         QuestieInterval              = 30,
         QuestieOffset                = 20,

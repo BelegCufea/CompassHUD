@@ -66,7 +66,13 @@ function updateSpeech()
 
     local poi = Options.SpeechPOI and Options.POITrackEnabled and poiTrackHeading
     if poi and poi.name and poi.angle and poi.frame and poi.frame:IsShown() and math.abs(poi.angle) < limit then
+        limit = math.abs(poi.angle)
         candidate, name, distance = poi, poi.name, poi.distance
+    end
+
+    local questie = Options.SpeechQuestie and Options.QuestieEnabled and questieNodes.heading
+    if questie and questie.name and questie.angle and questie.frame and questie.frame:IsShown() and math.abs(questie.angle) < limit then
+        candidate, name, distance = questie, questieTitle(questie), questie.distance
     end
 
     local now = GetTime()

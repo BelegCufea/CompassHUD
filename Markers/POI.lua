@@ -536,14 +536,28 @@ function setPOITrackNodes()
     HUD.minimapIcons = poiTrackPointTable
 end
 
-function supertrackPOITrack()
-    if not Options.POITrackEnabled then return end
-    if not player.uiMapID or not poiTrackPointTable[player.uiMapID] then
-        return
+-- The icon the supertrack keybinding acts on: the minimap icon or (with its option) the Questie
+-- icon closest to the facing direction, whichever is closer.
+local function faceTrackedIcon()
+    local poi = Options.POITrackEnabled and poiTrackHeading
+    if poi and not (poi.visible and poi.instance == player.uiMapID and poi.angle) then
+        poi = nil
     end
+    local questie = Options.QuestieEnabled and Options.QuestieSupertrack and questieNodes.heading
+    if questie and not (questie.frame and questie.instance == player.uiMapID and questie.angle) then
+        questie = nil
+    end
+    if poi and questie then
+        return math.abs(questie.angle) < math.abs(poi.angle) and questie or poi
+    end
+    return poi or questie
+end
 
-    local poi = poiTrackHeading
-    if poi and poi.visible and poi.instance == player.uiMapID then
+function supertrackPOITrack()
+    if not player.uiMapID then return end
+
+    local poi = faceTrackedIcon()
+    if poi then
         local stType = GetHighestPrioritySuperTrackingType()
         if poi.questID then
             if stType == Enum.SuperTrackingType.Quest then

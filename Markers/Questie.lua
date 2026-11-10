@@ -94,7 +94,8 @@ local function typeLabel(data, category)
     end
 end
 
-local function nodeTitle(node)
+-- name, and the kind of icon in parentheses if enabled (also read out by Speech.lua)
+function questieTitle(node)
     if Options.QuestieShowType and node.typeLabel then
         return (node.name or "") .. " (" .. node.typeLabel .. ")"
     end
@@ -111,7 +112,7 @@ function updateQuestieNode(node)
         setPointerFont(text[1], scale, setting(key .. "CustomFont"), setting(key .. "Font"), setting(key .. "FontSize"), setting(key .. "FontFlags"), setting(key .. "FontColor"))
     end
     setTitleWidth(frame.Title)
-    frame.Title:SetText(nodeTitle(node))
+    frame.Title:SetText(questieTitle(node))
 
     node.flipped = setting("Offset") > 0
     -- which texts are shown is decided on every update (texts visibility angle)
