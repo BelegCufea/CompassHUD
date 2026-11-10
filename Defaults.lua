@@ -162,12 +162,12 @@ Addon.Defaults = {
         GroupRaidNameBackgroundClass  = false,
         GroupRaidNameBackgroundColor  = {r = 1, g = 1, b = 1, a = 1},
         -- GatherMate markers: the same settings as the Questie markers and the minimap icons
-        -- (Markers/Common.lua); 0 (texts on every node) and full opacity keep the earlier look
+        -- (Markers/Common.lua); full opacity keeps the earlier look, texts only on the faced node
         GatherMateEnabled            = false,
         GatherMateUseMinimapSettings = false,
         GatherMateSupertrack         = false,
         GatherMateHideAtTarget       = true,
-        GatherMateTextsDegrees       = 0,
+        GatherMateTextsDegrees       = 2.5, -- like the minimap icons (was effectively 0 before v1.8)
         GatherMateOpacitySelected    = 1,
         GatherMateOpacityMaxRadius   = 1000,
         GatherMateRadius             = 150,
