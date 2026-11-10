@@ -67,7 +67,7 @@ Most settings have a tooltip with more details when you hover over them.
 
 ![Custom](https://i.imgur.com/ElQIDGp.png)
 
-- The `Speech` tab (accessibility) reads out the name of what is in front of you on the compass, with the game's text to speech: the supertracked target, minimap icons, Questie icons and/or gathering nodes (the one closest to the direction you are facing), optionally with the distance. Each one is read once, when you turn to it and have faced it for a short delay; you can set the facing angle, the delay, the voice (any voice the game offers), rate and volume, and test it. Text to speech is played outside the game's sound channels, so it has its own volume.
+- The `Speech` tab (accessibility) reads out the name of what is in front of you on the compass, with the game's text to speech: the supertracked target, minimap icons, Questie icons and/or gathering nodes (the one closest to the direction you are facing), optionally with the distance. Each one is read once, when you turn to it and have faced it for a short delay; you can set the facing angle, the delay, the voice (any voice the game offers), rate and volume, and test it. `Only read out names shown on the compass` limits it to what currently shows its name (with a texts visibility angle: the one icon showing its texts). Text to speech is played outside the game's sound channels, so it has its own volume.
 
 ### Supertracker
 

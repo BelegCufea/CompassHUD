@@ -48,14 +48,21 @@ local function textFor(name, distance)
     return name .. ", " .. value .. (Options.UseMeters and " meters" or " yards")
 end
 
--- Called on every HUD update, after the markers are placed (updateHUD).
+-- With "Only names shown on the compass": whether a name text is visible right now (its icon
+-- shown, and its name not hidden by the texts settings or the texts visibility angle).
+local function nameShown(frame, text)
+    if not Options.SpeechOnlyShownNames then return true end
+    return frame and frame:IsShown() and text and text:IsShown() or false
+end
+
+-- Called on every HUD update, after the markers are placed and their texts decided (updateHUD).
 function updateSpeech()
     if not (Options.SpeechEnabled and SpeakText and player.angle) then return end
     local limit = math.rad(Options.SpeechDegrees)
     local candidate, name, distance
 
     local target = Options.SpeechSupertracked and shownGameTarget
-    if target and target.text then
+    if target and target.text and nameShown(target.frame, target.frame and target.frame.QuestText) then
         local angle = relativeAngle(target.instance, target.x, target.y)
         if angle and math.abs(angle) <= limit then
             limit = math.abs(angle)
@@ -65,7 +72,8 @@ function updateSpeech()
     end
 
     local poi = Options.SpeechPOI and Options.POITrackEnabled and poiNodes.heading
-    if poi and poi.name and poi.angle and poi.frame and poi.frame:IsShown() and math.abs(poi.angle) < limit then
+    if poi and poi.name and poi.angle and poi.frame and poi.frame:IsShown() and math.abs(poi.angle) < limit
+        and nameShown(poi.frame, poi.frame.Title) then
         limit = math.abs(poi.angle)
         candidate, name, distance = poi, poi.name, poi.distance
     end
@@ -73,7 +81,8 @@ function updateSpeech()
     -- marker modules (Questie, GatherMate) with text to speech on
     for _, module in ipairs(markerModules) do
         local node = markerModuleHeading(module, "Speech")
-        if node and node.name and node.frame:IsShown() and math.abs(node.angle) < limit then
+        if node and node.name and node.frame:IsShown() and math.abs(node.angle) < limit
+            and nameShown(node.frame, node.frame.Title) then
             limit = math.abs(node.angle)
             candidate, name, distance = node, module.title and module.title(node) or node.name, node.distance
         end

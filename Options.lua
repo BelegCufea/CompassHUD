@@ -1019,6 +1019,14 @@ Addon.Options = {
                             width = "full",
                             disabled = function() return not Options.SpeechEnabled end,
                         },
+                        SpeechOnlyShownNames = {
+                            type = "toggle",
+                            order = 31,
+                            name = "Only read out names shown on the compass",
+                            desc = "Read something out only while its name is shown on the compass. With a texts visibility angle, that is only the icon showing its texts (see the Texts tab of each section in Minimap tracking).",
+                            width = "full",
+                            disabled = function() return not Options.SpeechEnabled end,
+                        },
                         SpeechDegrees = {
                             type = "range",
                             order = 50,

@@ -87,6 +87,7 @@ Addon.Defaults = {
         SpeechQuestie          = true,
         SpeechGatherMate       = false,
         SpeechDistance         = false,
+        SpeechOnlyShownNames   = false,
         SpeechDegrees          = 10,
         SpeechDelay            = 0.5,
         SpeechVoice            = -1, -- -1: the voice of the game's text to speech settings
