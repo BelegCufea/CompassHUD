@@ -316,14 +316,16 @@ function layoutNodeTexts(frame, flipped, showDistance, showTTA, showTitle, dista
 end
 
 ------------------------------------------------------------------------------------------------
--- Integration marker modules (Questie, GatherMate2/GatherLite) share their settings, frames and
+-- Marker modules (minimap icons, Questie, GatherMate2/GatherLite) share their settings, frames and
 -- drawing. A module is a table:
---   prefix    option name prefix ("Questie", "GatherMate"); its settings mirror the minimap
---             icons' (POITrack...) names, see markerSetting
---   nodes     its nodes by key: { frame, instance (uiMapID), x, y (world), name, angle, distance }
+--   prefix    option name prefix ("POITrack", "Questie", "GatherMate"); the integrations' settings
+--             mirror the minimap icons' (POITrack...) names, see markerSetting
+--   nodes     its nodes by key: { frame, instance (uiMapID), x, y (world), name, angle, distance,
+--             optional: scale (size factor), visible (false: filtered out, not drawn) }
 --   framePool frames given back by released nodes (WoW never frees frames)
 --   heading   node closest to the facing direction, set by drawMarkerNodes
 --   title     optional function(node) -> text of the name line (default node.name)
+--   inRange   optional function(node) -> whether a node (node.distance set) is drawn at all
 ------------------------------------------------------------------------------------------------
 
 -- The integration marker modules, for features that look at all of them (supertrack keybinding,
@@ -385,6 +387,32 @@ function acquireMarkerFrame(module)
     return frame
 end
 
+-- Round icon with a border (e.g. world quests) or the plain icon; the mask and border are made
+-- the first time a frame needs them, and a reused frame may have had them or not.
+function setMarkerCircle(frame, circle)
+    if circle and not frame.mask then
+        frame.mask = frame:CreateMaskTexture()
+        frame.mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        frame.mask:SetAllPoints(frame.texture)
+        frame.border = frame:CreateTexture(nil, "OVERLAY", nil, 1)
+        frame.border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
+        frame.border:SetAllPoints(frame.texture)
+    end
+    if circle then
+        if not frame.masked then
+            frame.texture:AddMaskTexture(frame.mask)
+            frame.masked = true
+        end
+        frame.border:Show()
+    elseif frame.mask then
+        if frame.masked then
+            frame.texture:RemoveMaskTexture(frame.mask)
+            frame.masked = false
+        end
+        frame.border:Hide()
+    end
+end
+
 -- Removes a node and gives its frame back to the module's pool.
 function releaseMarkerNode(module, key)
     local node = module.nodes[key]
@@ -408,7 +436,9 @@ function styleMarkerNode(module, node)
     local frame = node.frame
     local size = markerSetting(module, "Scale")
     local scale = Options.Scale * Options.IconScale * size
-    frame:SetSize(iconSize * size, iconSize * size)
+    -- node.scale: size of this kind of icon (e.g. flight points), texts keep the module's size
+    local iconWidth = iconSize * size * (node.scale or 1)
+    frame:SetSize(iconWidth, iconWidth)
     for _, text in ipairs({ { frame.DistanceText, "Distance" }, { frame.TimeText, "Tta" }, { frame.Title, "Title" } }) do
         local key = text[2]
         setPointerFont(text[1], scale, markerSetting(module, key .. "CustomFont"), markerSetting(module, key .. "Font"),
@@ -460,10 +490,17 @@ function drawMarkerNodes(module)
     local target = markerHideAtTarget(module) and shownGameTarget
     for _, node in pairs(module.nodes) do
         local shown = false
-        local angle = player.angle and relativeAngle(node.instance, node.x, node.y)
+        local angle
+        -- filtered out (visible == false) or out of range (module.inRange) nodes are not drawn and
+        -- cannot be the faced one
+        if node.frame and node.visible ~= false and player.angle then
+            node.distance = HBD:GetWorldDistance(node.instance, player.x, player.y, node.x, node.y)
+            if not module.inRange or module.inRange(node) then
+                angle = relativeAngle(node.instance, node.x, node.y)
+            end
+        end
         node.angle = angle
         if angle then
-            node.distance = HBD:GetWorldDistance(node.instance, player.x, player.y, node.x, node.y)
             -- picked before the target check: the keybinding can still toggle its tracking off
             if math.abs(angle) < minAngle then
                 minAngle = math.abs(angle)
@@ -490,7 +527,9 @@ function drawMarkerNodes(module)
             node.frame:SetAlpha(opacity)
             showMarkerTexts(module, node.frame, textsDegrees == 0)
         end
-        node.frame:SetShown(shown)
+        if node.frame then
+            node.frame:SetShown(shown)
+        end
     end
 
     -- texts only on the faced node: nominated here, shown by showFacedMarkerTexts if it is the
