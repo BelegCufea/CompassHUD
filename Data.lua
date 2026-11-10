@@ -44,7 +44,7 @@ gatherMatePointTable = {}
 poiTrackPointTable = {}
 poiTrackHeading = nil -- minimap icon closest to the facing direction, re-picked on every pass
 poiTrackCurrentMap = nil
-STtexture = {}
+STtexture = { last = {} } -- SuperTracker retexture state; last = what was applied to the icon
 directions = {
     [0] = {letter = "N" , main = true },
     [45] = {letter = "NE" , main = false },

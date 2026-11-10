@@ -1,3 +1,9 @@
+# Unreleased
+
+## Fix
+
+- The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded (#22).
+
 # v1.7.0 (9.11.2026)
 
 ## New

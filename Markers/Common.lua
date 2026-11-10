@@ -162,6 +162,7 @@ function updateSuperTrackedTexture(activeID)
                 SuperTrackedFrame:UpdateIcon()
             end
             STtexture.applied = false
+            STtexture.last.valid = false
         end
         return
     end
@@ -185,22 +186,49 @@ function updateSuperTrackedTexture(activeID)
         STtexture.border:Hide()
     end
 
-    -- === Texture or atlas, same choice as applyPointerTexture ===
-    -- (re-applied on every update, because the game resets the icon on its own events)
-    if questPoint.texture and options.worldmapTexture then
-        icon:SetTexture(questPoint.texture)
-    elseif questPoint.atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
-        icon:SetAtlas(questPoint.atlasName)
-    else
-        icon:SetAtlas(questPoint.completed and options.atlasAltID or options.atlasID)
+    -- the game sets its own icon on its own events: forget what was applied, so it is applied again
+    if not STtexture.hooked and SuperTrackedFrame.UpdateIcon then
+        hooksecurefunc(SuperTrackedFrame, "UpdateIcon", function()
+            STtexture.last.valid = false
+        end)
+        STtexture.hooked = true
     end
 
+    -- === Texture or atlas, same choice as applyPointerTexture ===
+    local texture, atlas
+    if questPoint.texture and options.worldmapTexture then
+        texture = questPoint.texture
+    elseif questPoint.atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
+        atlas = questPoint.atlasName
+    else
+        atlas = questPoint.completed and options.atlasAltID or options.atlasID
+    end
     local scale = (questPoint.completed and options.textureAltScale or options.textureScale) * (frame.scaleMultiplier or 1)
+    local circle = questPoint.circle and true or false
+
+    -- Runs on every HUD update: change the icon only when something differs from what was applied
+    -- (or the game replaced it with its own atlas), so frames that watch it (Edit Mode, other
+    -- addons) are not made to re-layout all the time.
+    local last = STtexture.last
+    if STtexture.applied and last.valid and last.texture == texture and last.atlas == atlas
+        and last.scale == scale and last.circle == circle then
+        -- with a texture applied the icon has no atlas; an atlas there means the game set its own
+        if not icon.GetAtlas or icon:GetAtlas() == atlas then
+            return
+        end
+    end
+    last.valid, last.texture, last.atlas, last.scale, last.circle = true, texture, atlas, scale, circle
+
+    if texture then
+        icon:SetTexture(texture)
+    else
+        icon:SetAtlas(atlas)
+    end
     icon:SetSize(STtexture.iconSize, STtexture.iconSize)
     icon:SetScale(scale)
 
-    -- === Apply or remove mask/border (runs every HUD tick: add/remove the mask only on change) ===
-    if questPoint.circle then
+    -- === Apply or remove mask/border ===
+    if circle then
         if not STtexture.masked then
             icon:AddMaskTexture(STtexture.mask)
             STtexture.masked = true
