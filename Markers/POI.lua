@@ -56,14 +56,9 @@ poiNodes = {
 }
 table.insert(markerModules, poiNodes)
 
--- Scanning radius and "Bypass scanning radius" (per icon type, at draw time, so a change applies
--- right away)
--- Also the icon's filter: poi.visible is only true for a shown type (nil from a missing filter
--- entry counts as hidden, as before).
-function poiNodes.inRange(poi)
-    if not poi.visible then return false end
-    return Options.POITrackRadius == 0 or poiTrackBypassesRadius(poi)
-        or (poi.distance and poi.distance <= Options.POITrackRadius) or false
+-- "Bypass scanning radius" per icon type (checked at draw time, so a change applies right away)
+function poiNodes.bypassesRadius(poi)
+    return poiTrackBypassesRadius(poi)
 end
 
 -- Settings changed: re-apply them to all icons of all maps, or hide them all when turned off.
@@ -115,9 +110,6 @@ end
 
 -- Removes a minimap icon node of the map table 'pois' and puts its frame back into the pool.
 function poiNodes.release(pois, id)
-    if pois[id] == poiTrackHeading then
-        poiTrackHeading = nil
-    end
     releaseMarkerNode(poiNodes, id, pois)
 end
 
@@ -139,6 +131,7 @@ end
 -- current map: world coordinates, its frame and scale. The record itself becomes the node.
 function addPOITrackNode(id, data, xZone, yZone, scale)
     poiTrackPointTable[player.uiMapID][id] = data
+    data.visible = false -- until the scan that added it decides
     data.instance = player.uiMapID
     data.x, data.y = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
     data.frame = createPOITrackNode(data)
@@ -202,7 +195,7 @@ function setPOITrackNodes()
                     local poi = setPOITrackNode(poiID, poiTypeEnum.OTHER)
                     if poi then
                         poi.trackType = poiTrackTypeByAtlas(poi, poiTypeEnum.OTHER)
-                        poi.visible = Options.POITrackFilter[poi.trackType]
+                        poi.visible = Options.POITrackFilter[poi.trackType] == true
                     end
                 end
             end
@@ -260,7 +253,7 @@ function setPOITrackNodes()
                     end
                     local node = poiTrackPointTable[player.uiMapID][id]
                     node.trackType = poiTrackTypeByAtlas(node, poiTypeEnum.LINK)
-                    node.visible = Options.POITrackFilter[node.trackType]
+                    node.visible = Options.POITrackFilter[node.trackType] == true
                 end
             end
 
@@ -425,14 +418,13 @@ function setPOITrackNodes()
     -- position, opacity, texts and the faced icon: shared with the other marker modules
     poiNodes.nodes = poiTrackPointTable[player.uiMapID] or noIcons
     drawMarkerNodes(poiNodes)
-    poiTrackHeading = poiNodes.heading
     HUD.minimapIcons = poiTrackPointTable
 end
 
 -- The icon the supertrack keybinding acts on: the minimap icon or a node of a marker module with
 -- "Use supertracker keybinding" (Questie, GatherMate), whichever is closest to the facing direction.
 local function faceTrackedIcon()
-    local best = Options.POITrackEnabled and poiTrackHeading
+    local best = Options.POITrackEnabled and poiNodes.heading
     if best and not (best.visible and best.instance == player.uiMapID and best.angle) then
         best = nil
     end

@@ -99,14 +99,9 @@ local function addIcon(frameName, category)
     if not (icon and icon.miniMapIcon and icon.UiMapID == player.uiMapID and not icon.hidden and icon.x and icon.y) then return end
     local data = icon.data
     if not (type(data) == "table" and data.Type) then return end
+    -- (the scanning radius is checked when drawing, as for the other icon sections)
     local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(icon.x / 100, icon.y / 100, player.uiMapID)
     if not (xWorld and yWorld) then return end
-    -- 0 = the whole zone
-    local radius = markerSetting(questieNodes, "Radius")
-    if radius > 0 then
-        local distance = HBD:GetWorldDistance(player.instance, player.x, player.y, xWorld, yWorld)
-        if not distance or distance > radius then return end
-    end
 
     local key = frameName
     local node = questiePointTable[key]

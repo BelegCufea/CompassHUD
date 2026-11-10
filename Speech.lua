@@ -64,7 +64,7 @@ function updateSpeech()
         end
     end
 
-    local poi = Options.SpeechPOI and Options.POITrackEnabled and poiTrackHeading
+    local poi = Options.SpeechPOI and Options.POITrackEnabled and poiNodes.heading
     if poi and poi.name and poi.angle and poi.frame and poi.frame:IsShown() and math.abs(poi.angle) < limit then
         limit = math.abs(poi.angle)
         candidate, name, distance = poi, poi.name, poi.distance

@@ -325,7 +325,7 @@ end
 --   framePool frames given back by released nodes (WoW never frees frames)
 --   heading   node closest to the facing direction, set by drawMarkerNodes
 --   title     optional function(node) -> text of the name line (default node.name)
---   inRange   optional function(node) -> whether a node (node.distance set) is drawn at all
+--   bypassesRadius  optional function(node) -> whether a node is drawn beyond the scanning radius
 ------------------------------------------------------------------------------------------------
 
 -- The integration marker modules, for features that look at all of them (supertrack keybinding,
@@ -490,14 +490,17 @@ function drawMarkerNodes(module)
     local fadeFactor = fadeSpan > 0 and (opacityMin - opacityMax) / fadeSpan or 0
     -- the game's tracked target, if nodes at its place should be hidden (see shownGameTarget)
     local target = markerHideAtTarget(module) and shownGameTarget
+    -- 0 = the whole zone
+    local radius = markerSetting(module, "Radius")
     for _, node in pairs(module.nodes) do
         local shown = false
         local angle
-        -- filtered out (visible == false) or out of range (module.inRange) nodes are not drawn and
+        -- filtered out (visible == false) or out of the scanning radius nodes are not drawn and
         -- cannot be the faced one
         if node.frame and node.visible ~= false and player.angle then
             node.distance = HBD:GetWorldDistance(node.instance, player.x, player.y, node.x, node.y)
-            if not module.inRange or module.inRange(node) then
+            if radius == 0 or (node.distance and node.distance <= radius)
+                or (module.bypassesRadius and module.bypassesRadius(node)) then
                 angle = relativeAngle(node.instance, node.x, node.y)
             end
         end

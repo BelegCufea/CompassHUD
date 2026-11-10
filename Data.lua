@@ -44,7 +44,6 @@ questPointsTable = {}
 groupPointsTable = {}
 gatherMatePointTable = {}
 poiTrackPointTable = {}
-poiTrackHeading = nil -- minimap icon closest to the facing direction, re-picked on every pass
 poiTrackCurrentMap = nil
 STtexture = { last = {} } -- SuperTracker retexture state; last = what was applied to the icon
 editModeActive = false -- the game's Edit Mode is open (EditMode.lua)
