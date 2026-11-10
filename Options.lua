@@ -976,18 +976,7 @@ Addon.Options = {
                                 SpeechSourcesDesc = {
                                     type = "description",
                                     order = 1,
-                                    -- names only the choices shown (Questie and gathering nodes need their addon)
-                                    name = function()
-                                        local kinds = { "Minimap icons" }
-                                        if questieLoaded() then table.insert(kinds, "Questie icons") end
-                                        if GatherMate2 or GatherLite then table.insert(kinds, "gathering nodes") end
-                                        local list = kinds[1]
-                                        for i = 2, #kinds do
-                                            list = list .. (i == #kinds and " and " or ", ") .. kinds[i]
-                                        end
-                                        return "Of everything selected here, the one closest to the direction you are facing is read out. "
-                                            .. list .. " must also be turned on in Minimap tracking."
-                                    end,
+                                    name = "Of everything selected here, the one closest to the direction you are facing is read out. Icons are only read out while they are turned on in Minimap tracking.",
                                     width = "full",
                                 },
                                 SpeechSupertracked = {
