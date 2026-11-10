@@ -167,30 +167,6 @@ function isTaxiNodeUsable(taxi)
     return true
 end
 
-function getPOITrackFilter()
-    local list = {}
-    list[poiTypeEnum.TAXI] = "Flightpoints"
-    list[poiTypeEnum.TAXI .. "_min"] = "  - only closest flightpoint"
-    list[poiTypeEnum.EVENT] = "Events"
-    list[poiTypeEnum.INSTANCE] = "Instances (Dungeons, Raids)"
-    list[poiTypeEnum.HUB] = "Hubs (Cities, Towns, etc.)"
-    list[poiTypeEnum.DELVE] = "Delves"
-    list[poiTypeEnum.PORTAL] = "Teleports"
-    list[poiTypeEnum.LINK] = "Links (Shortcuts, Connections, Paths)"
-    list[poiTypeEnum.VIGNETTE] = "Vignettes"
-    list[poiTypeEnum.OTHER] = "Miscellaneous"
-    list[poiTypeEnum.RACE] = "Dragonriding races"
-    list[poiTypeEnum.QUEST] = "Quests (from the quest log)"
-    list[poiTypeEnum.QUEST .. "_complete"] = "  - only ready to turn in"
-    return list
-end
-
-function getPOITrackWholeZoneFilter()
-    local list = getPOITrackFilter()
-    list[poiTypeEnum.TAXI .. "_min"] = nil
-    list[poiTypeEnum.QUEST .. "_complete"] = nil
-    return list
-end
 
 function getPOIFrackWQFilter()
     local list = {}

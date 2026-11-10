@@ -1206,6 +1206,132 @@ local function markerTextOptions(args, key, show, header, order)
     }
 end
 
+-- Filter tab of the minimap icons: one row per icon type (show + any distance), and a box for
+-- each type with options of its own. The values are kept in POITrackFilter / POITrackWholeZone.
+local ANY_DISTANCE_DESC = "Show these icons at any distance, not only within the scanning radius: everything the game lists for the current map (for flight points this can be the whole continent)."
+
+-- a checkbox for one entry of the POITrackFilter or POITrackWholeZone table
+local function filterToggle(order, name, desc, tableName, key, width)
+    return {
+        type = "toggle",
+        order = order,
+        name = name,
+        desc = desc,
+        width = width,
+        get = function() return Addon.db.profile[tableName][key] or false end,
+        set = function(_, value)
+            Addon.db.profile[tableName][key] = value
+            Addon:UpdateHUDSettings()
+        end,
+    }
+end
+
+-- icon types without options of their own, in the order shown
+local placeTypes = {
+    { poiTypeEnum.HUB, "Hubs (cities, towns)" },
+    { poiTypeEnum.EVENT, "Events" },
+    { poiTypeEnum.DELVE, "Delves" },
+    { poiTypeEnum.INSTANCE, "Dungeons and raids" },
+    { poiTypeEnum.PORTAL, "Teleports" },
+    { poiTypeEnum.LINK, "Links (shortcuts, paths)" },
+    { poiTypeEnum.RACE, "Dragonriding races" },
+    { poiTypeEnum.VIGNETTE, "Vignettes (rares, treasures)" },
+    { poiTypeEnum.OTHER, "Other places" },
+}
+
+local placeArgs = {}
+for index, place in ipairs(placeTypes) do
+    local key, label = place[1], place[2]
+    placeArgs[key .. "Show"] = filterToggle(index * 10, label, nil, "POITrackFilter", key, 1.2)
+    placeArgs[key .. "AnyDistance"] = filterToggle(index * 10 + 1, "Any distance", ANY_DISTANCE_DESC, "POITrackWholeZone", key, 0.9)
+    placeArgs[key .. "Break"] = { type = "description", order = index * 10 + 2, name = "", width = "full" }
+end
+
+local poiTrackFilterArgs = {
+    FilterDescription = {
+        type = "description",
+        order = 0,
+        name = "Choose which icons are shown on the compass.",
+        fontSize = "medium",
+        width = "full",
+    },
+    Places = {
+        type = "group",
+        order = 10,
+        name = "Places",
+        inline = true,
+        args = placeArgs,
+    },
+    FlightPoints = {
+        type = "group",
+        order = 20,
+        name = "Flight points",
+        inline = true,
+        args = {
+            Show = filterToggle(1, "Show", "Flight points of your faction.", "POITrackFilter", poiTypeEnum.TAXI, 0.5),
+            AnyDistance = filterToggle(2, "Any distance", ANY_DISTANCE_DESC, "POITrackWholeZone", poiTypeEnum.TAXI, 0.8),
+            Closest = filterToggle(3, "Only the closest one", "Show only the flight point closest to you.", "POITrackFilter", poiTypeEnum.TAXI .. "_min", 1.0),
+        },
+    },
+    WorldQuests = {
+        type = "group",
+        order = 30,
+        name = "World quests",
+        inline = true,
+        args = {
+            POITrackWQFilter = {
+                type = "select",
+                order = 1,
+                name = "Show",
+                desc = "Which world quests are shown.",
+                width = 1.0,
+                values = function() return getPOIFrackWQFilter() end,
+            },
+            POITrackWQWholeZone = {
+                type = "toggle",
+                order = 2,
+                name = "Any distance",
+                desc = ANY_DISTANCE_DESC,
+                width = 0.9,
+            },
+        },
+    },
+    Quests = {
+        type = "group",
+        order = 40,
+        name = "Quests from your quest log",
+        inline = true,
+        args = {
+            Show = filterToggle(1, "Show", "Quests from your quest log that have a place on the current map.", "POITrackFilter", poiTypeEnum.QUEST, 0.5),
+            AnyDistance = filterToggle(2, "Any distance", ANY_DISTANCE_DESC, "POITrackWholeZone", poiTypeEnum.QUEST, 0.8),
+            POITrackQuestCurrentZone = {
+                type = "toggle",
+                order = 3,
+                name = "Only this zone",
+                desc = "Only quests in the zone you are in. Without it, quests of neighboring places shown on the map are included too (e.g. Stormwind while in Elwynn Forest).",
+                width = 1.0,
+            },
+            POITrackQuestWhich = {
+                type = "select",
+                order = 4,
+                name = "Which",
+                width = 1.0,
+                values = { both = "Both", active = "In progress", complete = "Ready to turn in" },
+                sorting = { "both", "active", "complete" },
+            },
+            POITrackQuestIcon = {
+                type = "select",
+                order = 5,
+                name = "Icon",
+                desc = "Like the supertracker: the icons of your supertracker pointer settings for each quest type.\nGame quest icons: the game's quest marks.",
+                width = 1.0,
+                values = { pointer = "Like the supertracker", game = "Game quest icons" },
+                sorting = { "pointer", "game" },
+            },
+        },
+    },
+}
+
 -- Texts tab of the minimap icons: the faced-icon settings, then the three texts
 local poiTrackTextArgs = {
     POITrackTextsDegrees = {
@@ -1351,63 +1477,7 @@ POITrackOptions = {
             type = "group",
             order = 20,
             name = "Filter",
-            args = {
-               ModuleDescription = {
-                    type = "description",
-                    order = 0,
-                    name = "Select which icons will be wisible.",
-                    fontSize = "medium",
-                },
-                POITrackFilter = {
-                    type = "multiselect",
-                    name = "Visible icon types",
-                    order = 910,
-                    width = "full",
-                    values = function() return getPOITrackFilter() end,
-                    get = function(info, key)
-                        return Addon.db.profile.POITrackFilter[key] or false
-                    end,
-                    set = function(info, key, value)
-                        Addon.db.profile.POITrackFilter[key] = value
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                POITrackWholeZone = {
-                    type = "multiselect",
-                    name = "Bypass scanning radius",
-                    desc = "Selected icon types will be shown in the whole zone, not just in the scanning radius.",
-                    order = 920,
-                    width = "full",
-                    values = function() return getPOITrackWholeZoneFilter() end,
-                    get = function(info, key)
-                        return Addon.db.profile.POITrackWholeZone[key] or false
-                    end,
-                    set = function(info, key, value)
-                        Addon.db.profile.POITrackWholeZone[key] = value
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                POITrackWQFilter = {
-                    type = "select",
-                    order = 1010,
-                    name = "World Quests ",
-                    desc = "Select which WorldQuest icons will be visible on the HUD.",
-                    values = function() return getPOIFrackWQFilter() end,
-                    get = function(info)
-                        return Addon.db.profile.POITrackWQFilter
-                    end,
-                    set = function(info, value)
-                        Addon.db.profile.POITrackWQFilter = value
-                        Addon:UpdateHUDSettings()
-                    end,
-                },
-                POITrackWQWholeZone = {
-                    type = "toggle",
-                    order = 1020,
-                    name = "Bypass scanning radius",
-                    desc = "If enabled, World Quests will be shown in the whole zone, not just in the scanning radius.",
-                },
-            },
+            args = poiTrackFilterArgs,
         },
         Texts = {
             type = "group",

@@ -236,8 +236,11 @@ Addon.Defaults = {
             [poiTypeEnum.VIGNETTE] = false,
             [poiTypeEnum.RACE] = false,
             [poiTypeEnum.QUEST] = false,
-            [poiTypeEnum.QUEST.."_complete"] = false,
         },
+        -- quests from the quest log (Filter tab): which ones, only this zone, icon style
+        POITrackQuestWhich         = "both", -- both, active, complete
+        POITrackQuestCurrentZone   = false,
+        POITrackQuestIcon          = "pointer", -- pointer (like the supertracker), game
         POITrackWholeZone          = {},
         POITrackWQFilter           = "All",
         POITrackWQWholeZone        = false,

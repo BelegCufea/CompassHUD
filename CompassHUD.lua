@@ -456,6 +456,15 @@ function migrateProfile()
         Options.IconScale = Options.VerticalScale
         Options.SizeVersion = 1
     end
+    -- the "only ready to turn in" quest filter became Filter tab -> Quests -> Which. Only a true
+    -- value was ever saved (false was the default, which AceDB does not store).
+    local filter = Options.POITrackFilter
+    if filter and filter[poiTypeEnum.QUEST .. "_complete"] ~= nil then
+        if filter[poiTypeEnum.QUEST .. "_complete"] == true then
+            Options.POITrackQuestWhich = "complete"
+        end
+        filter[poiTypeEnum.QUEST .. "_complete"] = nil
+    end
 end
 
 -- Size by pixels: the scales follow from the wanted HUD size (border included), so everything

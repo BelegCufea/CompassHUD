@@ -369,25 +369,33 @@ function setPOITrackNodes()
             -- complete). World quests and bonus objectives have their own type above.
             local mapQuests = Options.POITrackFilter[poiTypeEnum.QUEST] and GetQuestsOnMap(player.uiMapID)
             if mapQuests then
-                local onlyComplete = Options.POITrackFilter[poiTypeEnum.QUEST .. "_complete"]
+                -- both, active (in progress) or complete (ready to turn in)
+                local which = Options.POITrackQuestWhich
+                local iconStyle = Options.POITrackQuestIcon
                 local pois = poiTrackPointTable[player.uiMapID]
                 for _, quest in ipairs(mapQuests) do
                     local questID = quest.questID
-                    if questID and quest.x and quest.y and not isTask(questID) then
+                    -- quest.mapID: the map the quest is on (neighboring places are listed too)
+                    local otherZone = Options.POITrackQuestCurrentZone and quest.mapID and quest.mapID ~= player.uiMapID
+                    if questID and quest.x and quest.y and not otherZone and not isTask(questID) then
                         local id = poiTypeEnum.QUEST .. "_" .. questID
                         local completed = IsQuestComplete(questID) and true or false
                         local node = pois[id]
-                        if node and node.completed ~= completed then
-                            -- completed or no longer: other icon, build the node again
+                        if node and (node.completed ~= completed or node.iconStyle ~= iconStyle) then
+                            -- completed or no longer, or another icon style: build the node again
                             poiNodes.release(pois, id)
                             node = nil
                         end
                         if not node then
-                            -- same icons as the supertracker pointer of this quest type
-                            local options = Options.Pointers[getPointerType(questID, 0)]
-                            local atlas = options and (completed and options.atlasAltID or options.atlasID)
+                            local atlas
+                            if iconStyle ~= "game" then
+                                -- same icons as the supertracker pointer of this quest type
+                                local options = Options.Pointers[getPointerType(questID, 0)]
+                                atlas = options and (completed and options.atlasAltID or options.atlasID)
+                            end
                             quest.name = GetTitleForQuestID(questID)
                             quest.completed = completed
+                            quest.iconStyle = iconStyle
                             quest.atlasName = atlas or (completed and "QuestTurnin" or "QuestNormal")
                             node = addPOITrackNode(id, quest, quest.x, quest.y, 1)
                         else
@@ -397,7 +405,7 @@ function setPOITrackNodes()
                             node.frame.x, node.frame.y = xWorld, yWorld
                         end
                         node.trackType = poiTypeEnum.QUEST
-                        node.visible = completed or not onlyComplete
+                        node.visible = which == "both" or (which == "complete") == completed
                         poiNodes.seen[id] = true
                     end
                 end
