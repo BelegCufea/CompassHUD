@@ -44,7 +44,7 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 ![Heading](https://i.imgur.com/CxlBmpL.png)
 
 *- Questie's icons (quest givers, turn-ins, townsfolk) on the compass:*</br>
-![QuestieInAction](https://i.imgur.com/hFhwTuZ.png)
+![QuestieInAction](https://i.imgur.com/hJeXf5u.png)
 
 
 ## Configuration
@@ -137,7 +137,7 @@ Members on a different map (another continent, behind a portal, underground, ...
 - **World Quest Tracker**: its tracked quests can be used as the world quest filter for minimap icons.
 
 *Questie icons on the compass, and their settings:*</br>
-![QuestieInAction](https://i.imgur.com/hFhwTuZ.png)
+![QuestieInAction](https://i.imgur.com/hJeXf5u.png)
 ![QuestieSettings](https://i.imgur.com/qHnkZhv.png)
 
 ### Miscellaneous
