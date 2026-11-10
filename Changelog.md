@@ -1,30 +1,49 @@
-# Unreleased
+# v1.8.0 (not released yet)
+
+## Good to know
+
+- **WoW: Forever:** your profile choice may reset once (characters are now told apart by first name *and* surname). The `Default` profile and its settings are not affected.
+- **Gathering nodes:** if you show node texts, they now appear only on the node you face. Set `Texts visibility angle` to 0 to show them on every node again.
+- **Questie support is experimental:** Questie has no public interface for its icons, so a Questie update may turn it off until CompassHUD is updated.
 
 ## New
 
-- **Questie** support (experimental): the icons Questie places on the minimap can be shown on the compass, in their own section **Minimap tracking → Questie** (shown when Questie is loaded, off by default). Which icons appear (available quests, turn-ins, objectives, townsfolk such as innkeepers, trainers or mailboxes) is decided by Questie's own settings and menus. By default it uses the settings of **Minimap icons** (scanning radius, update throttle, position, scale, opacity, texts); turn **Use minimap icons settings** off to give Questie its own. The name can show the kind of icon in parentheses, e.g. "Innkeeper Farley (Innkeeper)". With **Use supertracker keybinding** (on by default) the minimap icons' supertrack keybinding also tracks the Questie icon you face, and **Speech** can read Questie icons out too. Questie has no public API for its icons, so a Questie update may turn this off until CompassHUD is updated (#23).
-- **Speech** tab (accessibility, off by default): reads out the name of what is in front of you on the compass, with the game's text to speech. Each one is read once, when you turn to face it. Covers the supertracked target, minimap icons, Questie icons and gathering nodes, optionally with the distance. Settings for the facing angle, a delay (so turning quickly does not read out everything you pass), the voice (any voice the game offers), rate and volume, and a **Test** button. **Only read out names shown on the compass** (off by default) reads something only while its name is visible, e.g. only the icon showing its texts when a texts visibility angle is set (#21).
-- Minimap icon type **Quests (from the quest log)** (**Minimap icons → Filter**, off by default): quests in your quest log that have a place on the current map, with the same icons as their supertracker pointers or the game's quest marks. Options: **Progress** (all, in progress, or ready to turn in) and **Only this zone**. World quests and bonus objectives keep their own type; the quest you track is hidden by **Hide icon at the tracked target** as usual, and the supertrack keybinding tracks the quest you are facing (#20).
-- **GatherMate2 / GatherLite** settings now match the Questie ones: **Use minimap icons settings** (off by default), **Hide node at the tracked target**, opacity by distance (**Minimum opacity**, **Maximum opacity**, **Full opacity within**), and on the **Texts** tab the **Texts visibility angle** and **Opacity of visible texts**. Opacity stays at 100% by default, so nodes look as before. **Change:** if you show node texts (distance, time, name), they now appear only on the node you face (**Texts visibility angle** 2.5°, like the minimap icons); set it to 0 to show texts on every node again. New, off by default: **Use supertracker keybinding** (track the node you face as a waypoint with its name and icon) and **Use text to speech** (also **Speech → Gathering nodes**). The section is hidden when neither addon is loaded.
-- With a **Texts visibility angle** set in several modules (minimap icons, Questie, GatherMate), only one icon shows its texts: the one closest to the direction you are facing, instead of one per section.
-- **Speech** tab: what to read out (supertracked target, minimap icons, Questie icons, gathering nodes) is grouped in one box, the distance option has its own line, and the other settings sit side by side.
-- **Minimap icons → Filter** tab redesigned: sub-tabs **Places** (one row per icon type with **Any distance** next to it, was the separate **Bypass scanning radius** list), **Quests**, **Flight points** (**Only the closest one**) and **World quests**, so nothing needs scrolling. Your filter choices are kept; a saved "only ready to turn in" becomes **Progress: Ready to turn in**.
-- **Edit Mode** support: while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged to a new place, even when **Lock compass** is on. Clicking it opens the CompassHUD options (#25).
-- The compass size can be set in pixels: **General → Size by: Pixels** shows **Width (pixels)** and **Height (pixels)** (border included, before the overall Scale), starting from the current size. **Field of View** then keeps the width and changes how many degrees fit in it (#24).
-- Option **Marker scale** (**General**): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass **Height**; existing profiles keep their current marker size (#24).
-- The **General** tab fits without scrolling: related settings sit side by side (**Scale**, **Marker scale** and a new **Reset size** button that sets Scale, Width, Height and Marker scale back to 100%; **Size by**, **Width** and **Height**; **Strata** and **Position in Strata**).
-- Option **Max title width** (**Appearance → Pointer font**). Longer titles of the supertracker, minimap icon and gathering node pointers are cut off with "...", so long quest titles (e.g. with map transition directions) no longer stretch far beyond the compass. 0 (default) = no limit, as before (#18).
+- **Questie** (#23): the icons Questie places on the minimap can be shown on the compass, in `Minimap tracking → Questie` (shown when Questie is loaded, off by default).
+  - Which icons appear (available quests, turn-ins, objectives, townsfolk such as innkeepers, trainers or mailboxes) is decided by Questie's own settings and menus.
+  - Uses the `Minimap icons` settings by default (scanning radius, update throttle, position, scale, opacity, texts); turn `Use minimap icons settings` off to give Questie its own.
+  - `Show the type after the name`, e.g. "Innkeeper Farley (Innkeeper)".
+  - `Use supertracker keybinding` (on by default): the minimap icons' supertrack keybind also tracks the Questie icon you face. `Use text to speech` reads it out.
+- **Speech** tab (#21, accessibility, off by default): reads out the name of what is in front of you on the compass, with the game's text to speech. Each one is read once, when you turn to face it.
+  - `What to read out`: the supertracked target, minimap icons, Questie icons and gathering nodes; `Also read out the distance`.
+  - `Only read out names shown on the compass` (off by default): read something only while its name is visible, e.g. only the icon showing its texts when a texts visibility angle is set.
+  - `Facing angle`, `Delay` (so turning quickly does not read out everything you pass), `Voice` (any voice the game offers), `Rate`, `Volume` and a `Test` button.
+- **Edit Mode** support (#25): while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged, even when `Lock compass` is on. Clicking it opens the CompassHUD options.
+- **Compass size in pixels** (#24): `General → Size by: Pixels` shows `Width (pixels)` and `Height (pixels)` (border included, before the overall `Scale`), starting from the current size. `Field of View` then keeps the width and changes how many degrees fit in it.
+- **Marker scale** (#24, `General`): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass `Height`; existing profiles keep their current marker size.
+- **Quests from your quest log** (#20): a new minimap icon type in `Minimap icons → Filter → Quests` (off by default) for quests that have a place on the current map.
+  - `Progress`: all, in progress, or ready to turn in. `Only this zone`. `Icon`: like the supertracker, or the game's quest marks.
+  - World quests and bonus objectives keep their own type; the supertrack keybind tracks the quest you face.
+- **`Minimap icons → Filter`** tab redesigned, with sub-tabs so nothing needs scrolling:
+  - `Places`: one row per icon type with `Any distance` next to it (was the separate `Bypass scanning radius` list).
+  - `Quests`, `Flight points` (`Only the closest one`) and `World quests`.
+  - Your filter choices are kept; a saved "only ready to turn in" becomes `Progress: Ready to turn in`.
+- **GatherMate2 / GatherLite** settings now match the Questie ones: `Use minimap icons settings`, `Hide node at the tracked target`, opacity by distance (`Minimum opacity`, `Maximum opacity`, `Full opacity within`), and on the `Texts` tab `Texts visibility angle` and `Opacity of visible texts`. Opacity stays at 100% by default, so nodes look as before.
+  - New, off by default: `Use supertracker keybinding` (track the node you face as a waypoint with its name and icon) and `Use text to speech` (also `Speech → Gathering nodes`).
+  - The section is hidden when neither addon is loaded.
+- **One icon with texts:** with a `Texts visibility angle` set for minimap icons, Questie or gathering nodes, only one icon of them all shows its texts: the one closest to the direction you are facing.
+- **Max title width** (#18, `Appearance → Pointer font`): longer titles of the supertracker, minimap icon and gathering node pointers are cut off with "...", so long quest titles (e.g. with map transition directions) no longer stretch far beyond the compass. 0 (default) = no limit, as before.
+- The **General** tab fits without scrolling: related settings sit side by side, with a new `Reset size` button (Scale, Width, Height and Marker scale back to 100%).
 
 ## Fix
 
-- A minimap icon set as a waypoint with the supertrack keybinding now gives the supertracker pointer its name (it was usually lost, the game stores the waypoint position slightly rounded), and with **Icon texture** (**Minimap icons → Supertracking**) also its icon when that is a texture, e.g. world quest rewards.
+- A minimap icon set as a waypoint with the supertrack keybind now gives the supertracker pointer its **name** (it was usually lost: the game stores the waypoint position slightly rounded), and with `Minimap icons → Supertracking → Icon texture` also its icon when that is a texture, e.g. world quest rewards.
 - The HUD is no longer hidden in every instance, only where the game does not give the player facing (dungeons, raids). It should now show in instances that have a facing, e.g. the housing neighborhoods Founder's Point and Razorwing Shore (#19).
 - The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded (#22).
-- WoW: Forever: characters with the same first name (but a different surname) on one realm shared their profile choice. Updated Ace3 to r1424-alpha (AceDB-3.0 40), which keys Forever characters by first name and surname. Your profile choice on Forever may reset once; the `Default` profile and its settings are not affected.
+- WoW: Forever: characters with the same first name (but a different surname) on one realm shared their profile choice (see *Good to know*).
 
 ## Misc
 
-- Updated Ace3 libraries to r1424-alpha.
+- Updated Ace3 libraries to r1424-alpha (AceDB-3.0 40 keys Forever characters by first name and surname).
 - Minimap icons, Questie and gathering nodes now share one implementation for their icons, texts, opacity and settings, so they behave the same. No change intended in how minimap icons look or work.
 
 # v1.7.0 (9.11.2026)
