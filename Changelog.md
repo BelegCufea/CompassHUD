@@ -2,6 +2,8 @@
 
 ## New
 
+- The compass size can be set in pixels: **General → Size by: Pixels** shows **Width (pixels)** and **Height (pixels)** (border included, before the overall Scale), starting from the current size. **Field of View** then keeps the width and changes how many degrees fit in it (#24).
+- Option **Marker size** (**General**): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass **Height**; existing profiles keep their current marker size (#24).
 - Option **Max title width** (**Appearance → Pointer font**). Longer titles of the supertracker, minimap icon and gathering node pointers are cut off with "...", so long quest titles (e.g. with map transition directions) no longer stretch far beyond the compass. 0 (default) = no limit, as before (#18).
 
 ## Fix

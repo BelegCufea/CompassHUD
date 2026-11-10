@@ -135,10 +135,51 @@ Addon.Options = {
                             bigStep = 0.05,
                             isPercent = true,
                         },
+                        SizeMode = {
+                            type = "select",
+                            name = "Size by",
+                            desc = "Scale: width and height in percent of the default size.\nPixels: exact width and height of the compass, border included (before the overall Scale).\nThe markers keep their own size (Marker size) either way.",
+                            order = 75,
+                            values = { SCALE = "Scale", PIXELS = "Pixels" },
+                            sorting = { "SCALE", "PIXELS" },
+                            style = "dropdown",
+                            set = function(info, value)
+                                if value == "PIXELS" and Options.SizeMode ~= "PIXELS" then
+                                    -- start from the current size
+                                    Options.Width = round(HUD:GetWidth())
+                                    Options.Height = round(HUD:GetHeight())
+                                end
+                                Options.SizeMode = value
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
+                        Width = {
+                            type = "range",
+                            name = "Width (pixels)",
+                            order = 80,
+                            min = 20,
+                            max = 4000,
+                            softMin = 100,
+                            softMax = 2500,
+                            step = 1,
+                            hidden = function() return Options.SizeMode ~= "PIXELS" end,
+                        },
+                        Height = {
+                            type = "range",
+                            name = "Height (pixels)",
+                            order = 90,
+                            min = 4,
+                            max = 300,
+                            softMin = 8,
+                            softMax = 100,
+                            step = 1,
+                            hidden = function() return Options.SizeMode ~= "PIXELS" end,
+                        },
                         HorizontalScale = {
                             type = "range",
                             name = "Width",
                             order = 80,
+                            hidden = function() return Options.SizeMode == "PIXELS" end,
                             min = 0.01,
                             max = 5,
                             softMin = 0.2,
@@ -155,6 +196,7 @@ Addon.Options = {
                             type = "range",
                             name = "Height",
                             order = 90,
+                            hidden = function() return Options.SizeMode == "PIXELS" end,
                             min = 0.01,
                             max = 5,
                             softMin = 0.2,
@@ -166,6 +208,18 @@ Addon.Options = {
                                 textureHeight = defaultTextureHeight * value
                                 Addon:UpdateHUDSettings()
                             end,
+                        },
+                        IconScale = {
+                            type = "range",
+                            name = "Marker size",
+                            desc = "Size of all markers on the compass (supertracker pointers, minimap icons, party/raid members, gathering nodes) and their texts. Separate from the compass size; each marker type has its own scale on top of this.",
+                            order = 95,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            isPercent = true,
                         },
                         Strata = {
                             type = "select",

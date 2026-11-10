@@ -13,7 +13,7 @@ local GetClassColor = C_ClassColor.GetClassColor
 function createGroupMemberIcon(unit)
     local groupPointer = CreateFrame("FRAME", nil, HUD)
     HUD.groups[unit] = groupPointer
-	groupPointer:SetSize(textureHeight, textureHeight)
+	groupPointer:SetSize(iconSize, iconSize)
 	groupPointer:SetPoint("CENTER");
 	groupPointer.texture = groupPointer:CreateTexture(nil, "ARTWORK")
 	groupPointer.texture:SetAllPoints(groupPointer)
@@ -33,7 +33,7 @@ end
 function updateGroupMemberTexts(unit)
     if not groupPointsTable or not groupPointsTable[unit] then return end
     local v = groupPointsTable[unit]
-    local scale = Options.Scale * Options.VerticalScale
+    local scale = Options.Scale * Options.IconScale
     local differentZone = player.instance ~= v.instance
     local flipped = (differentZone and Options.GroupZoneOffset > 0) or (not differentZone and Options.GroupOffset > 0)
     v.frame.Name:ClearAllPoints()
@@ -154,7 +154,7 @@ function setGroupIcons()
             local shown = false
             local markerRotate = 0
             local differentZone = player.instance ~= v.instance
-            local size = textureHeight * (differentZone and Options.GroupZoneScale or Options.GroupScale)
+            local size = iconSize * (differentZone and Options.GroupZoneScale or Options.GroupScale)
             local flipped = (differentZone and Options.GroupZoneOffset > 0 and Options.GroupZoneRotate == 1) or (not differentZone and Options.GroupOffset > 0 and Options.GroupRotate == 1)
             if v.active and player.angle then
                 if v.x and v.y and v.instance then
@@ -187,8 +187,8 @@ function setGroupIcons()
                 v.frame.texture:SetRotation(markerRotate)
                 v.frame.Name.text:SetText(v.name)
                 local sizeX, sizeY = v.frame.Name.text:GetSize()
-                sizeX = sizeX or textureHeight
-                sizeY = sizeY or textureHeight
+                sizeX = sizeX or iconSize
+                sizeY = sizeY or iconSize
                 v.frame.Name:SetSize(sizeX + 4, sizeY + 4)
                 v.frame.Name:SetShown((player.groupType == "party" and Options.GroupPartyNameShow) or (player.groupType == "raid" and Options.GroupRaidNameShow))
             end

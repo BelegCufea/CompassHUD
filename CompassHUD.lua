@@ -442,9 +442,32 @@ function Addon:ResetPosition(resetX, resetY)
     HUD:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", Options.PositionX, Options.PositionY)
 end
 
+-- One-time profile updates. Called for every profile that becomes active (login, switch, copy, reset).
+function migrateProfile()
+    if Options.SizeVersion < 1 then
+        -- markers used to be sized by the compass height; keep their size now that it is separate
+        Options.IconScale = Options.VerticalScale
+        Options.SizeVersion = 1
+    end
+end
+
+-- Size by pixels: the scales follow from the wanted HUD size (border included), so everything
+-- else keeps working with HorizontalScale/VerticalScale, and switching back to scales keeps the size.
+local function applyPixelSize()
+    local border = Options.BorderThickness * 2
+    local innerWidth = math.max(Options.Width - border, 1)
+    local innerHeight = math.max(Options.Height - border, 1)
+    Options.HorizontalScale = innerWidth * 720 / (Options.Degrees * defaultTextureWidth)
+    Options.VerticalScale = innerHeight / defaultTextureHeight
+end
+
 function Addon:UpdateHUDSettings()
+    if Options.SizeMode == "PIXELS" and Options.Width > 0 and Options.Height > 0 then
+        applyPixelSize()
+    end
     textureWidth = defaultTextureWidth * Options.HorizontalScale
     textureHeight = defaultTextureHeight * Options.VerticalScale
+    iconSize = defaultTextureHeight * Options.IconScale
     local width, height = Options.Degrees / (720 / textureWidth) + Options.BorderThickness * 2, textureHeight + Options.BorderThickness * 2
     adjCoord = Options.Degrees / 1440
 
@@ -527,6 +550,7 @@ end
 
 function Addon:RefreshConfig()
     Options = self.db.profile
+    migrateProfile()
     self:UpdateDataBroker()
     -- setGroupIcons stops early when the new profile hides party/raid markers, so hide the
     -- current ones here; it shows them again on its next pass if they are enabled
@@ -586,5 +610,6 @@ end
 function Addon:OnInitialize()
     Addon:ConstructDefaultsAndOptions()
     Options = self.db.profile
+    migrateProfile()
     createHUD()
 end

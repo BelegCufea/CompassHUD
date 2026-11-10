@@ -38,8 +38,8 @@ local GetVignettePosition = C_VignetteInfo.GetVignettePosition
 local GetVignetteInfo = C_VignetteInfo.GetVignetteInfo
 
 function updatePOITrackNode(poi)
-    local scale = Options.Scale * Options.VerticalScale * Options.POITrackScale
-    poi.frame:SetSize(textureHeight * Options.POITrackScale * (poi.scale or 1), textureHeight * Options.POITrackScale * (poi.scale or 1))
+    local scale = Options.Scale * Options.IconScale * Options.POITrackScale
+    poi.frame:SetSize(iconSize * Options.POITrackScale * (poi.scale or 1), iconSize * Options.POITrackScale * (poi.scale or 1))
     setPointerFont(poi.frame.DistanceText, scale, Options.POITrackDistanceCustomFont, Options.POITrackDistanceFont, Options.POITrackDistanceFontSize, Options.POITrackDistanceFontFlags, Options.POITrackDistanceFontColor)
     setPointerFont(poi.frame.TimeText, scale, Options.POITrackTtaCustomFont, Options.POITrackTtaFont, Options.POITrackTtaFontSize, Options.POITrackTtaFontFlags, Options.POITrackTtaFontColor)
     setPointerFont(poi.frame.Title, scale, Options.POITrackTitleCustomFont, Options.POITrackTitleFont, Options.POITrackTitleFontSize, Options.POITrackTitleFontFlags, Options.POITrackTitleFontColor)
@@ -103,12 +103,12 @@ function createPOITrackNode(data)
         poiTrackNode.type = "poiTrack"
         poiTrackNode:SetScript("OnUpdate", questPointerSetTexts)
     end
-    poiTrackNode:SetSize(textureHeight, textureHeight)
+    poiTrackNode:SetSize(iconSize, iconSize)
     poiTrackNode:ClearAllPoints()
     poiTrackNode:SetPoint("CENTER")
     poiTrackNode:Hide()
     poiTrackNode.texture:SetAtlas(data.atlasName)
-    poiTrackNode.texture:SetSize(textureHeight, textureHeight)
+    poiTrackNode.texture:SetSize(iconSize, iconSize)
     -- round icon with a border (world quests); a reused frame may have had it or not
     if data.circle then
         if not poiTrackNode.masked then

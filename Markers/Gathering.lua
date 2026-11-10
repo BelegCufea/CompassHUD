@@ -9,8 +9,8 @@ local math, string, table, wipe = math, string, table, wipe
 local HBD               = LibStub("HereBeDragons-2.0")
 
 function updateGatherMateNode(node)
-    local scale = Options.Scale * Options.VerticalScale * Options.GatherMateScale
-    node.frame:SetSize(textureHeight * Options.GatherMateScale, textureHeight * Options.GatherMateScale)
+    local scale = Options.Scale * Options.IconScale * Options.GatherMateScale
+    node.frame:SetSize(iconSize * Options.GatherMateScale, iconSize * Options.GatherMateScale)
     setPointerFont(node.frame.DistanceText, scale, Options.GatherMateDistanceCustomFont, Options.GatherMateDistanceFont, Options.GatherMateDistanceFontSize, Options.GatherMateDistanceFontFlags, Options.GatherMateDistanceFontColor)
     setPointerFont(node.frame.TimeText, scale, Options.GatherMateTtaCustomFont, Options.GatherMateTtaFont, Options.GatherMateTtaFontSize, Options.GatherMateTtaFontFlags, Options.GatherMateTtaFontColor)
     setPointerFont(node.frame.Title, scale, Options.GatherMateTitleCustomFont, Options.GatherMateTitleFont, Options.GatherMateTitleFontSize, Options.GatherMateTitleFontFlags, Options.GatherMateTitleFontColor)
@@ -41,7 +41,7 @@ function acquireGatherNodeFrame()
         return frame
     end
     frame = CreateFrame("FRAME", nil, HUD)
-    frame:SetSize(textureHeight, textureHeight)
+    frame:SetSize(iconSize, iconSize)
     frame:SetPoint("CENTER")
     frame.texture = frame:CreateTexture(nil, "ARTWORK")
     frame.texture:SetAllPoints(frame)

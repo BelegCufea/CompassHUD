@@ -17,12 +17,12 @@ local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuper
 local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
 
 function updateQuestIcon(questPointer)
-    local scale = Options.Scale * Options.VerticalScale
+    local scale = Options.Scale * Options.IconScale
     local options = Options.Pointers[questPointer.pointerType]
     local pointer = questPointsTable[questPointer.questID]
     local completed = pointer.completed
     questPointer.position = options.pointerOffset * textureHeight * -1
-    local size = textureHeight * (completed and options.textureAltScale or options.textureScale) * (questPointer.scaleMultiplier or 1.5)
+    local size = iconSize * (completed and options.textureAltScale or options.textureScale) * (questPointer.scaleMultiplier or 1.5)
     questPointer:SetSize(size, size)
 
     setPointerFont(questPointer.DistanceText, scale, options.distanceCustomFont, options.distanceFont, options.distanceFontSize, options.distanceFontFlags, options.distanceFontColor)
@@ -35,7 +35,7 @@ function updateQuestIcon(questPointer)
     local distanceTextPosition = -options.distanceOffset + 2
     local timeTextPosition = - ((options.showDistance and (textLineHeight(questPointer.DistanceText))) or 0) - options.ttaOffset + 2
     local questTextPosition = - ((options.showDistance and (textLineHeight(questPointer.DistanceText))) or 0) - ((options.showTTA and (textLineHeight(questPointer.TimeText))) or 0) - options.questOffset + 4
-    local cropX, cropY = pointer.crop / textureHeight, pointer.crop / textureHeight
+    local cropX, cropY = pointer.crop / iconSize, pointer.crop / iconSize
     questPointer.texture:SetTexCoord(cropX, 1 - cropX, cropY, 1 - cropY)
     questPointer.flipped = false
     if questPointer.position > 0 then
@@ -96,7 +96,7 @@ function createQuestIcon(questID, questType)
         HUD.pointers[questID] = questPointer
         questPointer.questID = questID
         questPointer.pointerType = pointerType
-        questPointer:SetSize(textureHeight, textureHeight)
+        questPointer:SetSize(iconSize, iconSize)
         questPointer:ClearAllPoints()
         questPointer:SetPoint("CENTER")
         questPointer:Hide()
@@ -110,7 +110,7 @@ function createQuestIcon(questID, questType)
     HUD.pointers[questID] = questPointer
 	questPointer.questID = questID
     questPointer.pointerType = pointerType
-	questPointer:SetSize(textureHeight, textureHeight)
+	questPointer:SetSize(iconSize, iconSize)
 	questPointer:SetPoint("CENTER");
 	questPointer:Hide()
 

@@ -60,6 +60,8 @@ directions = {
 ADJ_FACTOR = 1 / math.rad(720)
 defaultTextureWidth, defaultTextureHeight = 2048, 16
 textureWidth, textureHeight = defaultTextureWidth, defaultTextureHeight
+-- base size of the markers (Options.IconScale), separate from the ribbon height (textureHeight)
+iconSize = defaultTextureHeight
 texturePosition = function() return textureWidth * ADJ_FACTOR end
 adjCoord, currentFacing = nil, nil
 
