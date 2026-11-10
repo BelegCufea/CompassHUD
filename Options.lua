@@ -86,14 +86,14 @@ Addon.Options = {
                             type = "toggle",
                             name = "Use Meters instead of Yards",
                             desc = "If enabled, distances will be shown in meters instead of yards. (1 yard = 0.9144 meters)",
-                            width = "full",
+                            width = 1.5,
                             order = 28,
                         },
                         RoundDistance = {
                             type = "toggle",
                             name = "Show distances as whole numbers",
                             desc = "If enabled, distances under 1000 are rounded to whole yards/meters instead of showing a decimal (e.g. 46 instead of 45.6).",
-                            width = "full",
+                            width = 1.5,
                             order = 28.5,
                         },
                         BlankInterval = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
@@ -109,7 +109,6 @@ Addon.Options = {
                             step = 1,
                             bigStep = 5,
                         },
-                        BlankDegrees = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
                         Degrees = {
                             type = "range",
                             order = 40,
@@ -122,6 +121,48 @@ Addon.Options = {
                             step = 1,
                             bigStep = 5,
                         },
+                        BlankScaleRow = { type = "description", order = 45, fontSize = "small",name = "",width = "full", },
+                        Scale = {
+                            type = "range",
+                            name = "Scale",
+                            desc = "Overall scale of the compass and everything on it.",
+                            order = 50,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            bigStep = 0.05,
+                            isPercent = true,
+                        },
+                        IconScale = {
+                            type = "range",
+                            name = "Marker scale",
+                            desc = "Size of all markers on the compass (supertracker pointers, minimap icons, party/raid members, gathering nodes) and their texts. Separate from the compass size; each marker type has its own scale on top of this.",
+                            order = 55,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            isPercent = true,
+                        },
+                        ResetSize = {
+                            type = "execute",
+                            name = "Reset size",
+                            desc = "Sets Scale, Width, Height and Marker scale back to their defaults (100%, Size by: Scale).",
+                            order = 60,
+                            confirm = true,
+                            confirmText = "Reset the compass and marker size to the defaults?",
+                            func = function()
+                                Options.SizeMode = "SCALE"
+                                Options.Scale = 1
+                                Options.HorizontalScale = 1
+                                Options.VerticalScale = 1
+                                Options.IconScale = 1
+                                Addon:UpdateHUDSettings()
+                            end,
+                        },
                         BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
                         SizeGroup = {
                             type = "group",
@@ -132,7 +173,7 @@ Addon.Options = {
                                 SizeMode = {
                                     type = "select",
                                     name = "Size by",
-                                    desc = "Scale: width and height in percent of the default size.\nPixels: exact width and height of the compass, border included (before the overall Scale).\nThe markers keep their own size (Marker size) either way.",
+                                    desc = "Scale: width and height in percent of the default size.\nPixels: exact width and height of the compass, border included (before the overall Scale).\nThe markers keep their own size (Marker scale) either way.",
                                     order = 1,
                                     values = { SCALE = "Scale", PIXELS = "Pixels" },
                                     sorting = { "SCALE", "PIXELS" },
@@ -146,36 +187,6 @@ Addon.Options = {
                                         Options.SizeMode = value
                                         Addon:UpdateHUDSettings()
                                     end,
-                                },
-                                ResetSize = {
-                                    type = "execute",
-                                    name = "Reset size",
-                                    desc = "Sets Scale, Width, Height and Marker size back to their defaults (100%, Size by: Scale).",
-                                    order = 2,
-                                    confirm = true,
-                                    confirmText = "Reset the compass and marker size to the defaults?",
-                                    func = function()
-                                        Options.SizeMode = "SCALE"
-                                        Options.Scale = 1
-                                        Options.HorizontalScale = 1
-                                        Options.VerticalScale = 1
-                                        Options.IconScale = 1
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                },
-                                BlankSize = { type = "description", order = 3, fontSize = "small",name = "",width = "full", },
-                                Scale = {
-                                    type = "range",
-                                    name = "Scale",
-                                    desc = "Overall scale of the compass and everything on it.",
-                                    order = 10,
-                                    min = 0.01,
-                                    max = 5,
-                                    softMin = 0.2,
-                                    softMax = 3,
-                                    step = 0.01,
-                                    bigStep = 0.05,
-                                    isPercent = true,
                                 },
                                 Width = {
                                     type = "range",
@@ -216,19 +227,6 @@ Addon.Options = {
                                     name = "Height",
                                     order = 30,
                                     hidden = function() return Options.SizeMode == "PIXELS" end,
-                                    min = 0.01,
-                                    max = 5,
-                                    softMin = 0.2,
-                                    softMax = 3,
-                                    step = 0.01,
-                                    isPercent = true,
-                                },
-                                BlankMarker = { type = "description", order = 39, fontSize = "small",name = "",width = "full", },
-                                IconScale = {
-                                    type = "range",
-                                    name = "Marker size",
-                                    desc = "Size of all markers on the compass (supertracker pointers, minimap icons, party/raid members, gathering nodes) and their texts. Separate from the compass size; each marker type has its own scale on top of this.",
-                                    order = 40,
                                     min = 0.01,
                                     max = 5,
                                     softMin = 0.2,

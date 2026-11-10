@@ -54,7 +54,7 @@ Most settings have a tooltip with more details when you hover over them.
 - The `General` tab contains basic global settings:
   - lock the compass in place, show the minimap button and the AddOns compartment entry,
   - distances in yards or meters, and optionally as whole numbers (distances under 1000 otherwise show one decimal),
-  - update frequency, field of view, scale, width and height (in percent, or in pixels with `Size by: Pixels`), marker size (all markers, separate from the compass size) and frame strata,
+  - update frequency, field of view, scale, width and height (in percent, or in pixels with `Size by: Pixels`), marker scale (all markers, separate from the compass size) and frame strata,
   - `Visibility State`: a macro condition deciding when the HUD is shown (default `[petbattle] hide; show`); the HUD is always hidden in instances where the game gives no player facing (dungeons, raids),
   - center the HUD horizontally or reset its position.
 
