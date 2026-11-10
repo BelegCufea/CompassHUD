@@ -75,6 +75,7 @@ Addon.Defaults = {
         PointerFontSize        = 12,
         PointerFontFlags       = "",
         PointerFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        PointerTitleMaxWidth   = 0,
         UseCustomCompass             = true,
         CompassTextureTexture           = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\CompassHUD]],
         CompassCustomMainVisible        = true,

@@ -271,6 +271,13 @@ end
 
 -- Line height of a pointer text, from the font actually applied by setPointerFont (size already includes scale).
 -- Used to stack distance/time/title texts so they don't overlap whichever font is in effect.
+-- Limits a pointer title to Options.PointerTitleMaxWidth (0 = no limit). A single-line font string
+-- with a fixed width is cut off by the game with "...".
+function setTitleWidth(fontString)
+    fontString:SetWordWrap(false)
+    fontString:SetWidth(Options.PointerTitleMaxWidth or 0)
+end
+
 function textLineHeight(fontString)
     local _, size = fontString:GetFont()
     return (size or 12) * 1.2

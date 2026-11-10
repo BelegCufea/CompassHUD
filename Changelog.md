@@ -1,5 +1,9 @@
 # Unreleased
 
+## New
+
+- Option **Max title width** (**Appearance → Pointer font**). Longer titles of the supertracker, minimap icon and gathering node pointers are cut off with "...", so long quest titles (e.g. with map transition directions) no longer stretch far beyond the compass. 0 (default) = no limit, as before (#18).
+
 ## Fix
 
 - The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded (#22).

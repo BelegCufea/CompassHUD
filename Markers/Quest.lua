@@ -28,6 +28,7 @@ function updateQuestIcon(questPointer)
     setPointerFont(questPointer.DistanceText, scale, options.distanceCustomFont, options.distanceFont, options.distanceFontSize, options.distanceFontFlags, options.distanceFontColor)
     setPointerFont(questPointer.TimeText, scale, options.ttaCustomFont, options.ttaFont, options.ttaFontSize, options.ttaFontFlags, options.ttaFontColor)
     setPointerFont(questPointer.QuestText, scale, options.questCustomFont, options.questFont, options.questFontSize, options.questFontFlags, options.questFontColor)
+    setTitleWidth(questPointer.QuestText)
 
     local point = "TOP"
     local relativePoint = "BOTTOM"
