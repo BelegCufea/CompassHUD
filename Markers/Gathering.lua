@@ -200,6 +200,11 @@ function setGatherMateNodes()
             end
         end
     end
+    -- opacity fades from OpacityMinRadius to the scanning radius; no span means no fade (not 0/0)
+    local opacityMin, opacityMax, opacityMinRadius = Options.GatherMateOpacityMin, Options.GatherMateOpacityMax, Options.GatherMateOpacityMinRadius
+    local fadeEnd = Options.GatherMateRadius
+    local fadeSpan = fadeEnd - opacityMinRadius
+    local fadeFactor = fadeSpan > 0 and (opacityMin - opacityMax) / fadeSpan or 0
     for _, node in pairs(gatherMatePointTable) do
         local shown = false
         if node.visible and player.angle then
@@ -213,6 +218,14 @@ function setGatherMateNodes()
                     end
                 end
             end
+        end
+        if shown then
+            local opacity = opacityMax
+            local distance = HBD:GetWorldDistance(node.instance, player.x, player.y, node.x, node.y)
+            if distance and distance > opacityMinRadius then
+                opacity = distance >= fadeEnd and opacityMin or opacityMax + (distance - opacityMinRadius) * fadeFactor
+            end
+            node.frame:SetAlpha(opacity)
         end
         node.frame:SetShown(shown)
     end

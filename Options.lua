@@ -2273,6 +2273,43 @@ GroupOptions = {
     },
 }
 
+-- Options of one marker text (distance, time to arrive, title): header, show, vertical adjustment
+-- and custom font. 'key' is the option name part (e.g. "QuestieDistance"), 'show' the name of
+-- its Show option (e.g. "QuestieShowDistance").
+local function markerTextOptions(args, key, show, header, order)
+    local function noCustomFont() return not Options[key .. "CustomFont"] end
+    args["Header" .. key] = { type = "header", order = order, name = header }
+    args[show] = { type = "toggle", order = order + 10, name = "Show" }
+    args[key .. "Offset"] = { type = "range", order = order + 20, name = "Vertical adjustment", min = -20, max = 20, step = 0.5 }
+    args[key .. "CustomFont"] = { type = "toggle", order = order + 30, name = "Use custom font" }
+    args[key .. "Font"] = {
+        type = "select", order = order + 40, name = "Font", width = 1,
+        dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists['font'], disabled = noCustomFont,
+    }
+    args[key .. "FontSize"] = { type = "range", order = order + 50, name = "Size", width = 3/4, min = 2, max = 36, step = 0.5, disabled = noCustomFont }
+    args[key .. "FontFlags"] = {
+        type = "select", order = order + 60, name = "Outline", width = 3/4,
+        values = { [""] = "None", ["OUTLINE"] = "Normal", ["THICKOUTLINE"] = "Thick" }, disabled = noCustomFont,
+    }
+    args[key .. "FontColor"] = {
+        type = "color", order = order + 70, name = "Color", width = 1/2, hasAlpha = true, disabled = noCustomFont,
+        get = function(info)
+            local color = Addon.db.profile[info[#info]]
+            return color.r, color.g, color.b, color.a
+        end,
+        set = function(info, r, g, b, a)
+            local color = Addon.db.profile[info[#info]]
+            color.r, color.g, color.b, color.a = r, g, b, a
+            Addon:UpdateHUDSettings()
+        end,
+    }
+end
+
+local gatherMateTextArgs = {}
+markerTextOptions(gatherMateTextArgs, "GatherMateDistance", "GatherMateShowDistance", "Distance text", 100)
+markerTextOptions(gatherMateTextArgs, "GatherMateTta", "GatherMateShowTTA", "Time to arrive", 200)
+markerTextOptions(gatherMateTextArgs, "GatherMateTitle", "GatherMateShowTitle", "Node name", 300)
+
 GatherMateOptions = {
     type = "group",
     order = 1010,
@@ -2341,271 +2378,55 @@ GatherMateOptions = {
                     step = 0.01,
                     isPercent = true,
                 },
+                HeaderGatherMateOpacity = {
+                    type = "header",
+                    order = 100,
+                    name = "Opacity"
+                },
+                GatherMateOpacityDescription = {
+                    type = "description",
+                    order = 110,
+                    name = "Nodes farther away fade from the maximum to the minimum opacity at the scanning radius.",
+                    fontSize = "medium",
+                },
+                GatherMateOpacityMin = {
+                    type = "range",
+                    order = 120,
+                    name = "Minimum opacity",
+                    min = 0,
+                    max = 1,
+                    step = 0.01,
+                    isPercent = true,
+                },
+                GatherMateOpacityMax = {
+                    type = "range",
+                    order = 130,
+                    name = "Maximum opacity",
+                    min = 0,
+                    max = 1,
+                    step = 0.01,
+                    isPercent = true,
+                },
+                GatherMateOpacityMinRadius = {
+                    type = "range",
+                    order = 140,
+                    name = "Full opacity within",
+                    desc = "Nodes closer than this keep the maximum opacity.",
+                    min = 0,
+                    max = 2000,
+                    softMax = 500,
+                    step = 1,
+                },
             },
         },
         Texts = {
             type = "group",
             order = 20,
             name = "Texts",
-            args = {
-                HeaderGatherMateDistance = {
-                    type = "header",
-                    order = 100,
-                    name = "Distance text"
-                },
-                GatherMateShowDistance = {
-                    type = "toggle",
-                    order = 110,
-                    name = "Show",
-                },
-                GatherMateDistanceOffset = {
-                    type = "range",
-                    order = 120,
-                    name = "Vertical adjustment",
-                    min = -20,
-                    max = 20,
-                    step = 0.5,
-                },
-                GatherMateDistanceCustomFont = {
-                    type = "toggle",
-                    order = 130,
-                    name = "Use custom font",
-                },
-                GatherMateDistanceFont = {
-                    type = "select",
-                    order = 140,
-                    name = "Font",
-                    width = 1,
-                    dialogControl = "LSM30_Font",
-                    values = AceGUIWidgetLSMlists['font'],
-                    disabled = function() return not Options.GatherMateDistanceCustomFont end,
-                },
-                GatherMateDistanceFontSize = {
-                    type = "range",
-                    order = 150,
-                    name = "Size",
-                    width = 3/4,
-                    min = 2,
-                    max = 36,
-                    step = 0.5,
-                    disabled = function() return not Options.GatherMateDistanceCustomFont end,
-                },
-                GatherMateDistanceFontFlags = {
-                    type = "select",
-                    order = 160,
-                    name = "Outline",
-                    width = 3/4,
-                    values = {
-                        [""] = "None",
-                        ["OUTLINE"] = "Normal",
-                        ["THICKOUTLINE"] = "Thick",
-                    },
-                    disabled = function() return not Options.GatherMateDistanceCustomFont end,
-                },
-                GatherMateDistanceFontColor = {
-                    type = "color",
-                    order = 170,
-                    name = "Color",
-                    width = 1/2,
-                    hasAlpha = true,
-                    get = function(info)
-                        local color = Addon.db.profile[info[#info]]
-                        return color.r, color.g, color.b, color.a
-                    end,
-                    set = function (info, r, g, b, a)
-                        local color = Addon.db.profile[info[#info]]
-                        color.r = r
-                        color.g = g
-                        color.b = b
-                        color.a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                    disabled = function() return not Options.GatherMateDistanceCustomFont end,
-                },
-                HeaderGatherMateTTA = {
-                    type = "header",
-                    order = 200,
-                    name = "Time to arrive"
-                },
-                GatherMateShowTTA = {
-                    type = "toggle",
-                    order = 210,
-                    name = "Show",
-                },
-                GatherMateTtaOffset = {
-                    type = "range",
-                    order = 220,
-                    name = "Vertical adjustment",
-                    min = -20,
-                    max = 20,
-                    step = 0.5,
-                },
-                GatherMateTtaCustomFont = {
-                    type = "toggle",
-                    order = 230,
-                    name = "Use custom font",
-                },
-                GatherMateTtaFont = {
-                    type = "select",
-                    order = 240,
-                    name = "Font",
-                    width = 1,
-                    dialogControl = "LSM30_Font",
-                    values = AceGUIWidgetLSMlists['font'],
-                    disabled = function() return not Options.GatherMateTtaCustomFont end,
-                },
-                GatherMateTtaFontSize = {
-                    type = "range",
-                    order = 250,
-                    name = "Size",
-                    width = 3/4,
-                    min = 2,
-                    max = 36,
-                    step = 0.5,
-                    disabled = function() return not Options.GatherMateTtaCustomFont end,
-                },
-                GatherMateTtaFontFlags = {
-                    type = "select",
-                    order = 260,
-                    name = "Outline",
-                    width = 3/4,
-                    values = {
-                        [""] = "None",
-                        ["OUTLINE"] = "Normal",
-                        ["THICKOUTLINE"] = "Thick",
-                    },
-                    disabled = function() return not Options.GatherMateTtaCustomFont end,
-                },
-                GatherMateTtaFontColor = {
-                    type = "color",
-                    order = 270,
-                    name = "Color",
-                    width = 1/2,
-                    hasAlpha = true,
-                    get = function(info)
-                        local color = Addon.db.profile[info[#info]]
-                        return color.r, color.g, color.b, color.a
-                    end,
-                    set = function (info, r, g, b, a)
-                        local color = Addon.db.profile[info[#info]]
-                        color.r = r
-                        color.g = g
-                        color.b = b
-                        color.a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                    disabled = function() return not Options.GatherMateTtaCustomFont end,
-                },
-                HeaderGatherMateTitle = {
-                    type = "header",
-                    order = 300,
-                    name = "Node name"
-                },
-                GatherMateShowTitle = {
-                    type = "toggle",
-                    order = 310,
-                    name = "Show",
-                },
-                GatherMateTitleOffset = {
-                    type = "range",
-                    order = 320,
-                    name = "Vertical adjustment",
-                    min = -20,
-                    max = 20,
-                    step = 0.5,
-                },
-                GatherMateTitleCustomFont = {
-                    type = "toggle",
-                    order = 330,
-                    name = "Use custom font",
-                },
-                GatherMateTitleFont = {
-                    type = "select",
-                    order = 340,
-                    name = "Font",
-                    width = 1,
-                    dialogControl = "LSM30_Font",
-                    values = AceGUIWidgetLSMlists['font'],
-                    disabled = function() return not Options.GatherMateTitleCustomFont end,
-                },
-                GatherMateTitleFontSize = {
-                    type = "range",
-                    order = 350,
-                    name = "Size",
-                    width = 3/4,
-                    min = 2,
-                    max = 36,
-                    step = 0.5,
-                    disabled = function() return not Options.GatherMateTitleCustomFont end,
-                },
-                GatherMateTitleFontFlags = {
-                    type = "select",
-                    order = 360,
-                    name = "Outline",
-                    width = 3/4,
-                    values = {
-                        [""] = "None",
-                        ["OUTLINE"] = "Normal",
-                        ["THICKOUTLINE"] = "Thick",
-                    },
-                    disabled = function() return not Options.GatherMateTitleCustomFont end,
-                },
-                GatherMateTitleFontColor = {
-                    type = "color",
-                    order = 370,
-                    name = "Color",
-                    width = 1/2,
-                    hasAlpha = true,
-                    get = function(info)
-                        local color = Addon.db.profile[info[#info]]
-                        return color.r, color.g, color.b, color.a
-                    end,
-                    set = function (info, r, g, b, a)
-                        local color = Addon.db.profile[info[#info]]
-                        color.r = r
-                        color.g = g
-                        color.b = b
-                        color.a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                    disabled = function() return not Options.GatherMateTitleCustomFont end,
-                },
-            },
+            args = gatherMateTextArgs,
         },
     },
 }
-
--- Options of one marker text (distance, time to arrive, title): header, show, vertical adjustment
--- and custom font. 'key' is the option name part (e.g. "QuestieDistance"), 'show' the name of
--- its Show option (e.g. "QuestieShowDistance").
-local function markerTextOptions(args, key, show, header, order)
-    local function noCustomFont() return not Options[key .. "CustomFont"] end
-    args["Header" .. key] = { type = "header", order = order, name = header }
-    args[show] = { type = "toggle", order = order + 10, name = "Show" }
-    args[key .. "Offset"] = { type = "range", order = order + 20, name = "Vertical adjustment", min = -20, max = 20, step = 0.5 }
-    args[key .. "CustomFont"] = { type = "toggle", order = order + 30, name = "Use custom font" }
-    args[key .. "Font"] = {
-        type = "select", order = order + 40, name = "Font", width = 1,
-        dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists['font'], disabled = noCustomFont,
-    }
-    args[key .. "FontSize"] = { type = "range", order = order + 50, name = "Size", width = 3/4, min = 2, max = 36, step = 0.5, disabled = noCustomFont }
-    args[key .. "FontFlags"] = {
-        type = "select", order = order + 60, name = "Outline", width = 3/4,
-        values = { [""] = "None", ["OUTLINE"] = "Normal", ["THICKOUTLINE"] = "Thick" }, disabled = noCustomFont,
-    }
-    args[key .. "FontColor"] = {
-        type = "color", order = order + 70, name = "Color", width = 1/2, hasAlpha = true, disabled = noCustomFont,
-        get = function(info)
-            local color = Addon.db.profile[info[#info]]
-            return color.r, color.g, color.b, color.a
-        end,
-        set = function(info, r, g, b, a)
-            local color = Addon.db.profile[info[#info]]
-            color.r, color.g, color.b, color.a = r, g, b, a
-            Addon:UpdateHUDSettings()
-        end,
-    }
-end
 
 -- greyed out while the Questie markers use the minimap icons' settings
 local function questieUsesMinimapSettings() return Options.QuestieUseMinimapSettings end

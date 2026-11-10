@@ -164,6 +164,10 @@ Addon.Defaults = {
         GatherMateInterval           = 6,
         GatherMateOffset             = 20,
         GatherMateScale              = 0.8,
+        -- 1/1: no fading by default, nodes look as before the option existed
+        GatherMateOpacityMin         = 1,
+        GatherMateOpacityMax         = 1,
+        GatherMateOpacityMinRadius   = 50,
         GatherMateShowDistance       = false,
         GatherMateShowTTA            = false,
         GatherMateShowTitle          = false,
