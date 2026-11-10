@@ -16,6 +16,11 @@
 - A minimap icon set as a waypoint with the supertrack keybinding now gives the supertracker pointer its name (it was usually lost, the game stores the waypoint position slightly rounded), and with **Icon texture** (**Minimap icons → Supertracking**) also its icon when that is a texture, e.g. world quest rewards.
 - The HUD is no longer hidden in every instance, only where the game does not give the player facing (dungeons, raids). It should now show in instances that have a facing, e.g. the housing neighborhoods Founder's Point and Razorwing Shore (#19).
 - The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded (#22).
+- WoW: Forever: characters with the same first name (but a different surname) on one realm shared their profile choice. Updated Ace3 to r1424-alpha (AceDB-3.0 40), which keys Forever characters by first name and surname. Your profile choice on Forever may reset once; the `Default` profile and its settings are not affected.
+
+## Misc
+
+- Updated Ace3 libraries to r1424-alpha.
 
 # v1.7.0 (9.11.2026)
 
