@@ -955,7 +955,7 @@ Addon.Options = {
                         SpeechDesc = {
                             type = "description",
                             order = 1,
-                            name = "|cnACCOUNT_WIDE_FONT_COLOR:Reads out the name of the marker you are facing with the game's text to speech, when you turn to a different one.|r\n",
+                            name = "|cnACCOUNT_WIDE_FONT_COLOR:Reads out the name of the marker in front of you with the game's text to speech. Each marker is read once, when you turn to face it.|r\n",
                             fontSize = "medium",
                             width = "full",
                         },
