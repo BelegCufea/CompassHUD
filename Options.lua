@@ -1174,6 +1174,69 @@ TrackingOption = {
     args = {},
 }
 
+-- Options of one marker text (distance, time to arrive, title): header, show, vertical adjustment
+-- and custom font. 'key' is the option name part (e.g. "QuestieDistance"), 'show' the name of
+-- its Show option (e.g. "QuestieShowDistance").
+local function markerTextOptions(args, key, show, header, order)
+    local function noCustomFont() return not Options[key .. "CustomFont"] end
+    args["Header" .. key] = { type = "header", order = order, name = header }
+    args[show] = { type = "toggle", order = order + 10, name = "Show" }
+    args[key .. "Offset"] = { type = "range", order = order + 20, name = "Vertical adjustment", min = -20, max = 20, step = 0.5 }
+    args[key .. "CustomFont"] = { type = "toggle", order = order + 30, name = "Use custom font" }
+    args[key .. "Font"] = {
+        type = "select", order = order + 40, name = "Font", width = 1,
+        dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists['font'], disabled = noCustomFont,
+    }
+    args[key .. "FontSize"] = { type = "range", order = order + 50, name = "Size", width = 3/4, min = 2, max = 36, step = 0.5, disabled = noCustomFont }
+    args[key .. "FontFlags"] = {
+        type = "select", order = order + 60, name = "Outline", width = 3/4,
+        values = { [""] = "None", ["OUTLINE"] = "Normal", ["THICKOUTLINE"] = "Thick" }, disabled = noCustomFont,
+    }
+    args[key .. "FontColor"] = {
+        type = "color", order = order + 70, name = "Color", width = 1/2, hasAlpha = true, disabled = noCustomFont,
+        get = function(info)
+            local color = Addon.db.profile[info[#info]]
+            return color.r, color.g, color.b, color.a
+        end,
+        set = function(info, r, g, b, a)
+            local color = Addon.db.profile[info[#info]]
+            color.r, color.g, color.b, color.a = r, g, b, a
+            Addon:UpdateHUDSettings()
+        end,
+    }
+end
+
+-- Texts tab of the minimap icons: the faced-icon settings, then the three texts
+local poiTrackTextArgs = {
+    POITrackTextsDegrees = {
+        type = "range",
+        order = 10,
+        name = "Texts visibility angle",
+        desc = "Texts will be shown only if the angle to the icon is less than this value.\nOnly the closest icon to heading will show texts.\nIf set to 0, then all selected texts are shown for every visible icon.",
+        min = 0,
+        max = 360,
+        softMin = 0,
+        softMax = 30,
+        step = 0.5,
+    },
+    POITrackOpacitySelected = {
+        type = "range",
+        order = 20,
+        name = "Opacity of visible texts",
+        desc = "Set the opacity of the text labels for icon near the heading.\nThis option is only enabled when 'Texts visibility angle' is greater than 0.",
+        min = 0,
+        max = 1,
+        softMin = 0.1,
+        softMax = 1,
+        step = 0.01,
+        isPercent = true,
+        disabled = function() return Options.POITrackTextsDegrees == 0 end,
+    },
+}
+markerTextOptions(poiTrackTextArgs, "POITrackDistance", "POITrackShowDistance", "Distance text", 100)
+markerTextOptions(poiTrackTextArgs, "POITrackTta", "POITrackShowTTA", "Time to arrive", 200)
+markerTextOptions(poiTrackTextArgs, "POITrackTitle", "POITrackShowTitle", "Icon name", 300)
+
 POITrackOptions = {
     type = "group",
     order = 10,
@@ -1350,253 +1413,7 @@ POITrackOptions = {
             type = "group",
             order = 30,
             name = "Texts",
-            args = {
-                POITrackTextsDegrees = {
-                    type = "range",
-                    order = 10,
-                    name = "Texts visibility angle",
-                    desc = "Texts will be shown only if the angle to the icon is less than this value.\nOnly the closest icon to heading will show texts.\nIf set to 0, then all selected texts are shown for every visible icon.",
-                    min = 0,
-                    max = 360,
-                    softMin = 0,
-                    softMax = 30,
-                    step = 0.5,
-                },
-                POITrackOpacitySelected = {
-                    type = "range",
-                    order = 20,
-                    name = "Opacity of visible texts",
-                    desc = "Set the opacity of the text labels for icon near the heading.\nThis option is only enabled when 'Texts visibility angle' is greater than 0.",                    min = 0,
-                    max = 1,
-                    softMin = 0.1,
-                    softMax = 1,
-                    step = 0.01,
-                    isPercent = true,
-                    disabled = function() return Options.POITrackTextsDegrees == 0 end,
-                },
-                HeaderPOITrackDistance = {
-                    type = "header",
-                    order = 100,
-                    name = "Distance text"
-                },
-                POITrackShowDistance = {
-                    type = "toggle",
-                    order = 110,
-                    name = "Show",
-                },
-                POITrackDistanceOffset = {
-                    type = "range",
-                    order = 120,
-                    name = "Vertical adjustment",
-                    min = -20,
-                    max = 20,
-                    step = 0.5,
-                },
-                POITrackDistanceCustomFont = {
-                    type = "toggle",
-                    order = 130,
-                    name = "Use custom font",
-                },
-                POITrackDistanceFont = {
-                    type = "select",
-                    order = 140,
-                    name = "Font",
-                    width = 1,
-                    dialogControl = "LSM30_Font",
-                    values = AceGUIWidgetLSMlists['font'],
-                    disabled = function() return not Options.POITrackDistanceCustomFont end,
-                },
-                POITrackDistanceFontSize = {
-                    type = "range",
-                    order = 150,
-                    name = "Size",
-                    width = 3/4,
-                    min = 2,
-                    max = 36,
-                    step = 0.5,
-                    disabled = function() return not Options.POITrackDistanceCustomFont end,
-                },
-                POITrackDistanceFontFlags = {
-                    type = "select",
-                    order = 160,
-                    name = "Outline",
-                    width = 3/4,
-                    values = {
-                        [""] = "None",
-                        ["OUTLINE"] = "Normal",
-                        ["THICKOUTLINE"] = "Thick",
-                    },
-                    disabled = function() return not Options.POITrackDistanceCustomFont end,
-                },
-                POITrackDistanceFontColor = {
-                    type = "color",
-                    order = 170,
-                    name = "Color",
-                    width = 1/2,
-                    hasAlpha = true,
-                    get = function(info)
-                        local color = Addon.db.profile[info[#info]]
-                        return color.r, color.g, color.b, color.a
-                    end,
-                    set = function (info, r, g, b, a)
-                        local color = Addon.db.profile[info[#info]]
-                        color.r = r
-                        color.g = g
-                        color.b = b
-                        color.a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                    disabled = function() return not Options.POITrackDistanceCustomFont end,
-                },
-                HeaderPOITrackTTA = {
-                    type = "header",
-                    order = 200,
-                    name = "Time to arrive"
-                },
-                POITrackShowTTA = {
-                    type = "toggle",
-                    order = 210,
-                    name = "Show",
-                },
-                POITrackTtaOffset = {
-                    type = "range",
-                    order = 220,
-                    name = "Vertical adjustment",
-                    min = -20,
-                    max = 20,
-                    step = 0.5,
-                },
-                POITrackTtaCustomFont = {
-                    type = "toggle",
-                    order = 230,
-                    name = "Use custom font",
-                },
-                POITrackTtaFont = {
-                    type = "select",
-                    order = 240,
-                    name = "Font",
-                    width = 1,
-                    dialogControl = "LSM30_Font",
-                    values = AceGUIWidgetLSMlists['font'],
-                    disabled = function() return not Options.POITrackTtaCustomFont end,
-                },
-                POITrackTtaFontSize = {
-                    type = "range",
-                    order = 250,
-                    name = "Size",
-                    width = 3/4,
-                    min = 2,
-                    max = 36,
-                    step = 0.5,
-                    disabled = function() return not Options.POITrackTtaCustomFont end,
-                },
-                POITrackTtaFontFlags = {
-                    type = "select",
-                    order = 260,
-                    name = "Outline",
-                    width = 3/4,
-                    values = {
-                        [""] = "None",
-                        ["OUTLINE"] = "Normal",
-                        ["THICKOUTLINE"] = "Thick",
-                    },
-                    disabled = function() return not Options.POITrackTtaCustomFont end,
-                },
-                POITrackTtaFontColor = {
-                    type = "color",
-                    order = 270,
-                    name = "Color",
-                    width = 1/2,
-                    hasAlpha = true,
-                    get = function(info)
-                        local color = Addon.db.profile[info[#info]]
-                        return color.r, color.g, color.b, color.a
-                    end,
-                    set = function (info, r, g, b, a)
-                        local color = Addon.db.profile[info[#info]]
-                        color.r = r
-                        color.g = g
-                        color.b = b
-                        color.a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                    disabled = function() return not Options.POITrackTtaCustomFont end,
-                },
-                HeaderPOITrackTitle = {
-                    type = "header",
-                    order = 300,
-                    name = "Icon name"
-                },
-                POITrackShowTitle = {
-                    type = "toggle",
-                    order = 310,
-                    name = "Show",
-                },
-                POITrackTitleOffset = {
-                    type = "range",
-                    order = 320,
-                    name = "Vertical adjustment",
-                    min = -20,
-                    max = 20,
-                    step = 0.5,
-                },
-                POITrackTitleCustomFont = {
-                    type = "toggle",
-                    order = 330,
-                    name = "Use custom font",
-                },
-                POITrackTitleFont = {
-                    type = "select",
-                    order = 340,
-                    name = "Font",
-                    width = 1,
-                    dialogControl = "LSM30_Font",
-                    values = AceGUIWidgetLSMlists['font'],
-                    disabled = function() return not Options.POITrackTitleCustomFont end,
-                },
-                POITrackTitleFontSize = {
-                    type = "range",
-                    order = 350,
-                    name = "Size",
-                    width = 3/4,
-                    min = 2,
-                    max = 36,
-                    step = 0.5,
-                    disabled = function() return not Options.POITrackTitleCustomFont end,
-                },
-                POITrackTitleFontFlags = {
-                    type = "select",
-                    order = 360,
-                    name = "Outline",
-                    width = 3/4,
-                    values = {
-                        [""] = "None",
-                        ["OUTLINE"] = "Normal",
-                        ["THICKOUTLINE"] = "Thick",
-                    },
-                    disabled = function() return not Options.POITrackTitleCustomFont end,
-                },
-                POITrackTitleFontColor = {
-                    type = "color",
-                    order = 370,
-                    name = "Color",
-                    width = 1/2,
-                    hasAlpha = true,
-                    get = function(info)
-                        local color = Addon.db.profile[info[#info]]
-                        return color.r, color.g, color.b, color.a
-                    end,
-                    set = function (info, r, g, b, a)
-                        local color = Addon.db.profile[info[#info]]
-                        color.r = r
-                        color.g = g
-                        color.b = b
-                        color.a = a
-                        Addon:UpdateHUDSettings()
-                    end,
-                    disabled = function() return not Options.POITrackTitleCustomFont end,
-                },
-            },
+            args = poiTrackTextArgs,
         },
         Supertracking = {
             type = "group",
@@ -2294,38 +2111,6 @@ GroupOptions = {
         },
     },
 }
-
--- Options of one marker text (distance, time to arrive, title): header, show, vertical adjustment
--- and custom font. 'key' is the option name part (e.g. "QuestieDistance"), 'show' the name of
--- its Show option (e.g. "QuestieShowDistance").
-local function markerTextOptions(args, key, show, header, order)
-    local function noCustomFont() return not Options[key .. "CustomFont"] end
-    args["Header" .. key] = { type = "header", order = order, name = header }
-    args[show] = { type = "toggle", order = order + 10, name = "Show" }
-    args[key .. "Offset"] = { type = "range", order = order + 20, name = "Vertical adjustment", min = -20, max = 20, step = 0.5 }
-    args[key .. "CustomFont"] = { type = "toggle", order = order + 30, name = "Use custom font" }
-    args[key .. "Font"] = {
-        type = "select", order = order + 40, name = "Font", width = 1,
-        dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists['font'], disabled = noCustomFont,
-    }
-    args[key .. "FontSize"] = { type = "range", order = order + 50, name = "Size", width = 3/4, min = 2, max = 36, step = 0.5, disabled = noCustomFont }
-    args[key .. "FontFlags"] = {
-        type = "select", order = order + 60, name = "Outline", width = 3/4,
-        values = { [""] = "None", ["OUTLINE"] = "Normal", ["THICKOUTLINE"] = "Thick" }, disabled = noCustomFont,
-    }
-    args[key .. "FontColor"] = {
-        type = "color", order = order + 70, name = "Color", width = 1/2, hasAlpha = true, disabled = noCustomFont,
-        get = function(info)
-            local color = Addon.db.profile[info[#info]]
-            return color.r, color.g, color.b, color.a
-        end,
-        set = function(info, r, g, b, a)
-            local color = Addon.db.profile[info[#info]]
-            color.r, color.g, color.b, color.a = r, g, b, a
-            Addon:UpdateHUDSettings()
-        end,
-    }
-end
 
 -- Settings of an integration marker module (Markers/Common.lua): the same layout for each, with
 -- option names <prefix><setting> mirroring the minimap icons' POITrack<setting>.
