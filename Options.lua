@@ -2596,17 +2596,34 @@ local function markerTextOptions(args, key, show, header, order)
     }
 end
 
-local questieTextArgs = {}
+-- greyed out while the Questie markers use the minimap icons' settings
+local function questieUsesMinimapSettings() return Options.QuestieUseMinimapSettings end
+
+local questieTextArgs = {
+    QuestieTextsDegrees = {
+        type = "range",
+        order = 10,
+        name = "Texts visibility angle",
+        desc = "Texts are shown only on the icon you face within this angle. 0 = texts on every icon.",
+        min = 0,
+        max = 30,
+        step = 0.5,
+    },
+    QuestieOpacitySelected = {
+        type = "range",
+        order = 20,
+        name = "Opacity of visible texts",
+        desc = "Opacity of the icon whose texts are shown.",
+        min = 0.1,
+        max = 1,
+        step = 0.01,
+        isPercent = true,
+        disabled = function() return Options.QuestieTextsDegrees == 0 end,
+    },
+}
 markerTextOptions(questieTextArgs, "QuestieDistance", "QuestieShowDistance", "Distance text", 100)
 markerTextOptions(questieTextArgs, "QuestieTta", "QuestieShowTTA", "Time to arrive", 200)
 markerTextOptions(questieTextArgs, "QuestieTitle", "QuestieShowTitle", "Name", 300)
-questieTextArgs.QuestieShowType = {
-    type = "toggle",
-    order = 315,
-    name = "Show the type",
-    desc = "Adds the kind of icon in parentheses after the name, e.g. \"Innkeeper Farley (Innkeeper)\" or \"Princess Must Die! (Turn-in)\".",
-    disabled = function() return not Options.QuestieShowTitle end,
-}
 
 QuestieOptions = {
     type = "group",
@@ -2632,11 +2649,26 @@ QuestieOptions = {
                     width = "full",
                     order = 10,
                 },
+                QuestieShowType = {
+                    type = "toggle",
+                    order = 12,
+                    name = "Show the type after the name",
+                    desc = "Adds the kind of icon in parentheses after the name, e.g. \"Innkeeper Farley (Innkeeper)\" or \"Princess Must Die! (Turn-in)\".",
+                    width = "full",
+                },
+                QuestieUseMinimapSettings = {
+                    type = "toggle",
+                    order = 15,
+                    name = "Use minimap icons settings",
+                    desc = "Use the settings of Minimap tracking -> Minimap icons (radius, throttle, position, scale, opacity, texts) instead of the ones below and on the Texts tab.",
+                    width = "full",
+                },
                 QuestieRadius = {
                     type = "range",
                     order = 20,
                     name = "Scanning radius",
                     desc = "Only icons within this distance are shown. 0 = the whole zone.",
+                    disabled = questieUsesMinimapSettings,
                     min = 0,
                     max = 5000,
                     softMax = 2000,
@@ -2648,6 +2680,7 @@ QuestieOptions = {
                     order = 30,
                     name = "Update throttle",
                     desc = "Interval between reading Questie's icons again, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 30 (default) and 'Update Frequency' is set to 60 (default), Questie's icons are read twice per second.",
+                    disabled = questieUsesMinimapSettings,
                     min = 1,
                     max = 300,
                     softMax = 120,
@@ -2659,6 +2692,7 @@ QuestieOptions = {
                     name = "Hide icon at the tracked target",
                     desc = "While the game tracks a target at an icon's place, only its supertracker pointer is shown.",
                     width = "full",
+                    disabled = questieUsesMinimapSettings,
                 },
                 HeaderQuestieNode = {
                     type = "header",
@@ -2669,6 +2703,7 @@ QuestieOptions = {
                     type = "range",
                     order = 60,
                     name = "Vertical adjustment",
+                    disabled = questieUsesMinimapSettings,
                     min = -64,
                     max = 64,
                     step = 0.5,
@@ -2677,6 +2712,7 @@ QuestieOptions = {
                     type = "range",
                     order = 70,
                     name = "Scale",
+                    disabled = questieUsesMinimapSettings,
                     min = 0,
                     max = 3,
                     step = 0.01,
@@ -2697,6 +2733,7 @@ QuestieOptions = {
                     type = "range",
                     order = 120,
                     name = "Minimum opacity",
+                    disabled = questieUsesMinimapSettings,
                     min = 0,
                     max = 1,
                     step = 0.01,
@@ -2706,6 +2743,7 @@ QuestieOptions = {
                     type = "range",
                     order = 130,
                     name = "Maximum opacity",
+                    disabled = questieUsesMinimapSettings,
                     min = 0,
                     max = 1,
                     step = 0.01,
@@ -2716,6 +2754,7 @@ QuestieOptions = {
                     order = 140,
                     name = "Full opacity within",
                     desc = "Icons closer than this keep the maximum opacity.",
+                    disabled = questieUsesMinimapSettings,
                     min = 0,
                     max = 2000,
                     softMax = 500,
@@ -2727,6 +2766,7 @@ QuestieOptions = {
             type = "group",
             order = 20,
             name = "Texts",
+            disabled = questieUsesMinimapSettings,
             args = questieTextArgs,
         },
     },
