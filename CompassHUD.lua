@@ -165,17 +165,38 @@ end
 -- GetTitleForQuestID is often empty for quests not in the quest log, so the
 -- name comes from the world map pin, or from the data that the pin is built from.
 questOfferCache = {}
+
+-- The quest offer pin of 'questID' on the open world map: its name, position, map and icon.
+-- The map's pins are read from its pin pools (WorldMapFrame:EnumerateAllPins no longer gives an
+-- iterator on retail 12.x); every step is checked, and the whole lookup is protected, so a change
+-- of the world map only means falling back to the other sources below.
+local function findQuestOfferPin(questID)
+    local pools = WorldMapFrame.pinPools
+    if type(pools) ~= "table" then return end
+    for _, pool in pairs(pools) do
+        if type(pool) == "table" and type(pool.EnumerateActive) == "function" then
+            local iterator, state, control = pool:EnumerateActive()
+            if type(iterator) == "function" then
+                for pin in iterator, state, control do
+                    if type(pin) == "table" and pin.questID == questID and pin.questName and pin.GetPosition then
+                        local x, y = pin:GetPosition()
+                        if x and y then
+                            local atlasName = type(pin.questIcon) == "string" and pin.questIcon or nil
+                            return pin.questName, x, y, WorldMapFrame:GetMapID(), atlasName
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 function getQuestOfferInfo(questID, uiMapID)
     -- The pin on the open world map already holds the quest name and its position
     if WorldMapFrame:IsVisible() then
-        for pin in WorldMapFrame:EnumerateAllPins() do
-            if pin.questID == questID and pin.questName and pin.GetPosition then
-                local x, y = pin:GetPosition()
-                if x and y then
-                    local atlasName = type(pin.questIcon) == "string" and pin.questIcon or nil
-                    return pin.questName, x, y, WorldMapFrame:GetMapID(), atlasName
-                end
-            end
+        local ok, name, x, y, mapID, atlasName = pcall(findQuestOfferPin, questID)
+        if ok and name then
+            return name, x, y, mapID, atlasName
         end
     end
 

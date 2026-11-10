@@ -45,6 +45,7 @@
 ## Fix
 
 - A minimap icon set as a waypoint with the supertrack keybind now gives the supertracker pointer its **name** (it was usually lost: the game stores the waypoint position slightly rounded), and with `Minimap icons → Supertracking → Icon texture` also its icon when that is a texture, e.g. world quest rewards.
+- Retail: Lua error ("attempt to call a nil value") while tracking an available quest ("!" quest giver) with the world map open. The quest name and position are read from the map's pins in a way that works with the current client, and a future change of the world map can no longer cause an error.
 - The HUD is no longer hidden in every instance, only where the game does not give the player facing (dungeons, raids). It should now show in instances that have a facing, e.g. the housing neighborhoods Founder's Point and Razorwing Shore (#19).
 - The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded (#22).
 - WoW: Forever: characters with the same first name (but a different surname) on one realm shared their profile choice (see *Good to know*).
