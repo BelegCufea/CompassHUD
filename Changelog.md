@@ -24,6 +24,7 @@
 ## Misc
 
 - Updated Ace3 libraries to r1424-alpha.
+- Minimap icons, Questie and gathering nodes now share one implementation for their icons, texts, opacity and settings, so they behave the same. No change intended in how minimap icons look or work.
 
 # v1.7.0 (9.11.2026)
 
