@@ -522,18 +522,25 @@ function setPOITrackNodes()
             poi.frame:SetAlpha(poi.opacity)
         end
     end
-    if (Options.POITrackTextsDegrees > 0) and (minAngle <= math.rad(Options.POITrackTextsDegrees)) then
-        local poi = poiTrackHeading
-        if poi then
-            poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
-            poi.frame.distanceHidden = not Options.POITrackShowDistance
-            poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
-            poi.frame.timeHidden = not Options.POITrackShowTTA
-            poi.frame.Title:SetShown(Options.POITrackShowTitle)
-            poi.frame:SetAlpha(Options.POITrackOpacitySelected)
-        end
+    -- texts only on the faced icon: nominated here, shown by showFacedMarkerTexts (Markers/Common.lua)
+    -- if it is the closest faced marker of all modules
+    poiNodes.textNode, poiNodes.textAngle = nil, nil
+    local heading = poiTrackHeading
+    if Options.POITrackTextsDegrees > 0 and heading and heading.frame and heading.frame:IsShown()
+        and minAngle <= math.rad(Options.POITrackTextsDegrees) then
+        poiNodes.textNode, poiNodes.textAngle = heading, minAngle
     end
     HUD.minimapIcons = poiTrackPointTable
+end
+
+-- Shows the texts of the faced minimap icon, at its own opacity (see showFacedMarkerTexts).
+function poiNodes.showTexts(poi)
+    poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
+    poi.frame.distanceHidden = not Options.POITrackShowDistance
+    poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
+    poi.frame.timeHidden = not Options.POITrackShowTTA
+    poi.frame.Title:SetShown(Options.POITrackShowTitle)
+    poi.frame:SetAlpha(Options.POITrackOpacitySelected)
 end
 
 -- The icon the supertrack keybinding acts on: the minimap icon or a node of a marker module with

@@ -493,10 +493,38 @@ function drawMarkerNodes(module)
         node.frame:SetShown(shown)
     end
 
-    -- texts only on the faced node: shown, and at its own opacity
+    -- texts only on the faced node: nominated here, shown by showFacedMarkerTexts if it is the
+    -- closest faced marker of all modules
     local heading = module.heading
+    module.textNode, module.textAngle = nil, nil
     if textsDegrees > 0 and heading and heading.frame:IsShown() and minAngle <= math.rad(textsDegrees) then
-        showMarkerTexts(module, heading.frame, true)
-        heading.frame:SetAlpha(markerSetting(module, "OpacitySelected"))
+        module.textNode, module.textAngle = heading, minAngle
+    end
+end
+
+-- Shows the texts of a module's nominated node, at its own opacity.
+local function showModuleTexts(module, node)
+    showMarkerTexts(module, node.frame, true)
+    node.frame:SetAlpha(markerSetting(module, "OpacitySelected"))
+end
+
+-- With a texts visibility angle, only one marker shows its texts: the one closest to the facing
+-- direction among the faced markers of the minimap icons and all marker modules. Called once per
+-- update after every module has placed its nodes (updateHUD).
+function showFacedMarkerTexts()
+    local bestAngle, bestShow, bestModule, bestNode
+    if Options.POITrackEnabled and poiNodes.textNode then
+        bestAngle, bestNode, bestShow = poiNodes.textAngle, poiNodes.textNode, poiNodes.showTexts
+    end
+    for _, module in ipairs(markerModules) do
+        if Options[module.prefix .. "Enabled"] and module.textNode
+            and module.textNode.frame and (not bestAngle or module.textAngle < bestAngle) then
+            bestAngle, bestNode, bestShow, bestModule = module.textAngle, module.textNode, nil, module
+        end
+    end
+    if bestModule then
+        showModuleTexts(bestModule, bestNode)
+    elseif bestShow then
+        bestShow(bestNode)
     end
 end

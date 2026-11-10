@@ -65,6 +65,8 @@ function updateHUD(force)
     setGatherMateNodes()
     setPOITrackNodes()
     setQuestieNodes()
+    -- after all marker modules: texts only on the closest faced marker of all of them
+    showFacedMarkerTexts()
     updateSpeech()
 end
 
