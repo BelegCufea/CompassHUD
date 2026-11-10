@@ -11,7 +11,6 @@ local math, string, table, wipe = math, string, table, wipe
 local LSM               = LibStub("LibSharedMedia-3.0")
 local HBD               = LibStub("HereBeDragons-2.0")
 
-local GetPlayerFacing = GetPlayerFacing
 local GetTitleForQuestID = C_QuestLog.GetTitleForQuestID
 local GetQuestZoneID = C_TaskQuest.GetQuestZoneID
 local GetQuestLocation = C_TaskQuest.GetQuestLocation
@@ -49,7 +48,7 @@ function updateHeading()
 end
 
 function updateHUD(force)
-    local facing = GetPlayerFacing() or 0
+    local facing = readPlayerFacing() or 0
     if force or facing ~= currentFacing then
         local coord = (facing < PI and 0.5 or 1) - (facing * ADJ_FACTOR)
         -- rotate texture
@@ -391,13 +390,26 @@ function OnGroup(event, ...)
     player.groupType = groupType
 end
 
+-- The HUD is hidden in instances where the game gives no player facing (dungeons, raids): the
+-- compass cannot turn there. Other instances, e.g. housing neighborhoods, keep it if the facing
+-- is available. player.inInstance means "hidden because of the instance".
+-- Returns whether the player is in an instance at all.
+function updateInstanceState()
+    local inInstance = IsInInstance()
+    player.inInstance = (inInstance and not readPlayerFacing()) and true or false
+    Addon:SetVisibility(shouldShowHUD())
+    return inInstance
+end
+
 function OnZoneChange(event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
         schedulePointerFontRefresh()
     end
     cachePOIs()
-    player.inInstance = IsInInstance()
-    Addon:SetVisibility(shouldShowHUD())
+    if updateInstanceState() and player.inInstance then
+        -- the facing may only be given a moment after the loading screen: look once more
+        C_Timer.After(2, updateInstanceState)
+    end
     OnGroup(event, ...)
     OnEvent(event, ...)
 end

@@ -6,6 +6,7 @@
 
 ## Fix
 
+- The HUD is no longer hidden in every instance, only where the game does not give the player facing (dungeons, raids). It should now show in instances that have a facing, e.g. the housing neighborhoods Founder's Point and Razorwing Shore (#19).
 - The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded (#22).
 
 # v1.7.0 (9.11.2026)

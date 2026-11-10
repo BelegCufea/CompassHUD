@@ -55,7 +55,7 @@ Most settings have a tooltip with more details when you hover over them.
   - lock the compass in place, show the minimap button and the AddOns compartment entry,
   - distances in yards or meters, and optionally as whole numbers (distances under 1000 otherwise show one decimal),
   - update frequency, field of view, scale, width, height and frame strata,
-  - `Visibility State`: a macro condition deciding when the HUD is shown (default `[petbattle] hide; show`); the HUD is always hidden in instances,
+  - `Visibility State`: a macro condition deciding when the HUD is shown (default `[petbattle] hide; show`); the HUD is always hidden in instances where the game gives no player facing (dungeons, raids),
   - center the HUD horizontally or reset its position.
 
 ![Settings](https://i.imgur.com/W5uhfbJ.png)

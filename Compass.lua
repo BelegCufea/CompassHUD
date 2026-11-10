@@ -9,6 +9,7 @@ local math, string, table, wipe = math, string, table, wipe
 local LSM               = LibStub("LibSharedMedia-3.0")
 local HBD               = LibStub("HereBeDragons-2.0")
 local GetPlayerFacing = GetPlayerFacing
+local issecretvalue = issecretvalue
 local GetQuestsOnMap = C_QuestLog.GetQuestsOnMap
 local GetMapForQuestPOIs = C_QuestLog.GetMapForQuestPOIs
 local GetNextWaypoint = C_QuestLog.GetNextWaypoint
@@ -48,12 +49,20 @@ function getMapId(questID)
     if uiMapID and uiMapID > 0 then return uiMapID end
 end
 
+-- The player's facing, or nil where the game does not give it (dungeons, raids) or gives it as a
+-- secret value that addons cannot calculate with.
+function readPlayerFacing()
+    local facing = GetPlayerFacing()
+    if facing == nil or (issecretvalue and issecretvalue(facing)) then return end
+    return facing
+end
+
 function updatePlayerCoords()
     if player.inInstance then return end
 
     player.x, player.y, player.instance = HBD:GetPlayerWorldPosition()
     player.uiMapID = HBD:GetPlayerZone()
-    player.angle = GetPlayerFacing()
+    player.angle = readPlayerFacing()
 end
 
 -- Signed angle (-PI..PI) between the player's facing and a world point.
