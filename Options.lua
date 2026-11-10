@@ -2278,6 +2278,8 @@ GatherMateOptions = {
     order = 1010,
     name = "GatherMate2 / GatherLite",
     childGroups = "tab",
+    -- only with one of the two addons loaded, like the Questie section
+    hidden = function() return not (GatherMate2 or GatherLite) end,
     args = {
         Settings = {
             type = "group",
@@ -2656,7 +2658,7 @@ QuestieOptions = {
                     type = "toggle",
                     name = "Enabled",
                     desc = "Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.",
-                    width = 1.5,
+                    width = 1.2,
                     order = 10,
                 },
                 QuestieUseMinimapSettings = {
@@ -2664,14 +2666,14 @@ QuestieOptions = {
                     order = 11,
                     name = "Use minimap icons settings",
                     desc = "Use the settings of Minimap tracking -> Minimap icons (radius, throttle, position, scale, opacity, texts) instead of the ones below and on the Texts tab.",
-                    width = 1.5,
+                    width = 1.2,
                 },
                 QuestieSupertrack = {
                     type = "toggle",
                     order = 12,
                     name = "Use supertracker keybinding",
                     desc = "The supertrack keybinding of the minimap icons (Minimap icons -> Supertracking) also tracks the Questie icon you face: the quest itself for turn-ins and objectives, else a waypoint with the icon's name.",
-                    width = 1.5,
+                    width = 1.2,
                 },
                 -- the same setting as Speech -> Questie icons
                 SpeechQuestie = {
@@ -2679,7 +2681,7 @@ QuestieOptions = {
                     order = 13,
                     name = "Use text to speech",
                     desc = "Read out the Questie icon you face (the same setting as Speech -> Questie icons). Text to speech itself is turned on on the Speech tab.",
-                    width = 1.5,
+                    width = 1.2,
                     disabled = function() return not Options.SpeechEnabled end,
                 },
                 QuestieShowType = {
