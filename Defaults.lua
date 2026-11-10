@@ -183,21 +183,6 @@ Addon.Defaults = {
         GatherMateDistanceOffset     = 0,
         GatherMateTtaOffset          = 0,
         GatherMateTitleOffset        = 0,
-        GatherMateDistanceCustomFont = false,
-        GatherMateDistanceFont       = "Friz Quadrata TT",
-        GatherMateDistanceFontSize   = 12,
-        GatherMateDistanceFontColor  = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        GatherMateDistanceFontFlags  = "",
-        GatherMateTtaCustomFont      = false,
-        GatherMateTtaFont            = "Friz Quadrata TT",
-        GatherMateTtaFontSize        = 12,
-        GatherMateTtaFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        GatherMateTtaFontFlags       = "",
-        GatherMateTitleCustomFont    = false,
-        GatherMateTitleFont          = "Friz Quadrata TT",
-        GatherMateTitleFontSize      = 12,
-        GatherMateTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        GatherMateTitleFontFlags     = "",
         -- Questie markers: the same settings (and defaults) as the minimap icons (POITrack...),
         -- which are used instead while QuestieUseMinimapSettings is on (Markers/Questie.lua)
         QuestieEnabled               = false,
@@ -221,21 +206,6 @@ Addon.Defaults = {
         QuestieDistanceOffset        = 0,
         QuestieTtaOffset             = 0,
         QuestieTitleOffset           = 0,
-        QuestieDistanceCustomFont    = false,
-        QuestieDistanceFont          = "Friz Quadrata TT",
-        QuestieDistanceFontSize      = 12,
-        QuestieDistanceFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        QuestieDistanceFontFlags     = "",
-        QuestieTtaCustomFont         = false,
-        QuestieTtaFont               = "Friz Quadrata TT",
-        QuestieTtaFontSize           = 12,
-        QuestieTtaFontColor          = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        QuestieTtaFontFlags          = "",
-        QuestieTitleCustomFont       = false,
-        QuestieTitleFont             = "Friz Quadrata TT",
-        QuestieTitleFontSize         = 12,
-        QuestieTitleFontColor        = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        QuestieTitleFontFlags        = "",
         POITrackEnabled            = false,
         POITrackRadius             = 1000,
         POITrackInterval           = 30,
@@ -253,21 +223,6 @@ Addon.Defaults = {
         POITrackDistanceOffset     = 0,
         POITrackTtaOffset          = 0,
         POITrackTitleOffset        = 0,
-        POITrackDistanceCustomFont = false,
-        POITrackDistanceFont       = "Friz Quadrata TT",
-        POITrackDistanceFontSize   = 12,
-        POITrackDistanceFontColor  = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        POITrackDistanceFontFlags  = "",
-        POITrackTtaCustomFont      = false,
-        POITrackTtaFont            = "Friz Quadrata TT",
-        POITrackTtaFontSize        = 12,
-        POITrackTtaFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        POITrackTtaFontFlags       = "",
-        POITrackTitleCustomFont    = false,
-        POITrackTitleFont          = "Friz Quadrata TT",
-        POITrackTitleFontSize      = 12,
-        POITrackTitleFontColor     = {r = 255/255, g = 215/255, b = 0/255, a = 1},
-        POITrackTitleFontFlags     = "",
         POITrackFilter             = {
             [poiTypeEnum.TAXI] = false,
             [poiTypeEnum.TAXI.."_min"] = false,
@@ -290,3 +245,20 @@ Addon.Defaults = {
         POITrackWorldmapTexture    = true,
     },
 }
+
+-- Font defaults of the three texts (distance, time to arrive, name) of an icon section: the same
+-- for each section, named <prefix><text><setting>. Each color gets a table of its own (a shared
+-- one would link the colors of all texts).
+local function addTextDefaults(profile, prefix)
+    for _, text in ipairs({ "Distance", "Tta", "Title" }) do
+        profile[prefix .. text .. "CustomFont"] = false
+        profile[prefix .. text .. "Font"]       = "Friz Quadrata TT"
+        profile[prefix .. text .. "FontSize"]   = 12
+        profile[prefix .. text .. "FontColor"]  = {r = 255/255, g = 215/255, b = 0/255, a = 1}
+        profile[prefix .. text .. "FontFlags"]  = ""
+    end
+end
+
+addTextDefaults(Addon.Defaults.profile, "POITrack")
+addTextDefaults(Addon.Defaults.profile, "GatherMate")
+addTextDefaults(Addon.Defaults.profile, "Questie")
