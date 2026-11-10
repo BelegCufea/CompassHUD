@@ -413,10 +413,12 @@ function setMarkerCircle(frame, circle)
     end
 end
 
--- Removes a node and gives its frame back to the module's pool.
-function releaseMarkerNode(module, key)
-    local node = module.nodes[key]
-    module.nodes[key] = nil
+-- Removes a node and gives its frame back to the module's pool. 'nodes' is the table holding it,
+-- if not module.nodes (the minimap icons keep one table per map).
+function releaseMarkerNode(module, key, nodes)
+    nodes = nodes or module.nodes
+    local node = nodes[key]
+    nodes[key] = nil
     if node == module.heading then
         module.heading = nil
     end
@@ -551,19 +553,14 @@ end
 -- direction among the faced markers of the minimap icons and all marker modules. Called once per
 -- update after every module has placed its nodes (updateHUD).
 function showFacedMarkerTexts()
-    local bestAngle, bestShow, bestModule, bestNode
-    if Options.POITrackEnabled and poiNodes.textNode then
-        bestAngle, bestNode, bestShow = poiNodes.textAngle, poiNodes.textNode, poiNodes.showTexts
-    end
+    local bestAngle, bestModule
     for _, module in ipairs(markerModules) do
         if Options[module.prefix .. "Enabled"] and module.textNode
             and module.textNode.frame and (not bestAngle or module.textAngle < bestAngle) then
-            bestAngle, bestNode, bestShow, bestModule = module.textAngle, module.textNode, nil, module
+            bestAngle, bestModule = module.textAngle, module
         end
     end
     if bestModule then
-        showModuleTexts(bestModule, bestNode)
-    elseif bestShow then
-        bestShow(bestNode)
+        showModuleTexts(bestModule, bestModule.textNode)
     end
 end

@@ -39,19 +39,34 @@ local GetVignettes = C_VignetteInfo.GetVignettes
 local GetVignettePosition = C_VignetteInfo.GetVignettePosition
 local GetVignetteInfo = C_VignetteInfo.GetVignetteInfo
 
-function updatePOITrackNode(poi)
-    local scale = Options.Scale * Options.IconScale * Options.POITrackScale
-    poi.frame:SetSize(iconSize * Options.POITrackScale * (poi.scale or 1), iconSize * Options.POITrackScale * (poi.scale or 1))
-    setPointerFont(poi.frame.DistanceText, scale, Options.POITrackDistanceCustomFont, Options.POITrackDistanceFont, Options.POITrackDistanceFontSize, Options.POITrackDistanceFontFlags, Options.POITrackDistanceFontColor)
-    setPointerFont(poi.frame.TimeText, scale, Options.POITrackTtaCustomFont, Options.POITrackTtaFont, Options.POITrackTtaFontSize, Options.POITrackTtaFontFlags, Options.POITrackTtaFontColor)
-    setPointerFont(poi.frame.Title, scale, Options.POITrackTitleCustomFont, Options.POITrackTitleFont, Options.POITrackTitleFontSize, Options.POITrackTitleFontFlags, Options.POITrackTitleFontColor)
-    setTitleWidth(poi.frame.Title)
+POI_TRACK_WORLD_QUEST = "WorldQuest" -- world quests have their own bypass toggle
 
-    poi.flipped = Options.POITrackOffset > 0
-    layoutNodeTexts(poi.frame, poi.flipped, Options.POITrackShowDistance, Options.POITrackShowTTA, Options.POITrackShowTitle,
-        Options.POITrackDistanceOffset, Options.POITrackTtaOffset, Options.POITrackTitleOffset)
+-- The minimap icons as a marker module (Markers/Common.lua): frames, styling and drawing are
+-- shared with the Questie and GatherMate markers. The icons are kept per map in
+-- poiTrackPointTable[uiMapID]; 'nodes' is set to the current map's table before drawing.
+-- Icons that go away (vignettes, world quests, quests) give their frame back to the pool.
+-- (kept in one table: the main chunk is close to Lua's limit of 200 local variables)
+local noIcons = {}
+poiNodes = {
+    prefix = "POITrack",
+    nodes = noIcons,
+    framePool = {},
+    heading = nil,
+    seen = {}, -- vignettes, world quests and quests the game reported in the current scan
+}
+table.insert(markerModules, poiNodes)
+
+-- Scanning radius and "Bypass scanning radius" (per icon type, at draw time, so a change applies
+-- right away)
+-- Also the icon's filter: poi.visible is only true for a shown type (nil from a missing filter
+-- entry counts as hidden, as before).
+function poiNodes.inRange(poi)
+    if not poi.visible then return false end
+    return Options.POITrackRadius == 0 or poiTrackBypassesRadius(poi)
+        or (poi.distance and poi.distance <= Options.POITrackRadius) or false
 end
 
+-- Settings changed: re-apply them to all icons of all maps, or hide them all when turned off.
 function updatePoiTrack()
     for _, pois in pairs(poiTrackPointTable) do
         for _, poi in pairs(pois) do
@@ -62,77 +77,25 @@ function updatePoiTrack()
                 end
             end
             if poi.frame then
-                updatePOITrackNode(poi)
+                styleMarkerNode(poiNodes, poi)
             end
         end
     end
 end
 
-POI_TRACK_WORLD_QUEST = "WorldQuest" -- world quests have their own bypass toggle
-
--- Minimap icon frames are reused: WoW never frees frames, so icons that go away (vignettes, world
--- quests) hand theirs back to this pool instead of leaving it behind.
--- (kept in one table: the main chunk is close to Lua's limit of 200 local variables)
-poiNodes = {
-    framePool = {},
-    seen = {}, -- vignettes and world quests the game reported in the current scan
-}
-
+-- The frame of a new icon node: the one the game record already has (its icon on an earlier
+-- visit), or one from the pool.
 function createPOITrackNode(data)
-    local poiTrackNode = data.frame or table.remove(poiNodes.framePool)
-    if not poiTrackNode then
-        poiTrackNode = CreateFrame("FRAME", nil, HUD)
-        poiTrackNode.texture = poiTrackNode:CreateTexture(nil, "ARTWORK")
-        poiTrackNode.texture:SetAllPoints(poiTrackNode)
-        poiTrackNode.mask = poiTrackNode:CreateMaskTexture()
-        poiTrackNode.mask:SetTexture("Interface/Masks/CircleMaskScalable", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        poiTrackNode.mask:SetAllPoints(poiTrackNode.texture)
-        poiTrackNode.border = poiTrackNode:CreateTexture(nil, "OVERLAY", nil, 1)
-        poiTrackNode.border:SetAtlas("ui-frame-genericplayerchoice-portrait-border")
-        poiTrackNode.border:SetAllPoints(poiTrackNode.texture)
-        poiTrackNode.DistanceText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-        poiTrackNode.DistanceText:SetJustifyV("TOP")
-        poiTrackNode.DistanceText:SetSize(0, 16)
-        poiTrackNode.DistanceText:SetParent(poiTrackNode)
-        poiTrackNode.TimeText = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-        poiTrackNode.TimeText:SetJustifyV("TOP")
-        poiTrackNode.TimeText:SetSize(0, 16)
-        poiTrackNode.TimeText:SetParent(poiTrackNode)
-        poiTrackNode.Title = poiTrackNode:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-        poiTrackNode.Title:SetJustifyV("TOP")
-        poiTrackNode.Title:SetSize(0, 16)
-        poiTrackNode.Title:SetParent(poiTrackNode)
-        poiTrackNode.type = "poiTrack"
-        poiTrackNode:SetScript("OnUpdate", questPointerSetTexts)
-    end
-    poiTrackNode:SetSize(iconSize, iconSize)
-    poiTrackNode:ClearAllPoints()
-    poiTrackNode:SetPoint("CENTER")
-    poiTrackNode:Hide()
-    poiTrackNode.texture:SetAtlas(data.atlasName)
-    poiTrackNode.texture:SetSize(iconSize, iconSize)
-    -- round icon with a border (world quests); a reused frame may have had it or not
-    if data.circle then
-        if not poiTrackNode.masked then
-            poiTrackNode.texture:AddMaskTexture(poiTrackNode.mask)
-            poiTrackNode.masked = true
-        end
-        poiTrackNode.border:Show()
-    else
-        if poiTrackNode.masked then
-            poiTrackNode.texture:RemoveMaskTexture(poiTrackNode.mask)
-            poiTrackNode.masked = false
-        end
-        poiTrackNode.border:Hide()
-    end
-    poiTrackNode.Title:SetText(data.name)
-    poiTrackNode.instance = data.instance
-    poiTrackNode.x = data.x
-    poiTrackNode.y = data.y
-    poiTrackNode.elapsed = 0
-    poiTrackNode.minDistance = nil
-    poiTrackNode.ttaLastDistance = nil
-	return poiTrackNode
+    local frame = data.frame or acquireMarkerFrame(poiNodes)
+    frame:ClearAllPoints()
+    frame:SetPoint("CENTER")
+    frame:Hide()
+    frame.texture:SetAtlas(data.atlasName)
+    -- round icon with a border (world quests)
+    setMarkerCircle(frame, data.circle)
+    frame.instance, frame.x, frame.y = data.instance, data.x, data.y
+    frame.elapsed, frame.minDistance, frame.ttaLastDistance = 0, nil, nil
+    return frame
 end
 
 -- Vignettes, world quests and quests come and go; other minimap icon types are fixed per map.
@@ -150,18 +113,12 @@ function isTrackedWaypoint(point, tracked)
         and math.abs(point.position.y - tracked.yZone) < 0.0001
 end
 
--- Removes a minimap icon node and puts its frame back into the pool.
+-- Removes a minimap icon node of the map table 'pois' and puts its frame back into the pool.
 function poiNodes.release(pois, id)
-    local poi = pois[id]
-    pois[id] = nil
-    if poi == poiTrackHeading then
+    if pois[id] == poiTrackHeading then
         poiTrackHeading = nil
     end
-    if poi and poi.frame then
-        poi.frame:Hide()
-        table.insert(poiNodes.framePool, poi.frame)
-        poi.frame = nil
-    end
+    releaseMarkerNode(poiNodes, id, pois)
 end
 
 -- Each minimap icon node remembers its filter type (poi.trackType). It decides the "Bypass scanning
@@ -186,7 +143,7 @@ function addPOITrackNode(id, data, xZone, yZone, scale)
     data.x, data.y = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
     data.frame = createPOITrackNode(data)
     data.scale = scale
-    updatePOITrackNode(data)
+    styleMarkerNode(poiNodes, data)
     return data
 end
 
@@ -465,82 +422,11 @@ function setPOITrackNodes()
         poiTrackThrottle = 0
     end
 
-    local minAngle = 360
-    poiTrackHeading = nil
-    local effectivePOITrackRadius = Options.POITrackRadius == 0 and Options.POITrackOpacityMaxRadius or Options.POITrackRadius
-    -- the fade runs from OpacityMinRadius to the radius; no span (radius == min radius) means no fade instead of 0/0
-    local opacitySpan = effectivePOITrackRadius - Options.POITrackOpacityMinRadius
-    local opacityFactor = opacitySpan > 0 and (Options.POITrackOpacityMin - Options.POITrackOpacityMax) / opacitySpan or 0
-    -- the game's tracked target, if minimap icons at its place should be hidden (see shownGameTarget)
-    local target = Options.HidePOIAtTarget and shownGameTarget
-    for _, poi in pairs(poiTrackPointTable and poiTrackPointTable[player.uiMapID] or {}) do
-        if poi.frame then
-            local shown = false
-            if poi.visible and player.angle then
-                if poi.x and poi.y and poi.instance then
-                    poi.distance = HBD:GetWorldDistance(poi.instance, player.x, player.y, poi.x, poi.y)
-                    if Options.POITrackRadius == 0 or poiTrackBypassesRadius(poi) or (poi.distance and poi.distance <= Options.POITrackRadius) then
-                        -- normalized to -PI..PI before picking the icon closest to the heading
-                        local angle = relativeAngle(poi.instance, poi.x, poi.y)
-                        poi.angle = angle
-                        if angle and abs(angle) < minAngle then
-                            minAngle = abs(angle)
-                            poiTrackHeading = poi
-                        end
-                        if angle then
-                            local visible = math.rad(Options.Degrees)/2
-                            if angle < visible and angle > -visible then
-                                poi.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.POITrackOffset)
-                                shown = true
-                                -- already shown as the supertracker pointer: no second marker. It stays
-                                -- selectable above, so the keybinding can still toggle its tracking off.
-                                if target then
-                                    local distance = HBD:GetWorldDistance(poi.instance, poi.x, poi.y, target.x, target.y)
-                                    if distance and distance <= SAME_POINT_YARDS then
-                                        shown = false
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            poi.frame:SetShown(shown)
-            poi.frame.DistanceText:SetShown(Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
-            poi.frame.distanceHidden= not (Options.POITrackShowDistance and Options.POITrackTextsDegrees == 0)
-            poi.frame.TimeText:SetShown(Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
-            poi.frame.timeHidden = not (Options.POITrackShowTTA and Options.POITrackTextsDegrees == 0)
-            poi.frame.Title:SetShown(Options.POITrackShowTitle and Options.POITrackTextsDegrees == 0)
-            poi.shown = shown
-
-            poi.opacity = Options.POITrackOpacityMin
-            if not poi.distance or (poi.distance < Options.POITrackOpacityMinRadius) then
-                poi.opacity = Options.POITrackOpacityMax
-            elseif poi.distance <= effectivePOITrackRadius then
-                poi.opacity = Options.POITrackOpacityMax + (poi.distance - Options.POITrackOpacityMinRadius) * opacityFactor
-            end
-            poi.frame:SetAlpha(poi.opacity)
-        end
-    end
-    -- texts only on the faced icon: nominated here, shown by showFacedMarkerTexts (Markers/Common.lua)
-    -- if it is the closest faced marker of all modules
-    poiNodes.textNode, poiNodes.textAngle = nil, nil
-    local heading = poiTrackHeading
-    if Options.POITrackTextsDegrees > 0 and heading and heading.frame and heading.frame:IsShown()
-        and minAngle <= math.rad(Options.POITrackTextsDegrees) then
-        poiNodes.textNode, poiNodes.textAngle = heading, minAngle
-    end
+    -- position, opacity, texts and the faced icon: shared with the other marker modules
+    poiNodes.nodes = poiTrackPointTable[player.uiMapID] or noIcons
+    drawMarkerNodes(poiNodes)
+    poiTrackHeading = poiNodes.heading
     HUD.minimapIcons = poiTrackPointTable
-end
-
--- Shows the texts of the faced minimap icon, at its own opacity (see showFacedMarkerTexts).
-function poiNodes.showTexts(poi)
-    poi.frame.DistanceText:SetShown(Options.POITrackShowDistance)
-    poi.frame.distanceHidden = not Options.POITrackShowDistance
-    poi.frame.TimeText:SetShown(Options.POITrackShowTTA)
-    poi.frame.timeHidden = not Options.POITrackShowTTA
-    poi.frame.Title:SetShown(Options.POITrackShowTitle)
-    poi.frame:SetAlpha(Options.POITrackOpacitySelected)
 end
 
 -- The icon the supertrack keybinding acts on: the minimap icon or a node of a marker module with
