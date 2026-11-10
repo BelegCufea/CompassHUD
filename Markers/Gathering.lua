@@ -1,4 +1,5 @@
 -- Gathering node markers from GatherMate2, or GatherLite when GatherMate2 is not loaded.
+-- Drawn by the shared marker functions (Markers/Common.lua), like the Questie markers.
 local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
@@ -8,74 +9,19 @@ local math, string, table, wipe = math, string, table, wipe
 
 local HBD               = LibStub("HereBeDragons-2.0")
 
-function updateGatherMateNode(node)
-    local scale = Options.Scale * Options.IconScale * Options.GatherMateScale
-    node.frame:SetSize(iconSize * Options.GatherMateScale, iconSize * Options.GatherMateScale)
-    setPointerFont(node.frame.DistanceText, scale, Options.GatherMateDistanceCustomFont, Options.GatherMateDistanceFont, Options.GatherMateDistanceFontSize, Options.GatherMateDistanceFontFlags, Options.GatherMateDistanceFontColor)
-    setPointerFont(node.frame.TimeText, scale, Options.GatherMateTtaCustomFont, Options.GatherMateTtaFont, Options.GatherMateTtaFontSize, Options.GatherMateTtaFontFlags, Options.GatherMateTtaFontColor)
-    setPointerFont(node.frame.Title, scale, Options.GatherMateTitleCustomFont, Options.GatherMateTitleFont, Options.GatherMateTitleFontSize, Options.GatherMateTitleFontFlags, Options.GatherMateTitleFontColor)
-    setTitleWidth(node.frame.Title)
-
-    node.flipped = Options.GatherMateOffset > 0
-    layoutNodeTexts(node.frame, node.flipped, Options.GatherMateShowDistance, Options.GatherMateShowTTA, Options.GatherMateShowTitle,
-        Options.GatherMateDistanceOffset, Options.GatherMateTtaOffset, Options.GatherMateTitleOffset)
-    -- lets questPointerSetTexts skip work for hidden texts
-    node.frame.distanceHidden = not Options.GatherMateShowDistance
-    node.frame.timeHidden = not Options.GatherMateShowTTA
-end
-
--- Gathering nodes on the HUD. gatherMatePointTable holds only the nodes found by the latest scan
--- (within the scanning radius of the player, keyed per node). Nodes that leave that set give their
--- frame back to a pool, so neither the table nor the per-tick draw loop grows with the session.
--- (state kept in one table: the main chunk is close to Lua's limit of 200 local variables)
+-- gatherMatePointTable holds only the nodes found by the latest scan (within the scanning radius
+-- of the player, keyed per node). Nodes that leave that set give their frame back to a pool, so
+-- neither the table nor the per-tick draw loop grows with the session.
+-- The module for the shared marker functions, plus the gathering sources' own state.
 gatherNodes = {
+    prefix = "GatherMate",
+    nodes = gatherMatePointTable,
     framePool = {},
+    heading = nil,      -- node closest to the facing direction (supertrack keybinding, speech)
     seen = {},          -- nodes found by the current scan
     liteTypes = { "mining", "herbalism", "containers", "fishing" }, -- GatherLite node types
     liteObjects = {},   -- object ID -> GatherLite object (GetNodeObject searches its whole list)
 }
-
-function acquireGatherNodeFrame()
-    local frame = table.remove(gatherNodes.framePool)
-    if frame then
-        return frame
-    end
-    frame = CreateFrame("FRAME", nil, HUD)
-    frame:SetSize(iconSize, iconSize)
-    frame:SetPoint("CENTER")
-    frame.texture = frame:CreateTexture(nil, "ARTWORK")
-    frame.texture:SetAllPoints(frame)
-    frame:Hide()
-    frame.DistanceText = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    frame.DistanceText:SetJustifyV("TOP")
-    frame.DistanceText:SetSize(0, 16)
-    frame.DistanceText:SetParent(frame)
-    frame.TimeText = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    frame.TimeText:SetJustifyV("TOP")
-    frame.TimeText:SetSize(0, 16)
-    frame.TimeText:SetParent(frame)
-    frame.Title = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-    frame.Title:SetJustifyV("TOP")
-    frame.Title:SetSize(0, 16)
-    frame.Title:SetParent(frame)
-    frame.type = "GatherMate"
-    frame.elapsed = 0
-    frame:SetScript("OnUpdate", questPointerSetTexts)
-    return frame
-end
-
-function releaseGatherNode(key)
-    local node = gatherMatePointTable[key]
-    gatherMatePointTable[key] = nil
-    if node and node.frame then
-        local frame = node.frame
-        frame:Hide()
-        -- per-target text state must not carry over to the next node using this frame
-        frame.minDistance = nil
-        frame.ttaLastDistance = nil
-        table.insert(gatherNodes.framePool, frame)
-    end
-end
 
 -- Adds a node found by a scan (world coordinates, icon texture, title), or keeps the existing one.
 function addGatherNode(key, xWorld, yWorld, icon, title)
@@ -83,26 +29,25 @@ function addGatherNode(key, xWorld, yWorld, icon, title)
     if gatherMatePointTable[key] then
         return
     end
-    local node = { visible = true, instance = player.uiMapID, x = xWorld, y = yWorld }
-    local frame = acquireGatherNodeFrame()
+    local node = { instance = player.uiMapID, x = xWorld, y = yWorld, name = title or "", texture = icon }
+    local frame = acquireMarkerFrame(gatherNodes)
     frame.texture:SetTexture(icon)
-    frame.Title:SetText(title or "")
     frame.instance, frame.x, frame.y = node.instance, xWorld, yWorld
     node.frame = frame
     gatherMatePointTable[key] = node
-    updateGatherMateNode(node)
+    styleMarkerNode(gatherNodes, node)
 end
 
 -- GatherMate2 node source. These are GatherMate2's long-standing public methods plus three of its
 -- tables; every one is checked, so a change in GatherMate2 means no nodes rather than Lua errors.
-function scanGatherMate2(zoneX, zoneY)
+function scanGatherMate2(zoneX, zoneY, radius)
     local gm = GatherMate2
     if not (gm and gm.db_types and gm.Visible and gm.nodeTextures and gm.FindNearbyNode and gm.DecodeLoc and gm.GetNameForNode) then
         return
     end
     for _, dbType in pairs(gm.db_types) do
         if gm.Visible[dbType] then
-            for coord, nodeID in gm:FindNearbyNode(player.uiMapID, zoneX, zoneY, dbType, Options.GatherMateRadius) do
+            for coord, nodeID in gm:FindNearbyNode(player.uiMapID, zoneX, zoneY, dbType, radius) do
                 local key = dbType .. ":" .. coord
                 if gatherMatePointTable[key] then
                     gatherNodes.seen[key] = true
@@ -132,7 +77,7 @@ function getGatherLiteObject(gl, objectID)
     return object or nil
 end
 
-function scanGatherLite()
+function scanGatherLite(radius)
     local gl = GatherLite
     if not (gl and gl.IsLoaded and gl.GetNearbyZoneNodes and gl.EnsureNodeWorld and gl.GetNodeObject) or not gl:IsLoaded() then
         return
@@ -141,7 +86,6 @@ function scanGatherLite()
     if not (zoneX and zoneY and mapID and player.instance and player.x and player.y) then
         return
     end
-    local radius = Options.GatherMateRadius
     local usePredefined = not (gl.db and gl.db.global and gl.db.global.usePredefined == false)
     for _, nodeType in ipairs(gatherNodes.liteTypes) do
         -- follow GatherLite's own minimap tracking toggles, like GatherMate2's display filter
@@ -169,12 +113,13 @@ function scanGatherLite()
     end
 end
 
+-- Settings changed: re-apply them to all nodes, or drop all when the module is off.
 function updateGatherMate()
     for key, node in pairs(gatherMatePointTable) do
         if not Options.GatherMateEnabled then
-            releaseGatherNode(key)
+            releaseMarkerNode(gatherNodes, key)
         elseif node.frame then
-            updateGatherMateNode(node)
+            styleMarkerNode(gatherNodes, node)
         end
     end
 end
@@ -182,52 +127,26 @@ end
 function setGatherMateNodes()
     -- GatherMate2 if loaded, else GatherLite
     if not Options.GatherMateEnabled or not (GatherMate2 or GatherLite) then return end
-    if gatherMateThrottle and gatherMateThrottle >= Options.GatherMateInterval then
+    if gatherMateThrottle and gatherMateThrottle >= markerSetting(gatherNodes, "Interval") then
         gatherMateThrottle = 0
         local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
         if x and y then
             wipe(gatherNodes.seen)
+            -- the minimap icons' "whole zone" (0) is taken as their fading distance here
+            local radius = markerRadius(gatherNodes)
             if GatherMate2 then
-                scanGatherMate2(x, y)
+                scanGatherMate2(x, y, radius)
             else
-                scanGatherLite()
+                scanGatherLite(radius)
             end
             -- nodes no longer in range (or on another map) give their frame back to the pool
             for key in pairs(gatherMatePointTable) do
                 if not gatherNodes.seen[key] then
-                    releaseGatherNode(key)
+                    releaseMarkerNode(gatherNodes, key)
                 end
             end
         end
     end
-    -- opacity fades from OpacityMinRadius to the scanning radius; no span means no fade (not 0/0)
-    local opacityMin, opacityMax, opacityMinRadius = Options.GatherMateOpacityMin, Options.GatherMateOpacityMax, Options.GatherMateOpacityMinRadius
-    local fadeEnd = Options.GatherMateRadius
-    local fadeSpan = fadeEnd - opacityMinRadius
-    local fadeFactor = fadeSpan > 0 and (opacityMin - opacityMax) / fadeSpan or 0
-    for _, node in pairs(gatherMatePointTable) do
-        local shown = false
-        if node.visible and player.angle then
-            if node.x and node.y and node.instance then
-                local angle = relativeAngle(node.instance, node.x, node.y)
-                if angle then
-                    local visible = math.rad(Options.Degrees)/2
-                    if angle < visible and angle > -visible then
-                        node.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, Options.GatherMateOffset)
-                        shown = true
-                    end
-                end
-            end
-        end
-        if shown then
-            local opacity = opacityMax
-            local distance = HBD:GetWorldDistance(node.instance, player.x, player.y, node.x, node.y)
-            if distance and distance > opacityMinRadius then
-                opacity = distance >= fadeEnd and opacityMin or opacityMax + (distance - opacityMinRadius) * fadeFactor
-            end
-            node.frame:SetAlpha(opacity)
-        end
-        node.frame:SetShown(shown)
-    end
+    drawMarkerNodes(gatherNodes)
     HUD.gathermateNodes = gatherMatePointTable
 end

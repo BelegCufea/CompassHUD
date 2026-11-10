@@ -85,6 +85,7 @@ Addon.Defaults = {
         SpeechPOI              = true,
         SpeechSupertracked     = true,
         SpeechQuestie          = true,
+        SpeechGatherMate       = false,
         SpeechDistance         = false,
         SpeechDegrees          = 10,
         SpeechDelay            = 0.5,
@@ -159,7 +160,15 @@ Addon.Defaults = {
         GroupRaidNameBackground       = 'Blizzard Tooltip',
         GroupRaidNameBackgroundClass  = false,
         GroupRaidNameBackgroundColor  = {r = 1, g = 1, b = 1, a = 1},
+        -- GatherMate markers: the same settings as the Questie markers and the minimap icons
+        -- (Markers/Common.lua); 0 (texts on every node) and full opacity keep the earlier look
         GatherMateEnabled            = false,
+        GatherMateUseMinimapSettings = false,
+        GatherMateSupertrack         = false,
+        GatherMateHideAtTarget       = true,
+        GatherMateTextsDegrees       = 0,
+        GatherMateOpacitySelected    = 1,
+        GatherMateOpacityMaxRadius   = 1000,
         GatherMateRadius             = 150,
         GatherMateInterval           = 6,
         GatherMateOffset             = 20,

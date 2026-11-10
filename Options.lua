@@ -2305,321 +2305,178 @@ local function markerTextOptions(args, key, show, header, order)
     }
 end
 
-local gatherMateTextArgs = {}
-markerTextOptions(gatherMateTextArgs, "GatherMateDistance", "GatherMateShowDistance", "Distance text", 100)
-markerTextOptions(gatherMateTextArgs, "GatherMateTta", "GatherMateShowTTA", "Time to arrive", 200)
-markerTextOptions(gatherMateTextArgs, "GatherMateTitle", "GatherMateShowTitle", "Node name", 300)
+-- Settings of an integration marker module (Markers/Common.lua): the same layout for each, with
+-- option names <prefix><setting> mirroring the minimap icons' POITrack<setting>.
+--   prefix  option name prefix ("Questie", "GatherMate")
+--   info    { name, order, description, hidden, enabledDesc, what (e.g. "icon"), titleHeader,
+--             extraArgs (more options on the General tab) }
+local function markerModuleOptions(prefix, info)
+    -- greyed out while the module uses the minimap icons' settings
+    local function usesMinimapSettings() return Options[prefix .. "UseMinimapSettings"] end
+    local what = info.what
+    local general = {
+        ModuleDescription = {
+            type = "description",
+            order = 0,
+            name = "|cnACCOUNT_WIDE_FONT_COLOR:" .. info.description .. "|r\n",
+            fontSize = "medium",
+        },
+        [prefix .. "Enabled"] = { type = "toggle", order = 10, name = "Enabled", desc = info.enabledDesc, width = 1.2 },
+        [prefix .. "UseMinimapSettings"] = {
+            type = "toggle",
+            order = 11,
+            name = "Use minimap icons settings",
+            desc = "Use the settings of Minimap tracking -> Minimap icons (radius, throttle, position, scale, opacity, texts) instead of the ones below and on the Texts tab.",
+            width = 1.2,
+        },
+        [prefix .. "Supertrack"] = {
+            type = "toggle",
+            order = 12,
+            name = "Use supertracker keybinding",
+            desc = "The supertrack keybinding of the minimap icons (Minimap icons -> Supertracking) also tracks the " .. what .. " you face, with its name and icon (a quest in your quest log is tracked as the quest).",
+            width = 1.2,
+        },
+        -- the same setting as on the Speech tab
+        ["Speech" .. prefix] = {
+            type = "toggle",
+            order = 13,
+            name = "Use text to speech",
+            desc = "Read out the " .. what .. " you face (the same setting as on the Speech tab). Text to speech itself is turned on on the Speech tab.",
+            width = 1.2,
+            disabled = function() return not Options.SpeechEnabled end,
+        },
+        [prefix .. "Radius"] = {
+            type = "range",
+            order = 20,
+            name = "Scanning radius",
+            desc = "Only " .. what .. "s within this distance are shown. 0 = the whole zone.",
+            disabled = usesMinimapSettings,
+            min = 0,
+            max = 5000,
+            softMax = 2000,
+            step = 1,
+            bigStep = 10,
+        },
+        [prefix .. "Interval"] = {
+            type = "range",
+            order = 30,
+            name = "Update throttle",
+            desc = "Interval between scans for " .. what .. "s, relative to the 'Update Frequency' set on the 'General' tab.\nAt 30 with an 'Update Frequency' of 60 (defaults), they are scanned twice per second.",
+            disabled = usesMinimapSettings,
+            min = 1,
+            max = 300,
+            softMax = 120,
+            step = 1,
+        },
+        [prefix .. "HideAtTarget"] = {
+            type = "toggle",
+            order = 40,
+            name = "Hide " .. what .. " at the tracked target",
+            desc = "While the game tracks a target at the place of a " .. what .. ", only its supertracker pointer is shown.",
+            width = "full",
+            disabled = usesMinimapSettings,
+        },
+        ["Header" .. prefix .. "Node"] = { type = "header", order = 50, name = "Icon" },
+        [prefix .. "Offset"] = {
+            type = "range", order = 60, name = "Vertical adjustment", disabled = usesMinimapSettings,
+            min = -64, max = 64, step = 0.5,
+        },
+        [prefix .. "Scale"] = {
+            type = "range", order = 70, name = "Scale", disabled = usesMinimapSettings,
+            min = 0, max = 3, step = 0.01, isPercent = true,
+        },
+        ["Header" .. prefix .. "Opacity"] = { type = "header", order = 100, name = "Opacity" },
+        [prefix .. "OpacityDescription"] = {
+            type = "description",
+            order = 110,
+            name = "Farther " .. what .. "s fade from the maximum to the minimum opacity at the scanning radius (1000 yards when it is 0).",
+            fontSize = "medium",
+        },
+        [prefix .. "OpacityMin"] = {
+            type = "range", order = 120, name = "Minimum opacity", disabled = usesMinimapSettings,
+            min = 0, max = 1, step = 0.01, isPercent = true,
+        },
+        [prefix .. "OpacityMax"] = {
+            type = "range", order = 130, name = "Maximum opacity", disabled = usesMinimapSettings,
+            min = 0, max = 1, step = 0.01, isPercent = true,
+        },
+        [prefix .. "OpacityMinRadius"] = {
+            type = "range", order = 140, name = "Full opacity within",
+            desc = what:gsub("^%l", string.upper) .. "s closer than this keep the maximum opacity.",
+            disabled = usesMinimapSettings, min = 0, max = 2000, softMax = 500, step = 1,
+        },
+    }
+    for key, option in pairs(info.extraArgs or {}) do
+        general[key] = option
+    end
 
-GatherMateOptions = {
-    type = "group",
-    order = 1010,
+    local texts = {
+        [prefix .. "TextsDegrees"] = {
+            type = "range",
+            order = 10,
+            name = "Texts visibility angle",
+            desc = "Texts are shown only on the " .. what .. " you face within this angle. 0 = texts on every " .. what .. ".",
+            min = 0,
+            max = 30,
+            step = 0.5,
+        },
+        [prefix .. "OpacitySelected"] = {
+            type = "range",
+            order = 20,
+            name = "Opacity of visible texts",
+            desc = "Opacity of the " .. what .. " whose texts are shown.",
+            min = 0.1,
+            max = 1,
+            step = 0.01,
+            isPercent = true,
+            disabled = function() return Options[prefix .. "TextsDegrees"] == 0 end,
+        },
+    }
+    markerTextOptions(texts, prefix .. "Distance", prefix .. "ShowDistance", "Distance text", 100)
+    markerTextOptions(texts, prefix .. "Tta", prefix .. "ShowTTA", "Time to arrive", 200)
+    markerTextOptions(texts, prefix .. "Title", prefix .. "ShowTitle", info.titleHeader, 300)
+
+    return {
+        type = "group",
+        order = info.order,
+        name = info.name,
+        childGroups = "tab",
+        hidden = info.hidden,
+        args = {
+            Settings = { type = "group", order = 10, name = "General", args = general },
+            Texts = { type = "group", order = 20, name = "Texts", disabled = usesMinimapSettings, args = texts },
+        },
+    }
+end
+
+GatherMateOptions = markerModuleOptions("GatherMate", {
     name = "GatherMate2 / GatherLite",
-    childGroups = "tab",
-    -- only with one of the two addons loaded, like the Questie section
+    order = 1010,
+    description = "Shows gathering nodes from GatherMate2, or from GatherLite when GatherMate2 is not loaded. Which node types is decided by the addon's own settings.",
+    -- only with one of the two addons loaded
     hidden = function() return not (GatherMate2 or GatherLite) end,
-    args = {
-        Settings = {
-            type = "group",
-            order = 10,
-            name = "General",
-            args = {
-                ModuleDescription = {
-                    type = "description",
-                    order = 0,
-                    name = "|cnACCOUNT_WIDE_FONT_COLOR:This module will display potential locations of gathering nodes from GatherMate2, or from GatherLite when GatherMate2 is not loaded. Node types follow the addon's own display settings (GatherMate2 node filter, GatherLite minimap tracking).|r",
-                    fontSize = "medium",
-                },                GatherMateEnabled = {
-                    type = "toggle",
-                    name = "Enabled",
-                    width = "full",
-                    order = 10,
-                },
-                GatherMateRadius = {
-                    type = "range",
-                    order = 20,
-                    name = "Scanning radius",
-                    min = 1,
-                    max = 2000,
-                    softMin = 50,
-                    softMax = 1000,
-                    step = 1,
-                    bigStep = 5,
-                },
-                GatherMateInterval = {
-                    type = "range",
-                    order = 30,
-                    name = "Update throttle",
-                    desc = "Interval between adding/removing nodes on the HUD based on their distance, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 6 (default) and 'Update Frequency' is set to 60 (default), then visibility check will be run 60/6 = 10 times per second.",
-                    min = 1,
-                    max = 100,
-                    softMin = 1,
-                    softMax = 60,
-                    step = 1,
-                },
-                HeaderGatherMateNode = {
-                    type = "header",
-                    order = 50,
-                    name = "Node"
-                },
-                GatherMateOffset = {
-                    type = "range",
-                    order = 60,
-                    name = "Vertical adjustment",
-                    min = -64,
-                    max = 64,
-                    step = 0.5,
-                },
-                GatherMateScale = {
-                    type = "range",
-                    order = 70,
-                    name = "Scale",
-                    min = 0,
-                    max = 3,
-                    step = 0.01,
-                    isPercent = true,
-                },
-                HeaderGatherMateOpacity = {
-                    type = "header",
-                    order = 100,
-                    name = "Opacity"
-                },
-                GatherMateOpacityDescription = {
-                    type = "description",
-                    order = 110,
-                    name = "Nodes farther away fade from the maximum to the minimum opacity at the scanning radius.",
-                    fontSize = "medium",
-                },
-                GatherMateOpacityMin = {
-                    type = "range",
-                    order = 120,
-                    name = "Minimum opacity",
-                    min = 0,
-                    max = 1,
-                    step = 0.01,
-                    isPercent = true,
-                },
-                GatherMateOpacityMax = {
-                    type = "range",
-                    order = 130,
-                    name = "Maximum opacity",
-                    min = 0,
-                    max = 1,
-                    step = 0.01,
-                    isPercent = true,
-                },
-                GatherMateOpacityMinRadius = {
-                    type = "range",
-                    order = 140,
-                    name = "Full opacity within",
-                    desc = "Nodes closer than this keep the maximum opacity.",
-                    min = 0,
-                    max = 2000,
-                    softMax = 500,
-                    step = 1,
-                },
-            },
-        },
-        Texts = {
-            type = "group",
-            order = 20,
-            name = "Texts",
-            args = gatherMateTextArgs,
-        },
-    },
-}
+    what = "node",
+    titleHeader = "Node name",
+})
 
--- greyed out while the Questie markers use the minimap icons' settings
-local function questieUsesMinimapSettings() return Options.QuestieUseMinimapSettings end
-
-local questieTextArgs = {
-    QuestieTextsDegrees = {
-        type = "range",
-        order = 10,
-        name = "Texts visibility angle",
-        desc = "Texts are shown only on the icon you face within this angle. 0 = texts on every icon.",
-        min = 0,
-        max = 30,
-        step = 0.5,
-    },
-    QuestieOpacitySelected = {
-        type = "range",
-        order = 20,
-        name = "Opacity of visible texts",
-        desc = "Opacity of the icon whose texts are shown.",
-        min = 0.1,
-        max = 1,
-        step = 0.01,
-        isPercent = true,
-        disabled = function() return Options.QuestieTextsDegrees == 0 end,
-    },
-}
-markerTextOptions(questieTextArgs, "QuestieDistance", "QuestieShowDistance", "Distance text", 100)
-markerTextOptions(questieTextArgs, "QuestieTta", "QuestieShowTTA", "Time to arrive", 200)
-markerTextOptions(questieTextArgs, "QuestieTitle", "QuestieShowTitle", "Name", 300)
-
-QuestieOptions = {
-    type = "group",
-    order = 1020,
+QuestieOptions = markerModuleOptions("Questie", {
     name = "Questie",
-    childGroups = "tab",
+    order = 1020,
+    description = "Shows the icons Questie places on the minimap. Which ones is decided by Questie's own settings.",
     hidden = function() return not questieLoaded() end,
-    args = {
-        Settings = {
-            type = "group",
-            order = 10,
-            name = "General",
-            args = {
-                ModuleDescription = {
-                    type = "description",
-                    order = 0,
-                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Shows the icons Questie places on the minimap. Which ones is decided by Questie's own settings.|r\n",
-                    fontSize = "medium",
-                },
-                QuestieEnabled = {
-                    type = "toggle",
-                    name = "Enabled",
-                    desc = "Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.",
-                    width = 1.2,
-                    order = 10,
-                },
-                QuestieUseMinimapSettings = {
-                    type = "toggle",
-                    order = 11,
-                    name = "Use minimap icons settings",
-                    desc = "Use the settings of Minimap tracking -> Minimap icons (radius, throttle, position, scale, opacity, texts) instead of the ones below and on the Texts tab.",
-                    width = 1.2,
-                },
-                QuestieSupertrack = {
-                    type = "toggle",
-                    order = 12,
-                    name = "Use supertracker keybinding",
-                    desc = "The supertrack keybinding of the minimap icons (Minimap icons -> Supertracking) also tracks the Questie icon you face: the quest itself for turn-ins and objectives, else a waypoint with the icon's name.",
-                    width = 1.2,
-                },
-                -- the same setting as Speech -> Questie icons
-                SpeechQuestie = {
-                    type = "toggle",
-                    order = 13,
-                    name = "Use text to speech",
-                    desc = "Read out the Questie icon you face (the same setting as Speech -> Questie icons). Text to speech itself is turned on on the Speech tab.",
-                    width = 1.2,
-                    disabled = function() return not Options.SpeechEnabled end,
-                },
-                QuestieShowType = {
-                    type = "toggle",
-                    order = 14,
-                    name = "Show the type after the name",
-                    desc = "Adds the kind of icon in parentheses after the name, e.g. \"Innkeeper Farley (Innkeeper)\" or \"Princess Must Die! (Turn-in)\".",
-                    width = "full",
-                },
-                QuestieRadius = {
-                    type = "range",
-                    order = 20,
-                    name = "Scanning radius",
-                    desc = "Only icons within this distance are shown. 0 = the whole zone.",
-                    disabled = questieUsesMinimapSettings,
-                    min = 0,
-                    max = 5000,
-                    softMax = 2000,
-                    step = 1,
-                    bigStep = 10,
-                },
-                QuestieInterval = {
-                    type = "range",
-                    order = 30,
-                    name = "Update throttle",
-                    desc = "Interval between reading Questie's icons again, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 30 (default) and 'Update Frequency' is set to 60 (default), Questie's icons are read twice per second.",
-                    disabled = questieUsesMinimapSettings,
-                    min = 1,
-                    max = 300,
-                    softMax = 120,
-                    step = 1,
-                },
-                QuestieHideAtTarget = {
-                    type = "toggle",
-                    order = 40,
-                    name = "Hide icon at the tracked target",
-                    desc = "While the game tracks a target at an icon's place, only its supertracker pointer is shown.",
-                    width = "full",
-                    disabled = questieUsesMinimapSettings,
-                },
-                HeaderQuestieNode = {
-                    type = "header",
-                    order = 50,
-                    name = "Icon"
-                },
-                QuestieOffset = {
-                    type = "range",
-                    order = 60,
-                    name = "Vertical adjustment",
-                    disabled = questieUsesMinimapSettings,
-                    min = -64,
-                    max = 64,
-                    step = 0.5,
-                },
-                QuestieScale = {
-                    type = "range",
-                    order = 70,
-                    name = "Scale",
-                    disabled = questieUsesMinimapSettings,
-                    min = 0,
-                    max = 3,
-                    step = 0.01,
-                    isPercent = true,
-                },
-                HeaderQuestieOpacity = {
-                    type = "header",
-                    order = 100,
-                    name = "Opacity"
-                },
-                QuestieOpacityDescription = {
-                    type = "description",
-                    order = 110,
-                    name = "Icons farther away fade from the maximum to the minimum opacity at the scanning radius (1000 yards when it is 0).",
-                    fontSize = "medium",
-                },
-                QuestieOpacityMin = {
-                    type = "range",
-                    order = 120,
-                    name = "Minimum opacity",
-                    disabled = questieUsesMinimapSettings,
-                    min = 0,
-                    max = 1,
-                    step = 0.01,
-                    isPercent = true,
-                },
-                QuestieOpacityMax = {
-                    type = "range",
-                    order = 130,
-                    name = "Maximum opacity",
-                    disabled = questieUsesMinimapSettings,
-                    min = 0,
-                    max = 1,
-                    step = 0.01,
-                    isPercent = true,
-                },
-                QuestieOpacityMinRadius = {
-                    type = "range",
-                    order = 140,
-                    name = "Full opacity within",
-                    desc = "Icons closer than this keep the maximum opacity.",
-                    disabled = questieUsesMinimapSettings,
-                    min = 0,
-                    max = 2000,
-                    softMax = 500,
-                    step = 1,
-                },
-            },
-        },
-        Texts = {
-            type = "group",
-            order = 20,
-            name = "Texts",
-            disabled = questieUsesMinimapSettings,
-            args = questieTextArgs,
+    enabledDesc = "Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.",
+    what = "icon",
+    titleHeader = "Name",
+    extraArgs = {
+        QuestieShowType = {
+            type = "toggle",
+            order = 14,
+            name = "Show the type after the name",
+            desc = "Adds the kind of icon in parentheses after the name, e.g. \"Innkeeper Farley (Innkeeper)\" or \"Princess Must Die! (Turn-in)\".",
+            width = "full",
         },
     },
-}
+})
 
 function Addon:GetPointerTypes()
     local pointerTypes = {}
