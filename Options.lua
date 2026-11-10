@@ -2564,6 +2564,174 @@ GatherMateOptions = {
     },
 }
 
+-- Options of one marker text (distance, time to arrive, title): header, show, vertical adjustment
+-- and custom font. 'key' is the option name part (e.g. "QuestieDistance"), 'show' the name of
+-- its Show option (e.g. "QuestieShowDistance").
+local function markerTextOptions(args, key, show, header, order)
+    local function noCustomFont() return not Options[key .. "CustomFont"] end
+    args["Header" .. key] = { type = "header", order = order, name = header }
+    args[show] = { type = "toggle", order = order + 10, name = "Show" }
+    args[key .. "Offset"] = { type = "range", order = order + 20, name = "Vertical adjustment", min = -20, max = 20, step = 0.5 }
+    args[key .. "CustomFont"] = { type = "toggle", order = order + 30, name = "Use custom font" }
+    args[key .. "Font"] = {
+        type = "select", order = order + 40, name = "Font", width = 1,
+        dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists['font'], disabled = noCustomFont,
+    }
+    args[key .. "FontSize"] = { type = "range", order = order + 50, name = "Size", width = 3/4, min = 2, max = 36, step = 0.5, disabled = noCustomFont }
+    args[key .. "FontFlags"] = {
+        type = "select", order = order + 60, name = "Outline", width = 3/4,
+        values = { [""] = "None", ["OUTLINE"] = "Normal", ["THICKOUTLINE"] = "Thick" }, disabled = noCustomFont,
+    }
+    args[key .. "FontColor"] = {
+        type = "color", order = order + 70, name = "Color", width = 1/2, hasAlpha = true, disabled = noCustomFont,
+        get = function(info)
+            local color = Addon.db.profile[info[#info]]
+            return color.r, color.g, color.b, color.a
+        end,
+        set = function(info, r, g, b, a)
+            local color = Addon.db.profile[info[#info]]
+            color.r, color.g, color.b, color.a = r, g, b, a
+            Addon:UpdateHUDSettings()
+        end,
+    }
+end
+
+local questieTextArgs = {}
+markerTextOptions(questieTextArgs, "QuestieDistance", "QuestieShowDistance", "Distance text", 100)
+markerTextOptions(questieTextArgs, "QuestieTta", "QuestieShowTTA", "Time to arrive", 200)
+markerTextOptions(questieTextArgs, "QuestieTitle", "QuestieShowTitle", "Name", 300)
+questieTextArgs.QuestieShowType = {
+    type = "toggle",
+    order = 315,
+    name = "Show the type",
+    desc = "Adds the kind of icon in parentheses after the name, e.g. \"Innkeeper Farley (Innkeeper)\" or \"Princess Must Die! (Turn-in)\".",
+    disabled = function() return not Options.QuestieShowTitle end,
+}
+
+QuestieOptions = {
+    type = "group",
+    order = 1020,
+    name = "Questie",
+    childGroups = "tab",
+    hidden = function() return not questieLoaded() end,
+    args = {
+        Settings = {
+            type = "group",
+            order = 10,
+            name = "General",
+            args = {
+                ModuleDescription = {
+                    type = "description",
+                    order = 0,
+                    name = "|cnACCOUNT_WIDE_FONT_COLOR:Shows the icons Questie places on the minimap: available quests, quest turn-ins, quest objectives and the townsfolk chosen in Questie's minimap menu (innkeepers, trainers, mailboxes, ...). Which icons appear is decided by Questie's own settings.\n\nQuestie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.|r\n",
+                    fontSize = "medium",
+                },
+                QuestieEnabled = {
+                    type = "toggle",
+                    name = "Enabled",
+                    width = "full",
+                    order = 10,
+                },
+                QuestieRadius = {
+                    type = "range",
+                    order = 20,
+                    name = "Scanning radius",
+                    desc = "Only icons within this distance are shown. 0 = the whole zone.",
+                    min = 0,
+                    max = 5000,
+                    softMax = 2000,
+                    step = 1,
+                    bigStep = 10,
+                },
+                QuestieInterval = {
+                    type = "range",
+                    order = 30,
+                    name = "Update throttle",
+                    desc = "Interval between reading Questie's icons again, relative to the 'Update Frequency' set on the 'General' tab.\nIf set to 30 (default) and 'Update Frequency' is set to 60 (default), Questie's icons are read twice per second.",
+                    min = 1,
+                    max = 300,
+                    softMax = 120,
+                    step = 1,
+                },
+                QuestieHideAtTarget = {
+                    type = "toggle",
+                    order = 40,
+                    name = "Hide icon at the tracked target",
+                    desc = "While the game tracks a target at an icon's place, only its supertracker pointer is shown.",
+                    width = "full",
+                },
+                HeaderQuestieNode = {
+                    type = "header",
+                    order = 50,
+                    name = "Icon"
+                },
+                QuestieOffset = {
+                    type = "range",
+                    order = 60,
+                    name = "Vertical adjustment",
+                    min = -64,
+                    max = 64,
+                    step = 0.5,
+                },
+                QuestieScale = {
+                    type = "range",
+                    order = 70,
+                    name = "Scale",
+                    min = 0,
+                    max = 3,
+                    step = 0.01,
+                    isPercent = true,
+                },
+                HeaderQuestieOpacity = {
+                    type = "header",
+                    order = 100,
+                    name = "Opacity"
+                },
+                QuestieOpacityDescription = {
+                    type = "description",
+                    order = 110,
+                    name = "Icons farther away fade from the maximum to the minimum opacity at the scanning radius (1000 yards when it is 0).",
+                    fontSize = "medium",
+                },
+                QuestieOpacityMin = {
+                    type = "range",
+                    order = 120,
+                    name = "Minimum opacity",
+                    min = 0,
+                    max = 1,
+                    step = 0.01,
+                    isPercent = true,
+                },
+                QuestieOpacityMax = {
+                    type = "range",
+                    order = 130,
+                    name = "Maximum opacity",
+                    min = 0,
+                    max = 1,
+                    step = 0.01,
+                    isPercent = true,
+                },
+                QuestieOpacityMinRadius = {
+                    type = "range",
+                    order = 140,
+                    name = "Full opacity within",
+                    desc = "Icons closer than this keep the maximum opacity.",
+                    min = 0,
+                    max = 2000,
+                    softMax = 500,
+                    step = 1,
+                },
+            },
+        },
+        Texts = {
+            type = "group",
+            order = 20,
+            name = "Texts",
+            args = questieTextArgs,
+        },
+    },
+}
+
 function Addon:GetPointerTypes()
     local pointerTypes = {}
     for k, v in pairs(Options.Pointers) do
@@ -3297,6 +3465,7 @@ function Addon:ConstructDefaultsAndOptions()
     TrackingOption.args.POITrack = POITrackOptions
     TrackingOption.args.Group = GroupOptions
     TrackingOption.args.GatherMate = GatherMateOptions
+    TrackingOption.args.Questie = QuestieOptions
     self.Options.args.Supertracker = SupertrackerOptions
     buildPresetPreviews()
     self.Options.args.TrackingIntegrations = TrackingOption

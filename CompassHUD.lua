@@ -64,6 +64,7 @@ function updateHUD(force)
     setGroupIcons()
     setGatherMateNodes()
     setPOITrackNodes()
+    setQuestieNodes()
     updateSpeech()
 end
 
@@ -76,6 +77,7 @@ function onUpdate(_, elapsed)
     groupThrottle = groupThrottle + 1
     gatherMateThrottle = gatherMateThrottle + 1
     poiTrackThrottle = poiTrackThrottle + 1
+    questieThrottle = questieThrottle + 1
     updateHUD(false)
 end
 
@@ -377,6 +379,7 @@ function schedulePointerFontRefresh()
         updateGroupTexts()
         updateGatherMate()
         updatePoiTrack()
+        updateQuestie()
     end)
 end
 
@@ -546,6 +549,7 @@ function Addon:UpdateHUDSettings()
     updateGroupTexts()
     updateGatherMate()
     updatePoiTrack()
+    updateQuestie()
     UnregisterAttributeDriver(HUD, 'state-hudvisibility')
     RegisterAttributeDriver(HUD, "state-hudvisibility", Options.Visibility)
 end

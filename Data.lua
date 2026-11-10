@@ -22,7 +22,8 @@ timer = 0
 groupThrottle = 0
 gatherMateThrottle = 0
 poiTrackThrottle = 0
-player = {x = 0, y = 0, angle = 0}
+questieThrottle = 0
+player ={x = 0, y = 0, angle = 0}
 tomTomActive = nil
 poiTypeEnum = {
     DELVE = "Delve",
@@ -35,7 +36,6 @@ poiTypeEnum = {
     LINK = "Link",
     VIGNETTE = "Vignette",
     QUEST = "Quest",
-    QUESTIE = "Questie",
     OTHER = "Other",
 }
 poiCache = {}
