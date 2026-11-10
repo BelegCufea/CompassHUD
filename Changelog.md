@@ -1,4 +1,4 @@
-# v1.8.0 (not released yet)
+# v1.8.0 (10.11.2026)
 
 ## Good to know
 
