@@ -969,10 +969,16 @@ Addon.Options = {
                         SpeechSources = {
                             type = "group",
                             order = 20,
-                            name = "Read out",
+                            name = "Which markers to read out",
                             inline = true,
                             disabled = function() return not Options.SpeechEnabled end,
                             args = {
+                                SpeechSourcesDesc = {
+                                    type = "description",
+                                    order = 1,
+                                    name = "Of the selected kinds, the marker closest to your heading is read out. A module must also be enabled in Minimap tracking.",
+                                    width = "full",
+                                },
                                 SpeechSupertracked = {
                                     type = "toggle",
                                     order = 10,
@@ -1003,13 +1009,15 @@ Addon.Options = {
                                     width = 1,
                                     hidden = function() return not (GatherMate2 or GatherLite) end,
                                 },
-                                SpeechDistance = {
-                                    type = "toggle",
-                                    order = 90,
-                                    name = "Include the distance",
-                                    width = "full",
-                                },
                             },
+                        },
+                        SpeechDistance = {
+                            type = "toggle",
+                            order = 30,
+                            name = "Also read out the distance to the marker",
+                            desc = "E.g. \"Innkeeper Farley, 45 yards\". Yards or meters as set on the General tab.",
+                            width = "full",
+                            disabled = function() return not Options.SpeechEnabled end,
                         },
                         SpeechDegrees = {
                             type = "range",
