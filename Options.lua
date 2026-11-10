@@ -164,106 +164,91 @@ Addon.Options = {
                             end,
                         },
                         BlankScale = { type = "description", order = 69, fontSize = "small",name = "",width = "full", },
-                        SizeGroup = {
-                            type = "group",
+                        SizeMode = {
+                            type = "select",
+                            name = "Size by",
+                            desc = "Scale: width and height in percent of the default size.\nPixels: exact width and height of the compass, border included (before the overall Scale).\nThe markers keep their own size (Marker scale) either way.",
                             order = 70,
-                            name = "Size",
-                            inline = true,
-                            args = {
-                                SizeMode = {
-                                    type = "select",
-                                    name = "Size by",
-                                    desc = "Scale: width and height in percent of the default size.\nPixels: exact width and height of the compass, border included (before the overall Scale).\nThe markers keep their own size (Marker scale) either way.",
-                                    order = 1,
-                                    values = { SCALE = "Scale", PIXELS = "Pixels" },
-                                    sorting = { "SCALE", "PIXELS" },
-                                    style = "dropdown",
-                                    set = function(info, value)
-                                        if value == "PIXELS" and Options.SizeMode ~= "PIXELS" then
-                                            -- start from the current size
-                                            Options.Width = round(HUD:GetWidth())
-                                            Options.Height = round(HUD:GetHeight())
-                                        end
-                                        Options.SizeMode = value
-                                        Addon:UpdateHUDSettings()
-                                    end,
-                                },
-                                Width = {
-                                    type = "range",
-                                    name = "Width (pixels)",
-                                    order = 20,
-                                    min = 20,
-                                    max = 4000,
-                                    softMin = 100,
-                                    softMax = 2500,
-                                    step = 1,
-                                    hidden = function() return Options.SizeMode ~= "PIXELS" end,
-                                },
-                                Height = {
-                                    type = "range",
-                                    name = "Height (pixels)",
-                                    order = 30,
-                                    min = 4,
-                                    max = 300,
-                                    softMin = 8,
-                                    softMax = 100,
-                                    step = 1,
-                                    hidden = function() return Options.SizeMode ~= "PIXELS" end,
-                                },
-                                HorizontalScale = {
-                                    type = "range",
-                                    name = "Width",
-                                    order = 20,
-                                    hidden = function() return Options.SizeMode == "PIXELS" end,
-                                    min = 0.01,
-                                    max = 5,
-                                    softMin = 0.2,
-                                    softMax = 3,
-                                    step = 0.01,
-                                    isPercent = true,
-                                },
-                                VerticalScale = {
-                                    type = "range",
-                                    name = "Height",
-                                    order = 30,
-                                    hidden = function() return Options.SizeMode == "PIXELS" end,
-                                    min = 0.01,
-                                    max = 5,
-                                    softMin = 0.2,
-                                    softMax = 3,
-                                    step = 0.01,
-                                    isPercent = true,
-                                },
-                            },
+                            values = { SCALE = "Scale", PIXELS = "Pixels" },
+                            sorting = { "SCALE", "PIXELS" },
+                            style = "dropdown",
+                            set = function(info, value)
+                                if value == "PIXELS" and Options.SizeMode ~= "PIXELS" then
+                                    -- start from the current size
+                                    Options.Width = round(HUD:GetWidth())
+                                    Options.Height = round(HUD:GetHeight())
+                                end
+                                Options.SizeMode = value
+                                Addon:UpdateHUDSettings()
+                            end,
                         },
-                        StrataGroup = {
-                            type = "group",
+                        Width = {
+                            type = "range",
+                            name = "Width (pixels)",
+                            order = 71,
+                            min = 20,
+                            max = 4000,
+                            softMin = 100,
+                            softMax = 2500,
+                            step = 1,
+                            hidden = function() return Options.SizeMode ~= "PIXELS" end,
+                        },
+                        Height = {
+                            type = "range",
+                            name = "Height (pixels)",
+                            order = 72,
+                            min = 4,
+                            max = 300,
+                            softMin = 8,
+                            softMax = 100,
+                            step = 1,
+                            hidden = function() return Options.SizeMode ~= "PIXELS" end,
+                        },
+                        HorizontalScale = {
+                            type = "range",
+                            name = "Width",
+                            order = 71,
+                            hidden = function() return Options.SizeMode == "PIXELS" end,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            isPercent = true,
+                        },
+                        VerticalScale = {
+                            type = "range",
+                            name = "Height",
+                            order = 72,
+                            hidden = function() return Options.SizeMode == "PIXELS" end,
+                            min = 0.01,
+                            max = 5,
+                            softMin = 0.2,
+                            softMax = 3,
+                            step = 0.01,
+                            isPercent = true,
+                        },
+                        BlankStrata = { type = "description", order = 99, fontSize = "small",name = "",width = "full", },
+                        Strata = {
+                            type = "select",
+                            name = "Strata",
                             order = 100,
-                            name = "Frame strata",
-                            inline = true,
-                            args = {
-                                Strata = {
-                                    type = "select",
-                                    name = "Strata",
-                                    order = 1,
-                                    values = function()
-                                        return getStrateLevels()
-                                    end,
-                                    sorting = strataLevels,
-                                    style = "dropdown",
-                                },
-                                Level  = {
-                                    type = "range",
-                                    name = "Position in Strata",
-                                    order = 2,
-                                    min = 0,
-                                    max = 900,
-                                    softMin = 0,
-                                    softMax = 900,
-                                    step = 1,
-                                    bigStep = 10,
-                                },
-                            },
+                            values = function()
+                                return getStrateLevels()
+                            end,
+                            sorting = strataLevels,
+                            style = "dropdown",
+                        },
+                        Level  = {
+                            type = "range",
+                            name = "Position in Strata",
+                            order = 101,
+                            min = 0,
+                            max = 900,
+                            softMin = 0,
+                            softMax = 900,
+                            step = 1,
+                            bigStep = 10,
                         },
                         BlankVisibility = { type = "description", order = 499, fontSize = "small",name = "",width = "full", },
                         Visibility = {
