@@ -1,7 +1,9 @@
 -- Questie markers: the icons Questie places on the minimap (available quests, turn-ins, quest
--- objectives, townsfolk from its menu) as minimap icon nodes. Questie has no public API for its
--- icons, so its map module is read directly and every table and field is presence-checked; when
--- something is missing the source turns itself off. Called from setPOITrackNodes (Markers/POI.lua).
+-- objectives, townsfolk from its menu) as minimap icon nodes of one type. Which icons are shown is
+-- left to Questie's own settings: icons it hides (icon.hidden) are skipped. Questie has no public
+-- API for its icons, so its map module is read directly and every table and field is
+-- presence-checked; when something is missing the source turns itself off.
+-- Called from setPOITrackNodes (Markers/POI.lua).
 local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
@@ -10,16 +12,8 @@ local pairs, ipairs, type, pcall = pairs, ipairs, type, pcall
 local HBD = LibStub("HereBeDragons-2.0")
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 
--- Questie icon types (data.Type) to minimap icon filter types
-local questieTypes = {
-    available = poiTypeEnum.QUESTIE_AVAILABLE,
-    complete = poiTypeEnum.QUESTIE_COMPLETE,
-    monster = poiTypeEnum.QUESTIE_OBJECTIVE,
-    object = poiTypeEnum.QUESTIE_OBJECTIVE,
-    item = poiTypeEnum.QUESTIE_OBJECTIVE,
-    event = poiTypeEnum.QUESTIE_OBJECTIVE,
-    manual = poiTypeEnum.QUESTIE_TOWNSFOLK,
-}
+-- Questie icon types (data.Type) of quests in the quest log: the supertrack keybinding tracks them
+local questLogTypes = { complete = true, monster = true, object = true, item = true, event = true }
 
 local questieMap -- Questie's map module, once found
 local questieBroken = false -- something expected was missing: stop trying for this session
@@ -46,8 +40,7 @@ local function addQuestieIcon(pois, frameName)
     local icon = _G[frameName]
     if not (icon and icon.miniMapIcon and icon.UiMapID == player.uiMapID and not icon.hidden) then return end
     local data = icon.data
-    local trackType = type(data) == "table" and questieTypes[data.Type]
-    if not (trackType and Options.POITrackFilter[trackType] and icon.x and icon.y) then return end
+    if not (type(data) == "table" and data.Type and icon.x and icon.y) then return end
 
     local id = "Questie_" .. frameName
     local node = pois[id]
@@ -58,12 +51,11 @@ local function addQuestieIcon(pois, frameName)
     end
     local xZone, yZone = icon.x / 100, icon.y / 100
     if not node then
-        local quest = data.QuestData
-        local isQuest = trackType ~= poiTypeEnum.QUESTIE_TOWNSFOLK
+        local quest = data.Type ~= "manual" and data.QuestData
         node = addPOITrackNode(id, {
-            name = (isQuest and quest and quest.name) or data.Name,
-            -- turn-ins and objectives are quests in the log: the supertrack keybinding tracks them
-            questID = (trackType == poiTypeEnum.QUESTIE_COMPLETE or trackType == poiTypeEnum.QUESTIE_OBJECTIVE) and data.Id or nil,
+            -- quest title for quest icons, NPC/object name for townsfolk
+            name = (quest and quest.name) or data.Name,
+            questID = questLogTypes[data.Type] and data.Id or nil,
             atlasName = "QuestNormal", -- replaced by Questie's texture below
             questieData = data,
         }, xZone, yZone, 1)
@@ -76,20 +68,14 @@ local function addQuestieIcon(pois, frameName)
         node.x, node.y = xWorld, yWorld
         node.frame.x, node.frame.y = xWorld, yWorld
     end
-    node.trackType = trackType
+    node.trackType = poiTypeEnum.QUESTIE
     node.visible = true
     poiNodes.seen[id] = true
 end
 
-function questieTypeEnabled()
-    local filter = Options.POITrackFilter
-    return filter[poiTypeEnum.QUESTIE_AVAILABLE] or filter[poiTypeEnum.QUESTIE_COMPLETE]
-        or filter[poiTypeEnum.QUESTIE_OBJECTIVE] or filter[poiTypeEnum.QUESTIE_TOWNSFOLK]
-end
-
 -- Adds/refreshes the Questie icons of the current map in 'pois' (poiTrackPointTable[player.uiMapID]).
 function setQuestieNodes(pois)
-    if not questieTypeEnabled() then return end
+    if not Options.POITrackFilter[poiTypeEnum.QUESTIE] then return end
     local map = getQuestieMap()
     if not map then return end
     -- quest icons: { [questId] = { [frameName] = frameName } }
@@ -100,15 +86,13 @@ function setQuestieNodes(pois)
             end
         end
     end
-    -- townsfolk: { [category] = { [npcId] = { frameName, ... } } }
-    if Options.POITrackFilter[poiTypeEnum.QUESTIE_TOWNSFOLK] then
-        for _, ids in pairs(map.manualFrames) do
-            if type(ids) == "table" then
-                for _, names in pairs(ids) do
-                    if type(names) == "table" then
-                        for _, name in ipairs(names) do
-                            addQuestieIcon(pois, name)
-                        end
+    -- townsfolk chosen in Questie's menu: { [category] = { [npcId] = { frameName, ... } } }
+    for _, ids in pairs(map.manualFrames) do
+        if type(ids) == "table" then
+            for _, names in pairs(ids) do
+                if type(names) == "table" then
+                    for _, name in ipairs(names) do
+                        addQuestieIcon(pois, name)
                     end
                 end
             end

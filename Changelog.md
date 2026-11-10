@@ -2,7 +2,7 @@
 
 ## New
 
-- **Questie** support (experimental): the icons Questie places on the minimap can be shown on the compass, as four new minimap icon types (**Minimap icons → Filter**, shown when Questie is loaded, off by default): **available quests**, **quest turn-ins**, **quest objectives** and **townsfolk** (the NPCs chosen in Questie's minimap menu: innkeepers, trainers, mailboxes, ...). Questie's own filters apply. Questie has no public API for its icons, so a Questie update may turn this off until CompassHUD is updated (#23).
+- **Questie** support (experimental): the icons Questie places on the minimap can be shown on the compass: minimap icon type **Questie icons** (**Minimap icons → Filter**, shown when Questie is loaded, off by default). Which icons are shown (available quests, turn-ins, objectives, townsfolk such as innkeepers, trainers or mailboxes) is decided by Questie's own settings and menus. Questie has no public API for its icons, so a Questie update may turn this off until CompassHUD is updated (#23).
 
 - **Speech** tab (accessibility, off by default): reads out the name of the marker in front of you with the game's text to speech. Each marker is read once, when you turn to face it. Covers minimap icons and the supertracked target, optionally with the distance. Settings for the facing angle, a delay (so turning past markers does not read them all), the voice (any voice the game offers), rate and volume, and a **Test** button (#21).
 

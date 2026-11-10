@@ -35,10 +35,7 @@ poiTypeEnum = {
     LINK = "Link",
     VIGNETTE = "Vignette",
     QUEST = "Quest",
-    QUESTIE_AVAILABLE = "QuestieAvailable",
-    QUESTIE_COMPLETE = "QuestieComplete",
-    QUESTIE_OBJECTIVE = "QuestieObjective",
-    QUESTIE_TOWNSFOLK = "QuestieTownsfolk",
+    QUESTIE = "Questie",
     OTHER = "Other",
 }
 poiCache = {}
