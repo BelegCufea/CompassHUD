@@ -1295,7 +1295,7 @@ local poiTrackFilterArgs = {
     },
     Quests = {
         type = "group",
-        order = 40,
+        order = 15,
         name = "Quests",
         desc = "Quests from your quest log.",
         args = {
@@ -1317,11 +1317,13 @@ local poiTrackFilterArgs = {
             POITrackQuestWhich = {
                 type = "select",
                 order = 4,
-                name = "Which",
+                name = "Progress",
+                desc = "Show all quests, only the ones still in progress, or only the ones ready to turn in.",
                 width = 1.0,
-                values = { both = "Both", active = "In progress", complete = "Ready to turn in" },
+                values = { both = "All", active = "In progress", complete = "Ready to turn in" },
                 sorting = { "both", "active", "complete" },
             },
+            QuestsSpacer = { type = "description", order = 4.5, name = "", width = 0.15 },
             POITrackQuestIcon = {
                 type = "select",
                 order = 5,

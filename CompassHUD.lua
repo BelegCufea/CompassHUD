@@ -456,7 +456,7 @@ function migrateProfile()
         Options.IconScale = Options.VerticalScale
         Options.SizeVersion = 1
     end
-    -- the "only ready to turn in" quest filter became Filter tab -> Quests -> Which. Only a true
+    -- the "only ready to turn in" quest filter became Filter tab -> Quests -> Progress. Only a true
     -- value was ever saved (false was the default, which AceDB does not store).
     local filter = Options.POITrackFilter
     if filter and filter[poiTypeEnum.QUEST .. "_complete"] ~= nil then
