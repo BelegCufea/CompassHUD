@@ -314,3 +314,175 @@ function layoutNodeTexts(frame, flipped, showDistance, showTTA, showTitle, dista
     frame.TimeText:SetShown(showTTA)
     frame.Title:SetShown(showTitle)
 end
+
+------------------------------------------------------------------------------------------------
+-- Integration marker modules (Questie, GatherMate2/GatherLite) share their settings, frames and
+-- drawing. A module is a table:
+--   prefix    option name prefix ("Questie", "GatherMate"); its settings mirror the minimap
+--             icons' (POITrack...) names, see markerSetting
+--   nodes     its nodes by key: { frame, instance (uiMapID), x, y (world), name, angle, distance }
+--   framePool frames given back by released nodes (WoW never frees frames)
+--   heading   node closest to the facing direction, set by drawMarkerNodes
+--   title     optional function(node) -> text of the name line (default node.name)
+------------------------------------------------------------------------------------------------
+
+-- A module setting: its own (<prefix><name>) or, with "Use minimap icons settings"
+-- (<prefix>UseMinimapSettings), the minimap icons' one (POITrack<name>).
+function markerSetting(module, name)
+    return Options[(Options[module.prefix .. "UseMinimapSettings"] and "POITrack" or module.prefix) .. name]
+end
+
+local function markerHideAtTarget(module)
+    -- the minimap icons' own setting has an older name
+    if module.prefix == "POITrack" or Options[module.prefix .. "UseMinimapSettings"] then
+        return Options.HidePOIAtTarget
+    end
+    return Options[module.prefix .. "HideAtTarget"]
+end
+
+local function markerTitle(module, node)
+    return module.title and module.title(node) or node.name or ""
+end
+
+-- A frame for a new node: from the module's pool, or a new one.
+function acquireMarkerFrame(module)
+    local frame = table.remove(module.framePool)
+    if frame then
+        return frame
+    end
+    frame = CreateFrame("FRAME", nil, HUD)
+    frame:SetSize(iconSize, iconSize)
+    frame:SetPoint("CENTER")
+    frame.texture = frame:CreateTexture(nil, "ARTWORK")
+    frame.texture:SetAllPoints(frame)
+    frame:Hide()
+    frame.DistanceText = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    frame.DistanceText:SetJustifyV("TOP")
+    frame.DistanceText:SetSize(0, 16)
+    frame.TimeText = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    frame.TimeText:SetJustifyV("TOP")
+    frame.TimeText:SetSize(0, 16)
+    frame.Title = frame:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+    frame.Title:SetJustifyV("TOP")
+    frame.Title:SetSize(0, 16)
+    frame.type = module.prefix
+    frame.elapsed = 0
+    frame:SetScript("OnUpdate", questPointerSetTexts)
+    return frame
+end
+
+-- Removes a node and gives its frame back to the module's pool.
+function releaseMarkerNode(module, key)
+    local node = module.nodes[key]
+    module.nodes[key] = nil
+    if node == module.heading then
+        module.heading = nil
+    end
+    if node and node.frame then
+        local frame = node.frame
+        frame:Hide()
+        -- per-target text state must not carry over to the next node using this frame
+        frame.minDistance = nil
+        frame.ttaLastDistance = nil
+        table.insert(module.framePool, frame)
+        node.frame = nil
+    end
+end
+
+-- Applies the module's size, fonts and text layout to a node (new node, or settings changed).
+function styleMarkerNode(module, node)
+    local frame = node.frame
+    local size = markerSetting(module, "Scale")
+    local scale = Options.Scale * Options.IconScale * size
+    frame:SetSize(iconSize * size, iconSize * size)
+    for _, text in ipairs({ { frame.DistanceText, "Distance" }, { frame.TimeText, "Tta" }, { frame.Title, "Title" } }) do
+        local key = text[2]
+        setPointerFont(text[1], scale, markerSetting(module, key .. "CustomFont"), markerSetting(module, key .. "Font"),
+            markerSetting(module, key .. "FontSize"), markerSetting(module, key .. "FontFlags"), markerSetting(module, key .. "FontColor"))
+    end
+    setTitleWidth(frame.Title)
+    frame.Title:SetText(markerTitle(module, node))
+
+    node.flipped = markerSetting(module, "Offset") > 0
+    -- which texts are shown is decided on every update (texts visibility angle)
+    layoutNodeTexts(frame, node.flipped, markerSetting(module, "ShowDistance"), markerSetting(module, "ShowTTA"),
+        markerSetting(module, "ShowTitle"), markerSetting(module, "DistanceOffset"), markerSetting(module, "TtaOffset"),
+        markerSetting(module, "TitleOffset"))
+end
+
+-- The scanning radius; 0 (whole zone, minimap icons) is taken as the fading distance.
+function markerRadius(module)
+    local radius = markerSetting(module, "Radius")
+    return radius > 0 and radius or markerSetting(module, "OpacityMaxRadius")
+end
+
+-- Shows the texts of a node (shown = true) or hides them all; hidden ones also skip their updates.
+local function showMarkerTexts(module, frame, shown)
+    local distance = shown and markerSetting(module, "ShowDistance")
+    local tta = shown and markerSetting(module, "ShowTTA")
+    frame.DistanceText:SetShown(distance)
+    frame.distanceHidden = not distance
+    frame.TimeText:SetShown(tta)
+    frame.timeHidden = not tta
+    frame.Title:SetShown(shown and markerSetting(module, "ShowTitle"))
+end
+
+-- Places the module's nodes on the HUD (every update): position by angle, opacity by distance,
+-- texts on all nodes or only the faced one (texts visibility angle), and module.heading.
+function drawMarkerNodes(module)
+    local minAngle = math.huge
+    module.heading = nil
+    local visible = math.rad(Options.Degrees) / 2
+    local offset = markerSetting(module, "Offset")
+    -- 0: texts on every node; else only on the node faced within this angle
+    local textsDegrees = markerSetting(module, "TextsDegrees")
+    -- opacity fades from OpacityMinRadius to the scanning radius; no span means no fade (not 0/0)
+    local opacityMin, opacityMax = markerSetting(module, "OpacityMin"), markerSetting(module, "OpacityMax")
+    local opacityMinRadius = markerSetting(module, "OpacityMinRadius")
+    local fadeEnd = markerRadius(module)
+    local fadeSpan = fadeEnd - opacityMinRadius
+    local fadeFactor = fadeSpan > 0 and (opacityMin - opacityMax) / fadeSpan or 0
+    -- the game's tracked target, if nodes at its place should be hidden (see shownGameTarget)
+    local target = markerHideAtTarget(module) and shownGameTarget
+    for _, node in pairs(module.nodes) do
+        local shown = false
+        local angle = player.angle and relativeAngle(node.instance, node.x, node.y)
+        node.angle = angle
+        if angle then
+            node.distance = HBD:GetWorldDistance(node.instance, player.x, player.y, node.x, node.y)
+            -- picked before the target check: the keybinding can still toggle its tracking off
+            if math.abs(angle) < minAngle then
+                minAngle = math.abs(angle)
+                module.heading = node
+            end
+            if angle < visible and angle > -visible then
+                node.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, offset)
+                shown = true
+                -- already shown as the supertracker pointer: no second marker
+                if target then
+                    local distance = HBD:GetWorldDistance(node.instance, node.x, node.y, target.x, target.y)
+                    if distance and distance <= SAME_POINT_YARDS then
+                        shown = false
+                    end
+                end
+            end
+        end
+        if shown then
+            local distance = node.distance
+            local opacity = opacityMax
+            if distance and distance > opacityMinRadius then
+                opacity = distance >= fadeEnd and opacityMin or opacityMax + (distance - opacityMinRadius) * fadeFactor
+            end
+            node.frame:SetAlpha(opacity)
+            showMarkerTexts(module, node.frame, textsDegrees == 0)
+        end
+        node.frame:SetShown(shown)
+    end
+
+    -- texts only on the faced node: shown, and at its own opacity
+    local heading = module.heading
+    if textsDegrees > 0 and heading and heading.frame:IsShown() and minAngle <= math.rad(textsDegrees) then
+        showMarkerTexts(module, heading.frame, true)
+        heading.frame:SetAlpha(markerSetting(module, "OpacitySelected"))
+    end
+end
