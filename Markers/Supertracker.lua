@@ -38,11 +38,17 @@ function updatePointerFrame(questPointer)
     local timeTextPosition = - ((options.showDistance and (textLineHeight(questPointer.DistanceText))) or 0) - options.ttaOffset + 2
     local questTextPosition = - ((options.showDistance and (textLineHeight(questPointer.DistanceText))) or 0) - ((options.showTTA and (textLineHeight(questPointer.TimeText))) or 0) - options.questOffset + 4
     local cropX, cropY = pointer.crop / iconSize, pointer.crop / iconSize
-    questPointer.texture:SetTexCoord(cropX, 1 - cropX, cropY, 1 - cropY)
+    -- an icon that is a part of a texture sheet (applyPointerTexture) keeps its part, unflipped
+    local iconCoords = pointer.iconTexCoords
+    if iconCoords then
+        questPointer.texture:SetTexCoord(iconCoords[1], iconCoords[2], iconCoords[3], iconCoords[4])
+    else
+        questPointer.texture:SetTexCoord(cropX, 1 - cropX, cropY, 1 - cropY)
+    end
     questPointer.flipped = false
     if questPointer.position > 0 then
         questPointer.flipped = true
-        if pointer.rotateIcon or (completed and (options.textureAltRotate == 1)) or (not completed and (options.textureRotate == 1)) then
+        if not iconCoords and (pointer.rotateIcon or (completed and (options.textureAltRotate == 1)) or (not completed and (options.textureRotate == 1))) then
             questPointer.texture:SetTexCoord(cropX, 1 - cropX, 1 - cropY, cropY)
         end
         point = "BOTTOM"
@@ -298,11 +304,17 @@ function applyPointerTexture(entry)
     local moreArgs = entry.moreArgs
     entry.overrideRotation = false
     entry.rotateIcon = false
+    entry.iconTexCoords = nil
     entry.circle = entry.category == Enum.QuestClassification.WorldQuest
     frame.scaleMultiplier = 1.5
+    local color = nil
     if entry.texture and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         frame.texture:SetTexture(entry.texture)
         frame.scaleMultiplier = 1
+        -- a part of a texture sheet and its tint (e.g. a HandyNotes icon tracked with the keybinding);
+        -- the coordinates are applied by updatePointerFrame
+        entry.iconTexCoords = moreArgs and moreArgs.texCoords
+        color = moreArgs and moreArgs.color
         if frame.pointerType == questPointerIdent .. tomTom then
             -- TomTom's minimap arrow: turns like the rotating pointer textures (at the strip and,
             -- with "Pointers stay on the compass", sideways toward the target)
@@ -318,6 +330,7 @@ function applyPointerTexture(entry)
         frame.texture:SetAtlas(entry.completed and options.atlasAltID or options.atlasID)
         entry.circle = false
     end
+    frame.texture:SetVertexColor(color and color.r or 1, color and color.g or 1, color and color.b or 1, color and color.a or 1)
 end
 
 function updatePointerTextures()

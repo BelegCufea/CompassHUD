@@ -195,9 +195,11 @@ function updateSuperTrackedTexture(activeID)
     end
 
     -- === Texture or atlas, same choice as applyPointerTexture ===
-    local texture, atlas
+    local texture, atlas, texCoords
     if questPoint.texture and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         texture = questPoint.texture
+        -- a part of a texture sheet (e.g. a HandyNotes icon)
+        texCoords = questPoint.iconTexCoords
     elseif questPoint.atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         atlas = questPoint.atlasName
     else
@@ -211,16 +213,20 @@ function updateSuperTrackedTexture(activeID)
     -- addons) are not made to re-layout all the time.
     local last = STtexture.last
     if STtexture.applied and last.valid and last.texture == texture and last.atlas == atlas
-        and last.scale == scale and last.circle == circle then
+        and last.scale == scale and last.circle == circle and last.texCoords == texCoords then
         -- with a texture applied the icon has no atlas; an atlas there means the game set its own
         if not icon.GetAtlas or icon:GetAtlas() == atlas then
             return
         end
     end
     last.valid, last.texture, last.atlas, last.scale, last.circle = true, texture, atlas, scale, circle
+    last.texCoords = texCoords
 
     if texture then
         icon:SetTexture(texture)
+        -- (SetTexture keeps the coordinates the icon had, e.g. from the game's atlas)
+        local c = texCoords
+        icon:SetTexCoord(c and c[1] or 0, c and c[2] or 1, c and c[3] or 0, c and c[4] or 1)
     else
         icon:SetAtlas(atlas)
     end

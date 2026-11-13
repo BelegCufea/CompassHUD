@@ -254,6 +254,8 @@ function resolveSuperTrackedTarget(event,...)
                     setSupertrackTarget(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, poiTracked.atlasName, poiTracked.texture, {
                         ["stRetexture"] = Options.POITrackSTRetexture,
                         ["worldmapTexture"] = Options.POITrackWorldmapTexture,
+                        ["texCoords"] = poiTracked.texCoords,
+                        ["color"] = poiTracked.color,
                     })
                 else
                     name = getTomTomWaypointTitle(point.uiMapID, point.position.x, point.position.y)
