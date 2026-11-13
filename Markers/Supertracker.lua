@@ -1,6 +1,6 @@
 -- The supertracker pointer: the one target the game tracks (quest, map pin, POI/vignette pin, user
 -- waypoint) plus the TomTom arrow target. Not a marker module (Markers/Common.lua): one target at a
--- time, fed by events (updateQuest), with its own look per pointer type (Options.Pointers).
+-- time, fed by events (setSupertrackTarget), with its own look per pointer type (Options.Pointers).
 local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
@@ -18,10 +18,10 @@ local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
 local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
 local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
 
-function updateQuestIcon(questPointer)
+function updatePointerFrame(questPointer)
     local scale = Options.Scale * Options.IconScale
     local options = Options.Pointers[questPointer.pointerType]
-    local pointer = questPointsTable[questPointer.questID]
+    local pointer = supertrackTargets[questPointer.questID]
     local completed = pointer.completed
     questPointer.position = options.pointerOffset * textureHeight * -1
     local size = iconSize * (completed and options.textureAltScale or options.textureScale) * (questPointer.scaleMultiplier or 1.5)
@@ -82,19 +82,19 @@ function updateQuestIcon(questPointer)
     end
 end
 
--- Frames of quest pointers whose quest is no longer tracked (see setQuestsIcons), for reuse:
+-- Frames of quest pointers whose quest is no longer tracked (see setSupertrackerPointers), for reuse:
 -- WoW never frees frames.
-questFramePool = {}
+pointerFramePool = {}
 
-function createQuestIcon(questID, questType)
+function createPointerFrame(questID, questType)
     local pointerType = getPointerType(questID, questType)
     if not Options.Pointers[pointerType] then
         return
     end
     if not Options.Pointers[pointerType].enabled then return end
-    local questPointer = table.remove(questFramePool)
+    local questPointer = table.remove(pointerFramePool)
     if questPointer then
-        -- a reused frame: everything else is set by updateQuest/updateQuestIcon
+        -- a reused frame: everything else is set by setSupertrackTarget/updatePointerFrame
         HUD.pointers[questID] = questPointer
         questPointer.questID = questID
         questPointer.pointerType = pointerType
@@ -105,7 +105,7 @@ function createQuestIcon(questID, questType)
         questPointer.texture:SetAtlas(Options.Pointers[pointerType].atlasID)
         questPointer.arrowTexture:Hide()
         questPointer.elapsed = 0
-        updateQuestIcon(questPointer)
+        updatePointerFrame(questPointer)
         return questPointer
     end
     questPointer = CreateFrame("FRAME", nil, HUD)
@@ -148,7 +148,7 @@ function createQuestIcon(questID, questType)
     questPointer.QuestText:SetSize(0, 16)
     questPointer.QuestText:SetParent(questPointer)
 
-    updateQuestIcon(questPointer)
+    updatePointerFrame(questPointer)
 
     questPointer.elapsed = 0
     questPointer:SetScript("OnUpdate", questPointerSetTexts)
@@ -158,10 +158,10 @@ end
 -- Two targets closer than this are the same place (e.g. an addon's TomTom waypoint and its map pin copy)
 SAME_POINT_YARDS = 10
 -- The game's super-tracked target while its pointer is enabled and on the player's continent, else nil.
--- Set by setQuestsIcons on every update; other marker types use it to avoid a second marker there.
+-- Set by setSupertrackerPointers on every update; other marker types use it to avoid a second marker there.
 shownGameTarget = nil
 
-function setQuestsIcons()
+function setSupertrackerPointers()
     local vignetteGUID = GetSuperTrackedVignette()
     local supertrackingType = GetHighestPrioritySuperTrackingType()
     local isTrackingUserWaypoint = (supertrackingType == Enum.SuperTrackingType.UserWaypoint)
@@ -182,30 +182,30 @@ function setQuestsIcons()
     -- A TomTom waypoint at the game's target (addons often set both) is shown once, as the game's
     -- pointer, if that one is enabled. Checked on every update, so the TomTom pointer is back as
     -- soon as the game tracks something else.
-    local target = activeID and questPointsTable[activeID]
+    local target = activeID and supertrackTargets[activeID]
     shownGameTarget = target and target.x and target.y and target.frame and target.instance == playerInstance
         and Options.Pointers[target.frame.pointerType].enabled and target or nil
 
     local hideTomTom = false
-    local tt = questPointsTable[tomTom]
+    local tt = supertrackTargets[tomTom]
     if Options.HideTomTomAtTarget and tt and tt.track and tt.x and tt.y and target and target.x and target.y
         and target.instance == tt.instance and target.frame and Options.Pointers[target.frame.pointerType].enabled then
         local distance = HBD:GetWorldDistance(target.instance, tt.x, tt.y, target.x, target.y)
         hideTomTom = distance ~= nil and distance <= SAME_POINT_YARDS
     end
 
-	for questID, quest in pairs(questPointsTable) do
+	for questID, quest in pairs(supertrackTargets) do
         -- A quest that is no longer the tracked one is dropped (it was tracked once and stayed for the
         -- session); its frame is reused. Tracking it again creates a new entry on the next event.
         if questID > 0 and questID ~= trackedQuest then
-            questPointsTable[questID] = nil
+            supertrackTargets[questID] = nil
             if quest.frame then
                 local frame = quest.frame
                 frame:Hide()
                 frame.minDistance = nil
                 frame.ttaLastDistance = nil
                 HUD.pointers[questID] = nil
-                table.insert(questFramePool, frame)
+                table.insert(pointerFramePool, frame)
             end
             quest = nil
         end
@@ -271,7 +271,7 @@ end
 
 -- Sets a quest pointer's texture from its target data and pointer type settings:
 -- the world map texture/atlas if enabled (per type, or per target via moreArgs), else the type's atlas.
--- Shared by updateQuest and updatePointerTextures so a settings change gives the same result as an event.
+-- Shared by setSupertrackTarget and updatePointerTextures so a settings change gives the same result as an event.
 function applyPointerTexture(entry)
     local frame = entry.frame
     local options = Options.Pointers[frame.pointerType]
@@ -294,18 +294,18 @@ function applyPointerTexture(entry)
 end
 
 function updatePointerTextures()
-    for _, v in pairs(questPointsTable) do
+    for _, v in pairs(supertrackTargets) do
         -- no frame: the pointer category is disabled
         if v.frame and Options.Pointers[v.frame.pointerType] then
             applyPointerTexture(v)
-            updateQuestIcon(v.frame)
+            updatePointerFrame(v.frame)
         end
     end
 end
 
-function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasName, texture, moreArgs)
-    if type(questPointsTable[questID]) ~= "table" then
-        questPointsTable[questID] = {}
+function setSupertrackTarget(questID, x, y, uiMapID, questType, title, completed, atlasName, texture, moreArgs)
+    if type(supertrackTargets[questID]) ~= "table" then
+        supertrackTargets[questID] = {}
     end
     title = title or GetTitleForQuestID(questID) or ""
     local HBDuiMapID = uiMapID
@@ -325,47 +325,47 @@ function updateQuest(questID, x, y, uiMapID, questType, title, completed, atlasN
     end
 
     local lx, ly, instance = HBD:GetWorldCoordinatesFromZone(x, y, HBDuiMapID)
-    questPointsTable[questID].x = lx
-    questPointsTable[questID].y = ly
-    questPointsTable[questID].uiMapID = uiMapID
-    questPointsTable[questID].instance = instance
-    questPointsTable[questID].text = title
-    questPointsTable[questID].completed = completed
-    questPointsTable[questID].atlasName = atlasName
-    questPointsTable[questID].texture = texture
-    questPointsTable[questID].moreArgs = moreArgs
-    questPointsTable[questID].overrideRotation = false
-    questPointsTable[questID].crop = 0
-    questPointsTable[questID].category = getPointerCategory(questID, questType)
-    questPointsTable[questID].circle = false
+    supertrackTargets[questID].x = lx
+    supertrackTargets[questID].y = ly
+    supertrackTargets[questID].uiMapID = uiMapID
+    supertrackTargets[questID].instance = instance
+    supertrackTargets[questID].text = title
+    supertrackTargets[questID].completed = completed
+    supertrackTargets[questID].atlasName = atlasName
+    supertrackTargets[questID].texture = texture
+    supertrackTargets[questID].moreArgs = moreArgs
+    supertrackTargets[questID].overrideRotation = false
+    supertrackTargets[questID].crop = 0
+    supertrackTargets[questID].category = getPointerCategory(questID, questType)
+    supertrackTargets[questID].circle = false
 
 
-    if questPointsTable[questID].category == Enum.QuestClassification.WorldQuest then
-        questPointsTable[questID].texture = getWQicon(questID)
-        questPointsTable[questID].circle = true
+    if supertrackTargets[questID].category == Enum.QuestClassification.WorldQuest then
+        supertrackTargets[questID].texture = getWQicon(questID)
+        supertrackTargets[questID].circle = true
     end
 
-    if not questPointsTable[questID].frame then
-        questPointsTable[questID].frame = createQuestIcon(questID, questType)
+    if not supertrackTargets[questID].frame then
+        supertrackTargets[questID].frame = createPointerFrame(questID, questType)
     else
         -- The frame is reused for this quest ID: re-check its pointer type, which can change once
         -- classification or frequency data has loaded (it may have started as "Unknown pointer")
         local pointerType = getPointerType(questID, questType)
         if Options.Pointers[pointerType] then
-            questPointsTable[questID].frame.pointerType = pointerType
+            supertrackTargets[questID].frame.pointerType = pointerType
         end
     end
     -- Disabled pointer categories get no frame. The target data above is kept, and the frame
     -- is created by the next update after the category is enabled again.
-    if not questPointsTable[questID].frame then return end
-    questPointsTable[questID].frame.scaleMultiplier = 1.5
-    questPointsTable[questID].frame.minDistance = nil
-    questPointsTable[questID].frame.ttaLastDistance = nil -- new target: no "moving away" from the old one
-    questPointsTable[questID].frame.QuestText:SetText(title)
-    questPointsTable[questID].frame.type = "Quest"
-    questPointsTable[questID].frame.instance = questPointsTable[questID].instance
-    questPointsTable[questID].frame.x = questPointsTable[questID].x
-    questPointsTable[questID].frame.y = questPointsTable[questID].y
-    applyPointerTexture(questPointsTable[questID])
-    updateQuestIcon(questPointsTable[questID].frame)
+    if not supertrackTargets[questID].frame then return end
+    supertrackTargets[questID].frame.scaleMultiplier = 1.5
+    supertrackTargets[questID].frame.minDistance = nil
+    supertrackTargets[questID].frame.ttaLastDistance = nil -- new target: no "moving away" from the old one
+    supertrackTargets[questID].frame.QuestText:SetText(title)
+    supertrackTargets[questID].frame.type = "Quest"
+    supertrackTargets[questID].frame.instance = supertrackTargets[questID].instance
+    supertrackTargets[questID].frame.x = supertrackTargets[questID].x
+    supertrackTargets[questID].frame.y = supertrackTargets[questID].y
+    applyPointerTexture(supertrackTargets[questID])
+    updatePointerFrame(supertrackTargets[questID].frame)
 end

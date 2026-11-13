@@ -60,7 +60,7 @@ function updateHUD(force)
     end
     updatePlayerCoords()
     updateHeading()
-    setQuestsIcons()
+    setSupertrackerPointers()
     setGroupIcons()
     setGatherMateNodes()
     setPOITrackNodes()
@@ -93,17 +93,17 @@ function tomtomSetCrazyArrow(self, uid, dist, title)
     if title and title:find("^Turn in: ") then
         completed = true
     end
-    updateQuest(questID, uid[2], uid[3], uid[1], questType, title, completed)
+    setSupertrackTarget(questID, uid[2], uid[3], uid[1], questType, title, completed)
     tomTomActive = TomTom:GetKey(uid)
-    questPointsTable[tomTom].track = true
+    supertrackTargets[tomTom].track = true
 end
 
 function tomtomClearWaypoint(self, uid)
     if not uid then return end
     if type(uid) ~= "table" then return end
     local tomTomRemoved = TomTom:GetKey(uid)
-    if tomTomRemoved and tomTomActive == tomTomRemoved and questPointsTable[tomTom] then
-        questPointsTable[tomTom].track = false
+    if tomTomRemoved and tomTomActive == tomTomRemoved and supertrackTargets[tomTom] then
+        supertrackTargets[tomTom].track = false
     end
 end
 
@@ -223,8 +223,8 @@ function getQuestOfferInfo(questID, uiMapID)
 end
 
 function resolveSuperTrackedTarget(event,...)
-    if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and questPointsTable[tomTom] then
-        questPointsTable[tomTom].track = false
+    if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and supertrackTargets[tomTom] then
+        supertrackTargets[tomTom].track = false
     end
     local questID = GetSuperTrackedQuestID()
     local completed = false
@@ -242,7 +242,7 @@ function resolveSuperTrackedTarget(event,...)
             uiMapID, x, y, completed = GetQuestPOIInfo(questID)
         end
         if x and y and uiMapID then
-            updateQuest(questID, x, y, uiMapID, 0, nil, completed)
+            setSupertrackTarget(questID, x, y, uiMapID, 0, nil, completed)
         end
     else
         local superTrackingType = GetHighestPrioritySuperTrackingType()
@@ -254,13 +254,13 @@ function resolveSuperTrackedTarget(event,...)
                 local name
                 if isTrackedWaypoint(point, poiTracked) then
                     name = poiTracked.name
-                    updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, poiTracked.atlasName, poiTracked.texture, {
+                    setSupertrackTarget(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed, poiTracked.atlasName, poiTracked.texture, {
                         ["stRetexture"] = Options.POITrackSTRetexture,
                         ["worldmapTexture"] = Options.POITrackWorldmapTexture,
                     })
                 else
                     name = getTomTomWaypointTitle(point.uiMapID, point.position.x, point.position.y)
-                    updateQuest(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed)
+                    setSupertrackTarget(mapPin, point.position.x, point.position.y, point.uiMapID, mapPin, name, completed)
                 end
             end
         end
@@ -276,11 +276,11 @@ function resolveSuperTrackedTarget(event,...)
             }
 
             -- the pointer already shows this pin (from an earlier event)
-            local samePin = questPointsTable[selectedPin] and questPointsTable[selectedPin].moreArgs and questPointsTable[selectedPin].moreArgs.STtype == moreArgs.STtype and questPointsTable[selectedPin].moreArgs.STtypeID == moreArgs.STtypeID
+            local samePin = supertrackTargets[selectedPin] and supertrackTargets[selectedPin].moreArgs and supertrackTargets[selectedPin].moreArgs.STtype == moreArgs.STtype and supertrackTargets[selectedPin].moreArgs.STtypeID == moreArgs.STtypeID
 
             -- try to get corrent uiMapID
             if samePin then
-                uiMapID = questPointsTable[selectedPin].uiMapID
+                uiMapID = supertrackTargets[selectedPin].uiMapID
             elseif STtype == 0 and STtypeID and (not uiMapID or not poiCache[STtypeID] or not poiCache[STtypeID][uiMapID]) then
                 -- poiCache is keyed by areaPoiID: only area POIs (STtype 0) can be looked up there,
                 -- quest offer (1) and taxi node (2) IDs would match unrelated area POIs
@@ -330,14 +330,14 @@ function resolveSuperTrackedTarget(event,...)
             end
 
             if poiInfo then
-                updateQuest(selectedPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName, nil, moreArgs)
+                setSupertrackTarget(selectedPin, poiInfo.position.x, poiInfo.position.y, uiMapID, selectedPin, poiInfo.name, completed, poiInfo.atlasName, nil, moreArgs)
             elseif WorldMapFrame:IsVisible() and event == "SUPER_TRACKING_CHANGED" and not samePin then
                 -- No position from the game: approximate it with the cursor, but only right when the pin
                 -- was clicked. Later events (QUEST_LOG_UPDATE, ...) keep that position instead of
                 -- moving the target to wherever the cursor is then.
                 local x, y = WorldMapFrame:GetNormalizedCursorPosition()
                 if uiMapID and x and y then
-                    updateQuest(selectedPin, x, y, uiMapID, selectedPin, title, completed, nil, nil, moreArgs)
+                    setSupertrackTarget(selectedPin, x, y, uiMapID, selectedPin, title, completed, nil, nil, moreArgs)
                 end
             end
         end
@@ -349,13 +349,13 @@ function resolveSuperTrackedTarget(event,...)
                 if vignettePosition and vignetteInfo then
                     local x, y = vignettePosition:GetXY()
                     if x and y then
-                        updateQuest(selectedPin, x, y, uiMapID, selectedPin, vignetteInfo.name, false, vignetteInfo.atlasName, nil, vignetteInfo)
+                        setSupertrackTarget(selectedPin, x, y, uiMapID, selectedPin, vignetteInfo.name, false, vignetteInfo.atlasName, nil, vignetteInfo)
                     end
                 end
             end
         end
     end
-    setQuestsIcons()
+    setSupertrackerPointers()
 end
 
 -- Events that can fire many times in a row (QUEST_LOG_UPDATE comes in bursts). They are merged
@@ -394,9 +394,9 @@ function schedulePointerFontRefresh()
     fontRefreshPending = true
     C_Timer.After(0, function()
         fontRefreshPending = false
-        for _, quest in pairs(questPointsTable) do
+        for _, quest in pairs(supertrackTargets) do
             if quest.frame then
-                updateQuestIcon(quest.frame)
+                updatePointerFrame(quest.frame)
             end
         end
         updateGroupTexts()
@@ -571,9 +571,9 @@ function Addon:UpdateHUDSettings()
     updateCompassHUD()
 
     HUD.compassCustom:SetSize(width, height)
-    for _, quest in pairs(questPointsTable) do
+    for _, quest in pairs(supertrackTargets) do
         if quest.frame then
-            updateQuestIcon(quest.frame)
+            updatePointerFrame(quest.frame)
         end
     end
     updateHUD(true)

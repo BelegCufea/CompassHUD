@@ -132,10 +132,10 @@ end
 
 -- The game's SuperTracker icon (SuperTrackedFrame) is changed from one place only, for the active
 -- Blizzard super-tracked target (quest, user waypoint, or POI/vignette pin). Other entries in
--- questPointsTable (earlier targets, TomTom) never touch it. When retexturing does not apply,
+-- supertrackTargets (earlier targets, TomTom) never touch it. When retexturing does not apply,
 -- the icon is handed back to the game once.
 function updateSuperTrackedTexture(activeID)
-    local questPoint = activeID and questPointsTable[activeID]
+    local questPoint = activeID and supertrackTargets[activeID]
     local frame = questPoint and questPoint.frame
     local options = frame and Options.Pointers[frame.pointerType]
     local moreArgs = questPoint and questPoint.moreArgs

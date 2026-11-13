@@ -78,8 +78,8 @@ function relativeAngle(instance, x, y)
 end
 
 function getPlayerFacingAngle(questID)
-	if not questID or not questPointsTable[questID] then return end
-    local point = questPointsTable[questID]
+	if not questID or not supertrackTargets[questID] then return end
+    local point = supertrackTargets[questID]
     return relativeAngle(point.instance, point.x, point.y)
 end
 

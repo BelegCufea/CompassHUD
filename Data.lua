@@ -40,7 +40,7 @@ poiTypeEnum = {
 }
 poiCache = {}
 poiCacheContinents = {}
-questPointsTable = {}
+supertrackTargets = {}
 groupPointsTable = {}
 gatherMatePointTable = {}
 poiTrackPointTable = {}
