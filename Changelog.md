@@ -1,5 +1,10 @@
 # v2.0.0 (unreleased)
 
+## Good to know
+
+- **Minimap button / broker / AddOn compartment:** left-click now opens the options in a movable window. The game's settings page opens with **right-click**.
+- **TomTom waypoints** (if you show them on the compass) now appear at any distance, not only within the scanning radius. Turn off `Minimap tracking → TomTom → Any distance` to hide far ones again.
+
 ## New
 
 - **Looks** tab (`Options → Looks`): ready-made looks for the whole compass (frame, letters, fonts, colors, pointer textures), each with a picture. `Try` shows one on the compass right away, then `Keep` it or `Revert` to the look you had, right in its row. A look never changes the compass size, position or what it shows.
@@ -12,6 +17,10 @@
 - **Minimap button / broker / AddOn compartment:** left-click opens the options in a window you can drag away from the compass (click again to close it), right-click in the game's settings as before.
 - **TomTom waypoints:** `Any distance` (on by default) shows them beyond the scanning radius, as TomTom's minimap does with its edge arrows, also when using the minimap icons settings. Far ones fade to the minimum opacity.
 - **TomTom:** the supertracker keybinding now also clears the crazy arrow: press it while facing the TomTom pointer (at any distance). The waypoint stays in TomTom and shows as a marker again, as with `Clear waypoint from arrow` in TomTom's menu.
+
+## Misc
+
+- New libraries for sharing looks as text: AceSerializer-3.0 (Ace3 r1284) and LibDeflate (1.0.2).
 
 ## *For developers only*
 
