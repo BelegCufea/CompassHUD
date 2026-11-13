@@ -102,7 +102,7 @@ don't run inside instances (dungeons, raids, ...), where the compass is hidden.
 next update after registering, and again after [`Rescan`](#the-handle)). It reports the markers
 that should exist now; any marker it does not report (with `Get` or `Add`) is removed afterwards.
 
-The `scan` object has where the player is:
+The `scan` object contains the player's position:
 
 | Field | |
 |---|---|
@@ -112,8 +112,8 @@ The `scan` object has where the player is:
 | `scan.instance` | The player's world instance (continent) ID. |
 | `scan.radius` | The scanning radius in yards. When the player set it to 0 (whole zone), this is the fading distance instead. Markers beyond it are not drawn, so you may report only what is within it, or everything. |
 
-and the calls that report markers (`key`: any value except nil that names the marker, e.g. an ID,
-a string or a table of yours):
+It also provides the calls that report markers. Each marker has a `key`: any value except nil
+that identifies it, e.g. an ID, a string or a table of yours.
 
 | Call | |
 |---|---|
