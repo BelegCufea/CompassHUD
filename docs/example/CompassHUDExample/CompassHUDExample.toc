@@ -1,0 +1,6 @@
+## Interface: 120105, 16001
+## Title: CompassHUD Example
+## Notes: Example marker source for CompassHUD's interface (docs/API.md)
+## Dependencies: CompassHUD
+
+CompassHUDExample.lua

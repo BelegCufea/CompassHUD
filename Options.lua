@@ -2183,7 +2183,7 @@ GroupOptions = {
 --   prefix  option name prefix ("Questie", "GatherMate")
 --   info    { name, order, description, hidden, enabledDesc, what (e.g. "icon"), titleHeader,
 --             extraArgs (more options on the General tab) }
-local function markerModuleOptions(prefix, info)
+function markerModuleOptions(prefix, info)
     -- greyed out while the module uses the minimap icons' settings
     local function usesMinimapSettings() return Options[prefix .. "UseMinimapSettings"] end
     local what = info.what
@@ -3207,6 +3207,12 @@ function Addon:ConstructDefaultsAndOptions()
     TrackingOption.args.Questie = QuestieOptions
     TrackingOption.args.TomTom = TomTomOptions
     TrackingOption.args.HandyNotes = HandyNotesOptions
+    -- sources registered through the public interface (API.lua) bring their own page
+    for _, source in ipairs(markerModules) do
+        if source.optionsPage then
+            TrackingOption.args[source.prefix] = source.optionsPage
+        end
+    end
     self.Options.args.Supertracker = SupertrackerOptions
     buildPresetPreviews()
     self.Options.args.TrackingIntegrations = TrackingOption

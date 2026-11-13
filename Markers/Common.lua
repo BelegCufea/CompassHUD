@@ -618,7 +618,7 @@ function registerMarkerSource(source)
 end
 
 local function markerSourceOn(source)
-    return Options[source.prefix .. "Enabled"] and (not source.isAvailable or source.isAvailable())
+    return Options[source.prefix .. "Enabled"] and not source.failed and (not source.isAvailable or source.isAvailable())
 end
 
 -- The node a scan reports under 'key', if it already has one; it is kept by this scan.

@@ -26,12 +26,12 @@ Libs\libs.xml
 const.lua
 debug.lua
 Init.lua
-API.lua
 Data.lua
 Defaults.lua
 Util.lua
 Options.lua
 Compass.lua
+API.lua
 Markers\Common.lua
 Markers\Supertracker.lua
 Markers\Group.lua

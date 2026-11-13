@@ -1,8 +1,8 @@
 # v2.0.0 (unreleased)
 
-## Good to know
+## *For developers only*
 
-- **The compass frame is now called `CompassHUDFrame`** (it was `CompassHUD`). Only matters if you anchor something to it by name, e.g. in WeakAuras or another layout addon. `CompassHUD` is now the addon's interface for other addons. Your compass position and keybinding are kept.
+- *The compass frame is now called `CompassHUDFrame` (it was `CompassHUD`), e.g. for anchoring to it in WeakAuras or a layout addon. `CompassHUD` is now the addon's interface for other addons.*
 
 # v1.9.0 (13.11.2026)
 
