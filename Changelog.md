@@ -6,6 +6,7 @@
 
 ## *For developers only*
 
+- *Other addons can show their markers on the compass: `CompassHUD.RegisterMarkerSource`, documented in [docs/API.md](https://github.com/BelegCufea/CompassHUD/blob/master/docs/API.md) with an example addon. CompassHUD's own TomTom, Questie, HandyNotes and gathering markers use it too.*
 - *The compass frame is now called `CompassHUDFrame` (it was `CompassHUD`), e.g. for anchoring to it in WeakAuras or a layout addon. `CompassHUD` is now the addon's interface for other addons.*
 
 # v1.9.0 (13.11.2026)

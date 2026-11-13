@@ -166,6 +166,10 @@ just after the line containing:</br>
 Check that you put it in the correct profile. Edit the file only while the game is closed (or logged out), as the game overwrites it on logout.
 
 
+## For addon authors
+
+Your addon can show its own markers on the compass (with names, distances, the supertrack keybinding, text to speech and a settings page of their own) through CompassHUD's interface: see [docs/API.md](https://github.com/BelegCufea/CompassHUD/blob/master/docs/API.md), with a complete example addon.
+
 ## Issues and suggestions
 
 If you run into problems or have feature requests, feel free to [open an issue on GitHub](https://github.com/BelegCufea/CompassHUD/issues).
