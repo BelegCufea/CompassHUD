@@ -12,6 +12,7 @@ local pairs, type, pcall, tostring, tonumber, select, math, table, wipe = pairs,
 local GetTime = GetTime
 local C_TooltipInfo, C_QuestLog, C_Item, C_CurrencyInfo, C_Spell, C_Map = C_TooltipInfo, C_QuestLog, C_Item, C_CurrencyInfo, C_Spell, C_Map
 local GetAchievementInfo, EJ_GetInstanceInfo = GetAchievementInfo, EJ_GetInstanceInfo
+local GetAchievementCriteriaInfoByID = GetAchievementCriteriaInfoByID
 
 local HBD = LibStub("HereBeDragons-2.0")
 
@@ -41,9 +42,11 @@ handyNotesNodes = registerMarkerSource({
     cache = { uiMapID = nil, time = 0, entries = {} },
 })
 
--- A name readable as a plugin's label: "HandyNotes_TheWarWithin" -> "TheWarWithin".
+-- A name readable as a plugin's label: "HandyNotes_TheWarWithin" -> "TheWarWithin"; HandyNotes'
+-- own notes plugin is called "HandyNotes".
 function handyNotesPluginLabel(pluginName)
-    return (tostring(pluginName):gsub("^HandyNotes[_ ]?", ""))
+    local label = tostring(pluginName):gsub("^HandyNotes[_ ]?", "")
+    return label ~= "" and label or "HandyNotes (your own notes)"
 end
 
 -- The plugins HandyNotes has, for the options (name -> label).
@@ -75,13 +78,21 @@ local function npcName(id)
     end
 end
 
+local function achievementName(id)
+    return GetAchievementInfo and select(2, GetAchievementInfo(id))
+end
+
+local function itemName(id)
+    return C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(id)
+end
+
 -- The plugins' placeholders ({npc:123}, {achievement:40606}, ...) as names, like the expansion
 -- plugins render them in their tooltips; unknown ones are dropped.
 local linkNames = {
     npc = npcName,
-    achievement = function(id) return GetAchievementInfo and select(2, GetAchievementInfo(id)) end,
+    achievement = function(id) return achievementName(id) end,
     quest = function(id) return C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(id) end,
-    item = function(id) return C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(id) end,
+    item = function(id) return itemName(id) end,
     currency = function(id)
         local info = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(id)
         return info and info.name
@@ -95,11 +106,23 @@ local linkNames = {
 }
 linkNames.daily = linkNames.quest
 
+-- {kind:id} with letters after the id kept (Zarillion: {npc:123s}), or {kind:id:extra}
+-- (Kemayo: {achievement:id:criteria} is the criteria's name).
 local function renderLinks(text)
-    return (text:gsub("{(%l+):(%d+)(%l*)}", function(kind, id, suffix)
-        local get = linkNames[kind]
-        local ok, name = get and pcall(get, tonumber(id))
-        return ok and type(name) == "string" and (name .. (suffix or "")) or ""
+    return (text:gsub("{(%a+):([^:}]+):?([^}]*)}", function(kind, idText, extra)
+        local id, suffix = idText:match("^(%d+)(%l*)$")
+        id = tonumber(id)
+        if not id then return "" end
+        local ok, name
+        if kind == "achievement" and tonumber(extra) and GetAchievementCriteriaInfoByID then
+            ok, name = pcall(GetAchievementCriteriaInfoByID, id, tonumber(extra))
+        end
+        if not (ok and type(name) == "string" and name ~= "") then
+            local get = linkNames[kind]
+            ok, name = false, nil
+            if get then ok, name = pcall(get, id) end
+        end
+        return ok and type(name) == "string" and (name .. suffix) or ""
     end))
 end
 
@@ -115,10 +138,23 @@ local function cleanName(text)
     return text
 end
 
--- An expansion plugin node (label), or anything else with a name, label or title.
+-- A node with a name, label or title (Zarillion's expansion plugins: label, with placeholders;
+-- HandyNotes' own notes: title), else a point of Kemayo's plugins ("... Treasures and Rares"),
+-- named like their tooltip: the achievement criteria, the NPC, the loot or the achievement.
 local function nameOf(data)
     if type(data) ~= "table" then return end
-    return cleanName(data.name) or cleanName(data.label) or cleanName(data.title)
+    local name = cleanName(data.name) or cleanName(data.label) or cleanName(data.title)
+    if name then return name end
+    local achievement = tonumber(data.achievement)
+    if achievement and type(data.criteria) == "number" and GetAchievementCriteriaInfoByID then
+        name = cleanName((GetAchievementCriteriaInfoByID(achievement, data.criteria)))
+    end
+    name = name or npcName(data.npc)
+    if not name and type(data.loot) == "table" then
+        local first = data.loot[1]
+        name = itemName(tonumber(type(first) == "table" and (first.id or first[1]) or first))
+    end
+    return name or (achievement and achievementName(achievement)) or nil
 end
 
 -- A MapNotes node: its name, else its NPC (npcID, npcIDs1, ...), its dungeon or raid (id: the
