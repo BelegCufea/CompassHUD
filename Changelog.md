@@ -3,6 +3,14 @@
 ## Good to know
 
 - **Minimap icons:** after you cross into another zone, the previous zone's icons stay until the next scan (as gathering nodes and Questie icons always did), and a changed filter shows on the next scan.
+- **TomTom pointer settings moved:** the crazy arrow pointer's textures and texts, and `Hide duplicate TomTom pointer`, are now in `Minimap tracking → TomTom → Crazy arrow` (no longer under `Supertracker → Pointers`). Your settings are kept.
+
+## New
+
+- **TomTom waypoints** in `Minimap tracking → TomTom` (shown when TomTom is loaded, off by default): all your TomTom waypoints on the current map, with the same settings as the other icon sections (uses the `Minimap icons` settings by default).
+  - The crazy arrow's waypoint is not shown twice: it stays the TomTom pointer.
+  - `Use supertracker keybinding` (on by default): the keybind makes the waypoint you face the crazy arrow's target. `Use text to speech` reads it out.
+- **Speech:** `Supertracked target` also reads out the TomTom crazy arrow's waypoint.
 
 ## Misc
 
