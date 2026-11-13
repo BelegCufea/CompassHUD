@@ -117,7 +117,8 @@ function shouldShowHUD()
 end
 
 function createHUD()
-    HUD = CreateFrame('Frame', ADDON_NAME, UIParent, "BackdropTemplate")
+    -- CompassHUD (the global) is the public interface (API.lua), the frame has a name of its own
+    HUD = CreateFrame('Frame', "CompassHUDFrame", UIParent, "BackdropTemplate")
     HUD:SetPoint("CENTER")
     HUD:SetClampedToScreen(true)
     HUD:RegisterForDrag("LeftButton")
@@ -127,10 +128,6 @@ function createHUD()
             Addon:SetVisibility(shouldShowHUD())
         end
     end)
-
-    HUD.SupertrackMinimapIcon = function(self)
-        supertrackPOITrack()
-    end
 end
 
 -- Title of the TomTom waypoint at the same place as a user map pin.

@@ -26,6 +26,7 @@ Libs\libs.xml
 const.lua
 debug.lua
 Init.lua
+API.lua
 Data.lua
 Defaults.lua
 Util.lua
