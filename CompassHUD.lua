@@ -48,7 +48,8 @@ function updateHeading()
 end
 
 function updateHUD(force)
-    local facing = readPlayerFacing() or 0
+    -- the looks' sample markers (Looks.lua): the compass faces north
+    local facing = lookSamples and 0 or (readPlayerFacing() or 0)
     if force or facing ~= currentFacing then
         local coord = (facing < PI and 0.5 or 1) - (facing * ADJ_FACTOR)
         -- rotate texture
@@ -57,6 +58,10 @@ function updateHUD(force)
         HUD.compassCustom.mask:ClearAllPoints()
         HUD.compassCustom.mask:SetPoint('TOP', HUD.compassCustom, 'TOP', (1/2 - coord) * textureWidth, 0)
         currentFacing = facing
+    end
+    if lookSamples then
+        drawLookSamples()
+        return
     end
     updatePlayerCoords()
     updateHeading()

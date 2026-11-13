@@ -599,6 +599,119 @@ local function setPreviewBackground(key)
 end
 
 ------------------------------------------------------------------------------------------------
+-- Sample markers (with Debug on, for the looks' pictures): the compass frozen facing north, the
+-- real markers and pointers hidden, and a fixed sample pointer and markers drawn with the current
+-- look, so every look's picture shows the same. Only for this session; updateHUD (CompassHUD.lua)
+-- calls drawLookSamples instead of the marker updates while lookSamples is on.
+------------------------------------------------------------------------------------------------
+
+lookSamples = false
+
+-- angle from north (radians; the sign as for real markers), icon, texts
+local SAMPLE_MARKERS = {
+    { angle = 0.45, texture = [[Interface\Minimap\Tracking\Innkeeper]], name = "Innkeeper Firebrew", distance = "235.6" },
+    { angle = -0.30, texture = [[Interface\Minimap\Tracking\FlightMaster]], name = "Flight Master", distance = "1,120" },
+}
+local SAMPLE_POINTER = { angle = -0.12, distance = "1,460", time = "***", name = "Shimmer Stout" }
+
+-- the sample markers are styled like minimap icons (POITrack settings)
+local sampleModule = { prefix = "POITrack", framePool = {} }
+local sampleFrames
+
+local function createSampleFrames()
+    local frames = { markers = {} }
+    for i in ipairs(SAMPLE_MARKERS) do
+        local frame = acquireMarkerFrame(sampleModule)
+        -- its texts are set here, not from a position
+        frame:SetScript("OnUpdate", nil)
+        frames.markers[i] = frame
+    end
+    local pointer = CreateFrame("Frame", nil, HUD)
+    pointer.texture = pointer:CreateTexture(nil, "ARTWORK")
+    pointer.texture:SetAllPoints()
+    for _, text in ipairs({ "DistanceText", "TimeText", "QuestText" }) do
+        pointer[text] = pointer:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+        pointer[text]:SetJustifyV("TOP")
+        pointer[text]:SetSize(0, 16)
+    end
+    frames.pointer = pointer
+    return frames
+end
+
+-- Draws the samples with the current look (called on every HUD update while lookSamples is on).
+function drawLookSamples()
+    sampleFrames = sampleFrames or createSampleFrames()
+    local scale = Options.Scale * Options.IconScale
+    local offset = markerSetting(sampleModule, "Offset")
+    for i, sample in ipairs(SAMPLE_MARKERS) do
+        local frame = sampleFrames.markers[i]
+        local node = { frame = frame, name = sample.name }
+        frame.texture:SetTexture(sample.texture)
+        frame.texture:SetTexCoord(0, 1, 0, 1)
+        frame.texture:SetVertexColor(1, 1, 1, 1)
+        styleMarkerNode(sampleModule, node)
+        frame.DistanceText:SetText(sample.distance)
+        frame.TimeText:SetText("***")
+        frame.DistanceText:SetShown(markerSetting(sampleModule, "ShowDistance"))
+        frame.TimeText:SetShown(markerSetting(sampleModule, "ShowTTA"))
+        frame.Title:SetShown(markerSetting(sampleModule, "ShowTitle"))
+        frame:SetAlpha(1)
+        frame:ClearAllPoints()
+        frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * sample.angle, offset)
+        frame:Show()
+    end
+
+    -- the pointer, like a supertracked quest (updatePointerFrame), below the strip
+    local pointer = sampleFrames.pointer
+    local options = Options.Pointers[questPointerIdent .. Enum.QuestClassification.Normal]
+    local size = iconSize * options.textureScale * 1.5
+    pointer:SetSize(size, size)
+    pointer.texture:SetAtlas(options.atlasID)
+    pointer.texture:SetTexCoord(0, 1, 0, 1)
+    setPointerFont(pointer.DistanceText, scale, options.distanceCustomFont, options.distanceFont, options.distanceFontSize, options.distanceFontFlags, options.distanceFontColor)
+    setPointerFont(pointer.TimeText, scale, options.ttaCustomFont, options.ttaFont, options.ttaFontSize, options.ttaFontFlags, options.ttaFontColor)
+    setPointerFont(pointer.QuestText, scale, options.questCustomFont, options.questFont, options.questFontSize, options.questFontFlags, options.questFontColor)
+    pointer.DistanceText:SetText(SAMPLE_POINTER.distance)
+    pointer.TimeText:SetText(SAMPLE_POINTER.time)
+    pointer.QuestText:SetText(SAMPLE_POINTER.name)
+    local distanceHeight = options.showDistance and textLineHeight(pointer.DistanceText) or 0
+    local timeHeight = options.showTTA and textLineHeight(pointer.TimeText) or 0
+    pointer.DistanceText:ClearAllPoints()
+    pointer.DistanceText:SetPoint("TOP", pointer, "BOTTOM", 0, -options.distanceOffset + 2)
+    pointer.TimeText:ClearAllPoints()
+    pointer.TimeText:SetPoint("TOP", pointer, "BOTTOM", 0, -distanceHeight - options.ttaOffset + 2)
+    pointer.QuestText:ClearAllPoints()
+    pointer.QuestText:SetPoint("TOP", pointer, "BOTTOM", 0, -distanceHeight - timeHeight - options.questOffset + 4)
+    pointer.DistanceText:SetShown(options.showDistance)
+    pointer.TimeText:SetShown(options.showTTA)
+    pointer.QuestText:SetShown(options.showQuest)
+    pointer:ClearAllPoints()
+    pointer:SetPoint("CENTER", HUD, "CENTER", texturePosition() * SAMPLE_POINTER.angle, options.pointerOffset * textureHeight * -1)
+    pointer:Show()
+
+    if HUD.heading and HUD.heading.text then
+        HUD.heading.text:SetText(Options.HeadingTrueNorth and 360 or 0)
+    end
+end
+
+local function setLookSamples(on)
+    lookSamples = on and true or false
+    if lookSamples then
+        -- hide the real markers and pointers (they are not updated while the samples show; their
+        -- own updates show them again afterwards)
+        for _, child in ipairs({ HUD:GetChildren() }) do
+            if child ~= HUD.compassCustom and child ~= HUD.heading then
+                child:Hide()
+            end
+        end
+    elseif sampleFrames then
+        for _, frame in ipairs(sampleFrames.markers) do frame:Hide() end
+        sampleFrames.pointer:Hide()
+    end
+    updateHUD(true)
+end
+
+------------------------------------------------------------------------------------------------
 -- The Looks tab: a row per look with Try; while it is being tried, Keep and Revert in its row.
 ------------------------------------------------------------------------------------------------
 
@@ -626,6 +739,16 @@ local looksArgs = {
         sorting = PREVIEW_ORDER,
         get = function() return previewChoice end,
         set = function(_, key) setPreviewBackground(key) end,
+    },
+    -- for the looks' pictures: the same compass and markers for every look, anywhere
+    SampleMarkers = {
+        type = "toggle",
+        order = 3,
+        name = "Sample markers",
+        desc = "(Debug) The compass faces north and shows a fixed sample pointer and markers instead of the real ones, styled with the current look. For pictures of the looks; not saved, Off or /reload brings the real ones back.",
+        hidden = function() return not Options.Debug end,
+        get = function() return lookSamples end,
+        set = function(_, value) setLookSamples(value) end,
     },
     -- the player's own look, saved when a look was first tried in this profile
     OwnLook = {
