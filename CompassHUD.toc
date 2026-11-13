@@ -32,7 +32,7 @@ Util.lua
 Options.lua
 Compass.lua
 Markers\Common.lua
-Markers\Quest.lua
+Markers\Supertracker.lua
 Markers\Group.lua
 Markers\Gathering.lua
 Markers\POI.lua

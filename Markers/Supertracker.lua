@@ -1,4 +1,6 @@
--- Quest pointers: quests, map pins, POI/vignette pins and the TomTom arrow target.
+-- The supertracker pointer: the one target the game tracks (quest, map pin, POI/vignette pin, user
+-- waypoint) plus the TomTom arrow target. Not a marker module (Markers/Common.lua): one target at a
+-- time, fed by events (updateQuest), with its own look per pointer type (Options.Pointers).
 local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
