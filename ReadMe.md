@@ -18,11 +18,12 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 - Support for predefined or custom compass textures, or a strip built from configurable letters and degree marks.
 - Plethora of markers to be displayed on the compass:
   - the quest, map pin, POI or vignette you are tracking (supertracking), each quest type with its own look,
-  - TomTom waypoints,
+  - TomTom's crazy arrow target and all your TomTom waypoints,
   - minimap icons (flight points, area POIs, delves, events, dungeon entrances, vignettes, world quests, quests from your quest log, ...),
   - party and raid members,
   - gathering nodes from GatherMate2 (or GatherLite in WoW: Forever),
-  - Questie's minimap icons: available quests, turn-ins, objectives, townsfolk (innkeepers, trainers, mailboxes, ...).
+  - Questie's minimap icons: available quests, turn-ins, objectives, townsfolk (innkeepers, trainers, mailboxes, ...),
+  - the icons of HandyNotes plugins (MapNotes, treasures and rares of the expansion plugins, your own notes, ...).
 - Name, distance (yards or meters) and time to arrival for markers.
 - Profiles for different characters or setups.
 
@@ -67,13 +68,13 @@ Most settings have a tooltip with more details when you hover over them.
 *The compass in the game's Edit Mode (drag it to move, click it for the options):*</br>
 ![EditMode](https://i.imgur.com/pf4eOgR.png)
 
-- The `Appearance` tab styles the HUD frame (central pin, opacity, border, background, edge line). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one. Party/raid names keep their own color setting. `Max title width` cuts off long titles of the supertracker, minimap icon and gathering node pointers with "..." (0 = no limit).
+- The `Appearance` tab styles the HUD frame (central pin, opacity, border, background, edge line). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one. Party/raid names keep their own color setting. `Max title width` cuts off long titles of the supertracker pointers and of all icon markers with "..." (0 = no limit).
 
 - The `Custom HUD` tab lets you choose between the compass texture or a strip built from its parts: main cardinal directions (N, E, S, W), ordinal directions (NE, SE, ...) and degrees, each with its own font, color and position. It also holds the numeric heading display (frame, font, decimal points, north shown as 0 or 360).
 
 ![Custom](https://i.imgur.com/ElQIDGp.png)
 
-- The `Speech` tab (accessibility) reads out the name of what is in front of you on the compass, with the game's text to speech: the supertracked target, minimap icons, Questie icons and/or gathering nodes (the one closest to the direction you are facing), optionally with the distance. Each one is read once, when you turn to it and have faced it for a short delay; you can set the facing angle, the delay, the voice (any voice the game offers), rate and volume, and test it. `Only read out names shown on the compass` limits it to what currently shows its name (with a texts visibility angle: the one icon showing its texts). Text to speech is played outside the game's sound channels, so it has its own volume.
+- The `Speech` tab (accessibility) reads out the name of what is in front of you on the compass, with the game's text to speech: the supertracked target, TomTom's crazy arrow target, minimap icons, Questie icons, gathering nodes, TomTom waypoints and/or HandyNotes icons (the one closest to the direction you are facing), each with its own toggle, optionally with the distance. Each one is read once, when you turn to it and have faced it for a short delay; you can set the facing angle, the delay, the voice (any voice the game offers), rate and volume, and test it. `Only read out names shown on the compass` limits it to what currently shows its name (with a texts visibility angle: the one icon showing its texts). Text to speech is played outside the game's sound channels, so it has its own volume.
 
 ![Speech](https://i.imgur.com/GxYMsDN.png)
 
@@ -87,12 +88,11 @@ Under the `Supertracker` submenu, you can configure visibility and behavior for 
 - `Pointers stay on HUD`: a pointer outside the field of view stays at the edge of the HUD (optionally with an out-of-HUD indicator).
 - `Hide pointers to other continents`.
 - `Use map transition for pointers`: when the target is in another zone, point to the way there suggested by the map (portal, entrance, ...).
-- `Hide duplicate TomTom pointer` (on by default, shown when TomTom is loaded): when a TomTom waypoint is at the same place as the quest, map pin or POI the game is tracking, only the game's pointer is shown. The TomTom pointer comes back as soon as the game tracks something else.
 
 *Choosing from pointer texture presets:*</br>
 ![PointerPresets](https://i.imgur.com/V1mzqaP.png)
 
-There is a pointer type for each kind of target: TomTom, user map pin, POI map pin, quest classifications (Quest, Campaign, Important, Legendary, Questline, Meta, Calling, Bonus, Threat, World Quest), daily, weekly and scheduled quests, and an "unknown" fallback.
+There is a pointer type for each kind of target: user map pin, POI map pin, quest classifications (Quest, Campaign, Important, Legendary, Questline, Meta, Calling, Bonus, Threat, World Quest), daily, weekly and scheduled quests, and an "unknown" fallback. The pointer for TomTom's crazy arrow has the same settings, on the TomTom page under `Minimap tracking` (see Addon integrations).
 
 *For each pointer type, you can also customize:*</br>
 *- Visibility, position, size, and textures (separately for a quest in progress and ready to turn in)*</br>
@@ -115,8 +115,8 @@ Under the `Minimap tracking` submenu, you'll find settings for icons usually sho
 The `Minimap icons` section covers standard WoW minimap icons (off by default). It has four tabs:
 - `General`: scanning radius, update throttle, position, scale, and an opacity gradient based on distance.
 - `Filter`: which icon types are shown, in sub-tabs. Each type has `Any distance` next to it (shown regardless of the scanning radius: everything the game lists for the current map, for flight points this can be the whole continent). `Places`: one row per type. `Quests`: quests from your quest log that have a place on the current map (objective area, or the turn-in when complete), with `Progress` (all, in progress or ready to turn in), optionally only those of the zone you are in, with the supertracker's icons or the game's quest marks. `Flight points` hides the other faction's ones and can show only the closest one. `World quests` can be filtered to none, all, tracked ones or those tracked by World Quest Tracker.
-- `Texts`: name, distance and time to arrival, shown for all icons or only for the one you're facing (`Texts visibility angle`). With an angle set here, for Questie or for gathering nodes, only one icon of them all shows its texts: the one closest to the direction you are facing.
-- `Supertracking`: a keybind that sets the icon you are facing as the game's tracked target (press again to clear it), `Hide icon at the tracked target` (on by default: while an icon is tracked, only its supertracker pointer is shown), and the texture used when a user waypoint has to be created. A waypoint keeps the icon's name, and with `Icon texture` its icon. Questie icons and gathering nodes can use the same keybind (`Use supertracker keybinding` in their sections).
+- `Texts`: name, distance and time to arrival, shown for all icons or only for the one you're facing (`Texts visibility angle`). With an angle set here or in the other icon sections (gathering nodes, Questie, TomTom, HandyNotes), only one icon of them all shows its texts: the one closest to the direction you are facing.
+- `Supertracking`: a keybind that sets the icon you are facing as the game's tracked target (press again to clear it), `Hide icon at the tracked target` (on by default: while an icon is tracked, only its supertracker pointer is shown), and the texture used when a user waypoint has to be created. A waypoint keeps the icon's name, and with `Icon texture` its icon. The other icon sections can use the same keybind (`Use supertracker keybinding` in their sections); for TomTom waypoints it makes the waypoint you face the crazy arrow's target.
 
 *Filter tab, `Places` and `Quests`:*</br>
 ![MinimapIconsPlaces](https://i.imgur.com/AyYAzuF.png)
@@ -131,9 +131,19 @@ Members on a different map (another continent, behind a portal, underground, ...
 
 #### Addon integrations
 
-- **GatherMate2 / GatherLite** (off by default): possible gathering node locations within a scanning radius. Node types follow GatherMate2's own display filter. In WoW: Forever, `GatherLite` works the same way when GatherMate2 is not loaded, following GatherLite's minimap tracking toggles. Its settings work like the Questie ones below: its own or the Minimap icons settings, opacity by distance, texts visibility angle, and optionally the supertrack keybinding and text to speech for the node you face.
-- **Questie** (experimental, off by default, shown when Questie is loaded): the icons Questie places on the minimap: available quests, quest turn-ins, quest objectives and the townsfolk chosen in Questie's minimap menu. Which icons appear is decided by Questie's own settings. By default it uses the Minimap icons settings (scanning radius, update throttle, position, scale, opacity, texts); with `Use minimap icons settings` off it has its own. The name can show the kind of icon in parentheses, e.g. "Innkeeper Farley (Innkeeper)". With `Use supertracker keybinding` the minimap icons' supertrack keybinding also tracks the Questie icon you face (the quest itself for turn-ins and objectives, else a waypoint with the icon's name and look). Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.
-- **TomTom**: the TomTom arrow's waypoint is shown as its own pointer type.
+Each addon has its own section under `Minimap tracking`, shown when the addon is loaded. They all work the same way: off by default; the Minimap icons settings (scanning radius, update throttle, position, scale, opacity, texts) or, with `Use minimap icons settings` off, their own; a texts visibility angle; and optionally the supertrack keybinding and text to speech for the icon you face.
+
+- **GatherMate2 / GatherLite**: possible gathering node locations within a scanning radius. Node types follow GatherMate2's own display filter. In WoW: Forever, `GatherLite` works the same way when GatherMate2 is not loaded, following GatherLite's minimap tracking toggles. Unlike the others, it has its own settings by default.
+- **HandyNotes**: the icons HandyNotes plugins place on the minimap: MapNotes, the treasures and rares of the expansion plugins, your own notes, and so on.
+  - `Plugins`: which plugins appear on the compass (all by default). Plugins turned off in HandyNotes are not shown either.
+  - `Icons from nearby zones` (off by default): also the icons of zones and cities around you within the scanning radius. Off, only the icons of the zone you are in are shown, as on HandyNotes' minimap.
+  - Names come from the plugins' own data where they provide it (MapNotes, the expansion plugins of Zarillion and Kemayo, your own notes); other icons are titled with the plugin's name.
+  - The supertrack keybinding sets a map waypoint on the icon you face.
+- **Questie** (experimental): the icons Questie places on the minimap: available quests, quest turn-ins, quest objectives and the townsfolk chosen in Questie's minimap menu. Which icons appear is decided by Questie's own settings. The name can show the kind of icon in parentheses, e.g. "Innkeeper Farley (Innkeeper)". The supertrack keybinding tracks the quest itself for turn-ins and objectives, else it sets a waypoint with the icon's name and look. Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.
+- **TomTom**: your TomTom waypoints, and the crazy arrow's target as a pointer.
+  - Waypoints are shown with the icon of TomTom's minimap theme. `Waypoints from other zones` (on by default) also shows those set on other maps of the continent you are on, e.g. in the zone around a city. The crazy arrow's waypoint is not shown twice.
+  - The supertrack keybinding makes the waypoint you face the crazy arrow's target.
+  - `Crazy arrow` tab: the arrow's pointer, with the same settings as the supertracker's pointer types (textures, texts, position). `Hide duplicate TomTom pointer` (on by default) shows only the game's pointer when the arrow's waypoint is at the same place as what the game is tracking. `Use text to speech` reads out the arrow's waypoint. `Use TomTom's arrow` (off by default) uses the arrow of TomTom's minimap theme instead of the pointer textures; it points at the compass, and sideways toward the waypoint when the pointer stays at the compass edge. The pointer follows TomTom's arrow: it goes away when the arrow is cleared, and hides while TomTom hides it (e.g. when the waypoint is on another continent).
 - **World Quest Tracker**: its tracked quests can be used as the world quest filter for minimap icons.
 
 *Questie icons on the compass, and their settings:*</br>
