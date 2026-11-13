@@ -9,34 +9,21 @@ local math, string, table, wipe = math, string, table, wipe
 
 local HBD               = LibStub("HereBeDragons-2.0")
 
--- gatherMatePointTable holds only the nodes found by the latest scan (within the scanning radius
--- of the player, keyed per node). Nodes that leave that set give their frame back to a pool, so
--- neither the table nor the per-tick draw loop grows with the session.
--- The module for the shared marker functions, plus the gathering sources' own state.
-gatherNodes = {
+-- A marker source (Markers/Common.lua): only the nodes found by the latest scan are kept (within
+-- the scanning radius of the player, keyed per node), plus the gathering addons' own state.
+gatherNodes = registerMarkerSource({
     prefix = "GatherMate",
-    nodes = gatherMatePointTable,
-    framePool = {},
-    heading = nil,      -- node closest to the facing direction (supertrack keybinding, speech)
-    seen = {},          -- nodes found by the current scan
+    -- GatherMate2 if loaded, else GatherLite
+    isAvailable = function() return (GatherMate2 or GatherLite) and true or false end,
     liteTypes = { "mining", "herbalism", "containers", "fishing" }, -- GatherLite node types
     liteObjects = {},   -- object ID -> GatherLite object (GetNodeObject searches its whole list)
-}
-table.insert(markerModules, gatherNodes)
+})
 
 -- Adds a node found by a scan (world coordinates, icon texture, title), or keeps the existing one.
 function addGatherNode(key, xWorld, yWorld, icon, title)
-    gatherNodes.seen[key] = true
-    if gatherMatePointTable[key] then
-        return
+    if not markerNode(gatherNodes, key) then
+        newMarkerNode(gatherNodes, key, { x = xWorld, y = yWorld, name = title or "", texture = icon })
     end
-    local node = { instance = player.uiMapID, x = xWorld, y = yWorld, name = title or "", texture = icon }
-    local frame = acquireMarkerFrame(gatherNodes)
-    frame.texture:SetTexture(icon)
-    frame.instance, frame.x, frame.y = node.instance, xWorld, yWorld
-    node.frame = frame
-    gatherMatePointTable[key] = node
-    styleMarkerNode(gatherNodes, node)
 end
 
 -- GatherMate2 node source. These are GatherMate2's long-standing public methods plus three of its
@@ -50,9 +37,7 @@ function scanGatherMate2(zoneX, zoneY, radius)
         if gm.Visible[dbType] then
             for coord, nodeID in gm:FindNearbyNode(player.uiMapID, zoneX, zoneY, dbType, radius) do
                 local key = dbType .. ":" .. coord
-                if gatherMatePointTable[key] then
-                    gatherNodes.seen[key] = true
-                else
+                if not markerNode(gatherNodes, key) then
                     local xZone, yZone = gm:DecodeLoc(coord)
                     local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
                     if xWorld and yWorld then
@@ -92,8 +77,8 @@ function scanGatherLite(radius)
         -- follow GatherLite's own minimap tracking toggles, like GatherMate2's display filter
         if not gl.GetNodeTracking or gl:GetNodeTracking("minimap", nodeType) then
             for _, node in ipairs(gl:GetNearbyZoneNodes(nodeType, mapID, player.instance, zoneX, zoneY, radius) or {}) do
-                if gatherMatePointTable[node] then
-                    gatherNodes.seen[node] = true
+                if markerNode(gatherNodes, node) then
+                    -- already shown
                 elseif not (node.predefined and not usePredefined) and not (gl.IsIgnored and gl:IsIgnored(node.object)) then
                     if not (node.worldX and node.worldY and node.instance) then
                         gl:EnsureNodeWorld(node)
@@ -114,40 +99,11 @@ function scanGatherLite(radius)
     end
 end
 
--- Settings changed: re-apply them to all nodes, or drop all when the module is off.
-function updateGatherMate()
-    for key, node in pairs(gatherMatePointTable) do
-        if not Options.GatherMateEnabled then
-            releaseMarkerNode(gatherNodes, key)
-        elseif node.frame then
-            styleMarkerNode(gatherNodes, node)
-        end
+-- radius: the minimap icons' "whole zone" (0) is taken as their fading distance (markerRadius)
+function gatherNodes.scan(_, x, y, radius)
+    if GatherMate2 then
+        scanGatherMate2(x, y, radius)
+    else
+        scanGatherLite(radius)
     end
-end
-
-function setGatherMateNodes()
-    -- GatherMate2 if loaded, else GatherLite
-    if not Options.GatherMateEnabled or not (GatherMate2 or GatherLite) then return end
-    if gatherMateThrottle and gatherMateThrottle >= markerSetting(gatherNodes, "Interval") then
-        gatherMateThrottle = 0
-        local x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
-        if x and y then
-            wipe(gatherNodes.seen)
-            -- the minimap icons' "whole zone" (0) is taken as their fading distance here
-            local radius = markerRadius(gatherNodes)
-            if GatherMate2 then
-                scanGatherMate2(x, y, radius)
-            else
-                scanGatherLite(radius)
-            end
-            -- nodes no longer in range (or on another map) give their frame back to the pool
-            for key in pairs(gatherMatePointTable) do
-                if not gatherNodes.seen[key] then
-                    releaseMarkerNode(gatherNodes, key)
-                end
-            end
-        end
-    end
-    drawMarkerNodes(gatherNodes)
-    HUD.gathermateNodes = gatherMatePointTable
 end

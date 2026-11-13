@@ -567,3 +567,127 @@ function showFacedMarkerTexts()
         showModuleTexts(bestModule, bestModule.textNode)
     end
 end
+
+-- Marker sources: a marker module that only says where its nodes come from. The source table has
+--   prefix       option name prefix (<prefix>Enabled, <prefix>Interval, ...; see markerSetting)
+--   isAvailable  function() -> whether the addon or game data it reads is there (optional)
+--   scan         function(source, x, y, radius): reports the nodes around the player with
+--                markerNode/newMarkerNode. x, y: player position on the current map (zone
+--                coordinates), radius: the scanning radius in yards (markerRadius)
+--   title, bypassesRadius  optional, see markerTitle and drawMarkerNodes
+-- The shared code does the rest: scan throttle, frames and their pool, styling, drawing, nodes no
+-- longer reported, settings changes, and the supertrack keybinding and speech (markerModules).
+function registerMarkerSource(source)
+    source.nodes = source.nodes or {}
+    source.framePool = source.framePool or {}
+    source.seen = source.seen or {}
+    source.throttle = 0 -- updates since the last scan
+    table.insert(markerModules, source)
+    return source
+end
+
+local function markerSourceOn(source)
+    return Options[source.prefix .. "Enabled"] and (not source.isAvailable or source.isAvailable())
+end
+
+-- The node a scan reports under 'key', if it already has one; it is kept by this scan.
+function markerNode(source, key)
+    local node = source.nodes[key]
+    if node then
+        source.seen[key] = true
+    end
+    return node
+end
+
+-- Adds a node reported by a scan under 'key'. 'node' holds at least x, y (world coordinates, the
+-- current map's instance unless node.instance) and the icon: atlasName or texture (a question mark
+-- if neither); optional name, scale (icon size factor), circle (round icon with a border), and
+-- anything the source or the supertrack keybinding needs (questID, areaPoiID, ...).
+function newMarkerNode(source, key, node)
+    node.instance = node.instance or player.uiMapID
+    local frame = acquireMarkerFrame(source)
+    frame:ClearAllPoints()
+    frame:SetPoint("CENTER")
+    frame:Hide()
+    if node.atlasName then
+        frame.texture:SetAtlas(node.atlasName)
+    else
+        frame.texture:SetTexture(node.texture or 134400)
+    end
+    setMarkerCircle(frame, node.circle)
+    frame.elapsed = 0
+    node.frame = frame
+    moveMarkerNode(node, node.x, node.y)
+    source.nodes[key] = node
+    source.seen[key] = true
+    styleMarkerNode(source, node)
+    return node
+end
+
+-- A node's new place (world coordinates), e.g. a moving rare or a quest objective area.
+function moveMarkerNode(node, x, y)
+    node.x, node.y = x, y
+    if node.frame then
+        node.frame.instance, node.frame.x, node.frame.y = node.instance, x, y
+    end
+end
+
+-- Settings changed: re-apply them to all nodes, or drop all when the source is off.
+function restyleMarkerSource(source)
+    local on = markerSourceOn(source)
+    for key, node in pairs(source.nodes) do
+        if not on then
+            releaseMarkerNode(source, key)
+        elseif node.frame then
+            styleMarkerNode(source, node)
+        end
+    end
+end
+
+-- Scans the source when its interval has passed (nodes not reported again give their frame back),
+-- then places its nodes on the HUD.
+function setMarkerSourceNodes(source)
+    if not markerSourceOn(source) then return end
+    if source.throttle >= markerSetting(source, "Interval") then
+        source.throttle = 0
+        local x, y
+        if player.x and player.y and player.uiMapID then
+            x, y = HBD:GetZoneCoordinatesFromWorld(player.x, player.y, player.uiMapID, false)
+        end
+        if x and y then
+            wipe(source.seen)
+            source.scan(source, x, y, markerRadius(source))
+            for key in pairs(source.nodes) do
+                if not source.seen[key] then
+                    releaseMarkerNode(source, key)
+                end
+            end
+        end
+    end
+    drawMarkerNodes(source)
+end
+
+-- The marker sources' part of the HUD update loop (updateHUD), settings refresh and update tick.
+function setAllMarkerSources()
+    for _, source in ipairs(markerModules) do
+        if source.scan then
+            setMarkerSourceNodes(source)
+        end
+    end
+end
+
+function restyleAllMarkerSources()
+    for _, source in ipairs(markerModules) do
+        if source.scan then
+            restyleMarkerSource(source)
+        end
+    end
+end
+
+function tickMarkerSources()
+    for _, source in ipairs(markerModules) do
+        if source.throttle then
+            source.throttle = source.throttle + 1
+        end
+    end
+end

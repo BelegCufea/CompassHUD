@@ -62,7 +62,7 @@ function updateHUD(force)
     updateHeading()
     setSupertrackerPointers()
     setGroupIcons()
-    setGatherMateNodes()
+    setAllMarkerSources()
     setPOITrackNodes()
     setQuestieNodes()
     -- after all marker modules: texts only on the closest faced marker of all of them
@@ -77,7 +77,7 @@ function onUpdate(_, elapsed)
     if timer < (1 / Options.Interval) then return end
     timer = 0
     groupThrottle = groupThrottle + 1
-    gatherMateThrottle = gatherMateThrottle + 1
+    tickMarkerSources()
     poiTrackThrottle = poiTrackThrottle + 1
     questieThrottle = questieThrottle + 1
     updateHUD(false)
@@ -400,7 +400,7 @@ function schedulePointerFontRefresh()
             end
         end
         updateGroupTexts()
-        updateGatherMate()
+        restyleAllMarkerSources()
         updatePoiTrack()
         updateQuestie()
     end)
@@ -579,7 +579,7 @@ function Addon:UpdateHUDSettings()
     updateHUD(true)
     updatePointerTextures()
     updateGroupTexts()
-    updateGatherMate()
+    restyleAllMarkerSources()
     updatePoiTrack()
     updateQuestie()
     UnregisterAttributeDriver(HUD, 'state-hudvisibility')

@@ -20,7 +20,6 @@ Options = nil
 HUD = nil
 timer = 0
 groupThrottle = 0
-gatherMateThrottle = 0
 poiTrackThrottle = 0
 questieThrottle = 0
 player ={x = 0, y = 0, angle = 0}
@@ -42,7 +41,6 @@ poiCache = {}
 poiCacheContinents = {}
 supertrackTargets = {}
 groupPointsTable = {}
-gatherMatePointTable = {}
 poiTrackPointTable = {}
 poiTrackCurrentMap = nil
 STtexture = { last = {} } -- SuperTracker retexture state; last = what was applied to the icon
