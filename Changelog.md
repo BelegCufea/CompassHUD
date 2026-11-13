@@ -6,7 +6,7 @@
   - Looks: `Clean` (flat and dark), `Fade` (no frame, a band fading to both sides), `Line` (no frame or background, a line on top), `Night`, `Classic gold`, `Gilded` (gold lines, no frame), `Forever` and `Forever, no frame` (dark leather, copper and antique gold), `ElvUI` / `EllesmereUI` (shown when that addon is loaded, with its font and colors), and `Original` (CompassHUD's look on a fresh install, also undoes your look changes).
   - `Preview background` (snow, sand, sky, grass, stone, night, ...) shows a plain background behind the compass and its markers, to check how a look reads on different surroundings. It is not saved.
 - **Minimap button / broker / AddOn compartment:** left-click opens the options in a window you can drag away from the compass (click again to close it), right-click in the game's settings as before.
-  - `Share a look`: your current look as text to copy and share (or keep), and a box to paste someone's look into and try it (`Keep` / `Revert` as with the other looks). Only the look is shared, never size, position or what the compass shows.
+  - `Your own look → Export` shows your current look as text in a window, to copy and share or keep; `Import` takes a look someone shared and tries it (`Keep` / `Revert` as with the other looks). Only the look is shared, never size, position or what the compass shows.
   - `Your own look → Restore` brings back the look you had before you first tried one, even after `Keep`.
 - **TomTom:** the supertracker keybinding now also clears the crazy arrow: press it while facing the TomTom pointer (at any distance). The waypoint stays in TomTom and shows as a marker again, as with `Clear waypoint from arrow` in TomTom's menu.
 

@@ -682,20 +682,69 @@ local function importLook(text)
     return { id = "Imported", name = "Imported look", settings = settings, pointerSettings = pointerSettings }, count
 end
 
-local shareText, shareError -- pasted text, and why it could not be used
-local importedLook -- the look imported last (its row shows Keep/Revert while it is tried)
+local importedLook -- the look imported last ("Your own look" shows Keep/Revert while it is tried)
 
-local function tryImportedLook(text)
-    shareText = text
-    local look, result = importLook(text)
-    if not look then
-        shareError = result
-        refreshOptions()
-        return
+-- The export and import windows: a movable window with a large text box (AceGUI).
+local AceGUI = LibStub("AceGUI-3.0")
+local shareWindow
+
+local function closeShareWindow()
+    if shareWindow then
+        -- (OnClose releases it)
+        shareWindow:Hide()
     end
-    shareError = nil
-    importedLook = look
-    tryLook(look)
+end
+
+local function openShareWindow(title, status)
+    closeShareWindow()
+    local window = AceGUI:Create("Frame")
+    window:SetTitle(title)
+    window:SetStatusText(status)
+    window:SetLayout("Fill")
+    window:SetWidth(520)
+    window:SetHeight(300)
+    window:EnableResize(false)
+    local box = AceGUI:Create("MultiLineEditBox")
+    box:SetLabel("")
+    window:AddChild(box)
+    window:SetCallback("OnClose", function(widget)
+        if shareWindow == widget then shareWindow = nil end
+        -- AceGUI reuses its widgets (also for other addons): give the button its own label back
+        box.button:SetText(ACCEPT)
+        AceGUI:Release(widget)
+    end)
+    shareWindow = window
+    return window, box
+end
+
+-- Your current look as text, selected for copying.
+local function showExportWindow()
+    local text = exportLook()
+    local _, box = openShareWindow("CompassHUD: your look", "Ctrl+C to copy, then share or keep it. Only the look, never size, position or what the compass shows.")
+    box:DisableButton(true)
+    box:SetText(text)
+    -- whatever is typed into it, the box keeps showing the look
+    box:SetCallback("OnTextChanged", function(widget) widget:SetText(text); widget:HighlightText() end)
+    box:SetFocus()
+    box:HighlightText()
+end
+
+-- A box to paste a shared look into; Try tries it like the other looks.
+local function showImportWindow()
+    local window, box = openShareWindow("CompassHUD: use a shared look", "Paste a look (Ctrl+V), then Try.")
+    box.button:SetText("Try")
+    box:DisableButton(false)
+    box:SetCallback("OnEnterPressed", function(_, _, text)
+        local look, result = importLook(text)
+        if not look then
+            window:SetStatusText("|cnRED_FONT_COLOR:" .. result .. "|r")
+            return
+        end
+        importedLook = look
+        closeShareWindow()
+        tryLook(look)
+    end)
+    box:SetFocus()
 end
 
 ------------------------------------------------------------------------------------------------
@@ -902,18 +951,20 @@ local looksArgs = {
         get = function() return lookSamples end,
         set = function(_, value) setLookSamples(value) end,
     },
-    -- the player's own look, saved when a look was first tried in this profile
+    -- the player's own look: Restore (saved when a look was first tried in this profile), and
+    -- sharing it as text (Export) or using a shared one (Import)
     OwnLook = {
         type = "group",
         order = 5,
         inline = true,
-        name = "Your own look",
-        hidden = function() return not Options.LookBackup end,
+        name = function()
+            return trying(importedLook) and "Your own look  |cnGREEN_FONT_COLOR:(trying a shared look)|r" or "Your own look"
+        end,
         args = {
             Desc = {
                 type = "description",
                 order = 1,
-                name = "The look you had before you first tried one here. Brings it back, also after you kept another look.",
+                name = "Restore brings back the look you had before you first tried one here, also after you kept another. Export shows your current look as text to share or keep; Import tries a look someone shared.",
                 fontSize = "medium",
             },
             Restore = {
@@ -921,6 +972,37 @@ local looksArgs = {
                 order = 2,
                 name = "Restore",
                 func = restoreOwnLook,
+                hidden = function() return not Options.LookBackup or trying(importedLook) end,
+            },
+            Keep = {
+                type = "execute",
+                order = 3,
+                name = "Keep",
+                desc = "Keep the shared look.",
+                func = keepLook,
+                hidden = function() return not trying(importedLook) end,
+            },
+            Revert = {
+                type = "execute",
+                order = 4,
+                name = "Revert",
+                desc = "Go back to the look you had before trying.",
+                func = revertLook,
+                hidden = function() return not trying(importedLook) end,
+            },
+            Export = {
+                type = "execute",
+                order = 5,
+                name = "Export",
+                desc = "Your current look as text, to copy and share or keep.",
+                func = showExportWindow,
+            },
+            Import = {
+                type = "execute",
+                order = 6,
+                name = "Import",
+                desc = "Paste a look someone shared and try it.",
+                func = showImportWindow,
             },
         },
     },
@@ -978,64 +1060,6 @@ for index, look in ipairs(looks) do
         },
     }
 end
-
--- Sharing: your look as text to copy, and a box to paste someone's look into and try it.
-looksArgs.Share = {
-    type = "group",
-    order = 100,
-    inline = true,
-    name = function()
-        return trying(importedLook) and "Share a look  |cnGREEN_FONT_COLOR:(trying the pasted look)|r" or "Share a look"
-    end,
-    args = {
-        Desc = {
-            type = "description",
-            order = 1,
-            name = "Your look as text, to share it or keep it: click into the box, Ctrl+A, Ctrl+C. To use a look someone shared, paste it into the box below and press Enter: it is tried like the looks above. Only the look is shared, never size, position or what the compass shows.",
-            fontSize = "medium",
-        },
-        Export = {
-            type = "input",
-            order = 2,
-            name = "Your look",
-            width = "full",
-            get = function() return exportLook() end,
-            -- (the box shows your current look; anything typed into it is ignored)
-            set = function() refreshOptions() end,
-        },
-        Import = {
-            type = "input",
-            order = 3,
-            name = "Paste a look and press Enter",
-            width = "full",
-            get = function() return shareText or "" end,
-            set = function(_, text) tryImportedLook(text) end,
-        },
-        Error = {
-            type = "description",
-            order = 4,
-            name = function() return shareError and ("|cnRED_FONT_COLOR:" .. shareError .. "|r") or "" end,
-            hidden = function() return not shareError end,
-            fontSize = "medium",
-        },
-        Keep = {
-            type = "execute",
-            order = 5,
-            name = "Keep",
-            desc = "Keep the pasted look.",
-            func = keepLook,
-            hidden = function() return not trying(importedLook) end,
-        },
-        Revert = {
-            type = "execute",
-            order = 6,
-            name = "Revert",
-            desc = "Go back to the look you had before trying.",
-            func = revertLook,
-            hidden = function() return not trying(importedLook) end,
-        },
-    },
-}
 
 Addon.Options.args.Tabs.args.Looks = {
     type = "group",
