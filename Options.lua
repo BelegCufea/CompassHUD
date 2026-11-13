@@ -2360,6 +2360,17 @@ HandyNotesOptions = markerModuleOptions("HandyNotes", {
     what = "icon",
     titleHeader = "Name",
     extraArgs = {
+        HandyNotesNearbyZones = {
+            type = "toggle",
+            order = 13.5,
+            name = "Icons from nearby zones",
+            desc = "Also show the icons of zones and cities around you that are within the scanning radius, not only of the zone you are in (HandyNotes' minimap shows only the zone you are in). Asks the plugins about more maps, so it costs a bit more.",
+            width = "full",
+            set = function(_, value)
+                Options.HandyNotesNearbyZones = value
+                handyNotesPluginsChanged()
+            end,
+        },
         HandyNotesPlugins = {
             type = "multiselect",
             order = 14,

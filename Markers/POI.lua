@@ -361,12 +361,25 @@ function supertrackPOITrack()
                 end
             end
             SetSuperTrackedVignette(poi.vignetteGUID)
-        elseif CanSetUserWaypointOnMap(poi.instance) then
+        else
+            -- the map for the waypoint: the icon's own (waypointMapID, e.g. a HandyNotes icon of a
+            -- nearby zone, outside the current map) or the current one, if it lies on it
+            local waypointMap, xZone, yZone
+            for _, mapID in ipairs({ poi.waypointMapID or false, poi.instance or false }) do
+                if mapID and CanSetUserWaypointOnMap(mapID) then
+                    xZone, yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, mapID, false)
+                    if xZone and yZone then
+                        waypointMap = mapID
+                        break
+                    end
+                end
+            end
+            if not waypointMap then return end
             -- remembered, so the supertracker pointer of the waypoint gets the icon's name and look
             -- (texCoords, color: a part of a texture sheet and its tint, e.g. HandyNotes icons)
             local poiTracked = { atlasName = poi.atlasName, texture = poi.texture, texCoords = poi.texCoords, color = poi.color,
-                name = poi.name, x = poi.x, y = poi.y, instance = poi.instance, questID = poi.questID }
-            poiTracked.xZone, poiTracked.yZone = HBD:GetZoneCoordinatesFromWorld(poi.x, poi.y, poi.instance, false)
+                name = poi.name, x = poi.x, y = poi.y, instance = waypointMap, questID = poi.questID }
+            poiTracked.xZone, poiTracked.yZone = xZone, yZone
             local pos = CreateVector2D(poiTracked.xZone, poiTracked.yZone)
             local mapPoint = UiMapPoint.CreateFromVector2D(poiTracked.instance, pos)
             poiNodes.tracked = poiTracked

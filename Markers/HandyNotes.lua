@@ -8,7 +8,7 @@ local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
 
-local pairs, type, pcall, tostring, tonumber, select, math, table, wipe = pairs, type, pcall, tostring, tonumber, select, math, table, wipe
+local ipairs, pairs, type, pcall, tostring, tonumber, select, math, table, wipe = ipairs, pairs, type, pcall, tostring, tonumber, select, math, table, wipe
 local GetTime = GetTime
 local C_TooltipInfo, C_QuestLog, C_Item, C_CurrencyInfo, C_Spell, C_Map = C_TooltipInfo, C_QuestLog, C_Item, C_CurrencyInfo, C_Spell, C_Map
 local GetAchievementInfo, EJ_GetInstanceInfo = GetAchievementInfo, EJ_GetInstanceInfo
@@ -31,6 +31,7 @@ handyNotesNodes = registerMarkerSource({
         Supertrack         = true,
         HideAtTarget       = true,
         Plugins            = {}, -- [plugin name] = false: not shown on the compass
+        NearbyZones        = false, -- also the nodes of zones around (off: as HandyNotes' minimap)
     },
     speech = {
         order = 60,
@@ -190,9 +191,10 @@ local function iconOf(iconpath)
     return iconpath
 end
 
--- Reads one plugin's nodes of the current map into the cache.
-local function readPlugin(pluginName, handler, entries)
-    local uiMapID = player.uiMapID
+-- Reads one plugin's nodes of a map (the current one, or a nearby one) into the cache. 'places'
+-- (nearby zones only): nodes already read at the same place from another map are skipped (a
+-- plugin may show a city's nodes on its zone's map too).
+local function readPlugin(pluginName, handler, entries, uiMapID, places)
     local ok, iter, state, value = pcall(handler.GetNodes2, handler, uiMapID, true)
     if not (ok and type(iter) == "function") then return end
     local label = handyNotesPluginLabel(pluginName)
@@ -206,6 +208,12 @@ local function readPlugin(pluginName, handler, entries)
             local xZone, yZone = math.floor(coord / 10000) / 10000, (coord % 10000) / 10000
             -- (another map's coordinates, e.g. a sub zone's: world coordinates are the same)
             local x, y, instance = HBD:GetWorldCoordinatesFromZone(xZone, yZone, mapID)
+            local place = places and x and y and (pluginName .. ":" .. math.floor(x / 2) .. ":" .. math.floor(y / 2))
+            if place and places[place] then
+                x = nil -- the same node, read from another map
+            elseif place then
+                places[place] = true
+            end
             if x and y and instance == player.instance then
                 entries[pluginName .. ":" .. mapID .. ":" .. coord] = {
                     x = x, y = y,
@@ -213,6 +221,8 @@ local function readPlugin(pluginName, handler, entries)
                     texture = texture, texCoords = texCoords, color = color,
                     scale = type(scale) == "number" and math.min(math.max(scale, 0.3), 3) or nil,
                     plugin = label,
+                    -- the map its coordinates are on: the supertrack keybinding's waypoint goes there
+                    waypointMapID = mapID,
                     -- tells a changed icon (e.g. a rare killed) from the same one
                     iconKey = tostring(texture) .. (texCoords and table.concat(texCoords, ",") or "")
                         .. (color and (tostring(color.r) .. tostring(color.g) .. tostring(color.b)) or ""),
@@ -222,8 +232,56 @@ local function readPlugin(pluginName, handler, entries)
     end
 end
 
--- The cache holds the current map's nodes; read again on a map change, a HandyNotes update
--- message, a settings change (see restyle) or after REFRESH seconds.
+-- "Icons from nearby zones": the zones (and cities) of the player's continent whose area comes
+-- within the scanning radius of the player, besides the current map. Each zone's area in world
+-- coordinates is worked out once per continent.
+local zoneAreas = {} -- [continent uiMapID] = { { mapID, instance, minX, maxX, minY, maxY }, ... }
+
+local function continentOf(uiMapID)
+    local info = C_Map.GetMapInfo(uiMapID)
+    for _ = 1, 10 do
+        if not info then return end
+        if info.mapType == Enum.UIMapType.Continent then return info.mapID end
+        info = info.parentMapID and info.parentMapID > 0 and C_Map.GetMapInfo(info.parentMapID)
+    end
+end
+
+local function areasOf(continent)
+    if zoneAreas[continent] then return zoneAreas[continent] end
+    local areas = {}
+    for _, child in ipairs(C_Map.GetMapChildrenInfo(continent, Enum.UIMapType.Zone, true) or {}) do
+        local x1, y1, instance = HBD:GetWorldCoordinatesFromZone(0, 0, child.mapID)
+        local x2, y2 = HBD:GetWorldCoordinatesFromZone(1, 1, child.mapID)
+        if x1 and y1 and x2 and y2 then
+            areas[#areas + 1] = { child.mapID, instance, math.min(x1, x2), math.max(x1, x2), math.min(y1, y2), math.max(y1, y2) }
+        end
+    end
+    zoneAreas[continent] = areas
+    return areas
+end
+
+local function nearbyMaps()
+    local maps = { player.uiMapID }
+    local continent = continentOf(player.uiMapID)
+    if not (continent and player.x and player.y) then return maps end
+    local radius = markerRadius(handyNotesNodes)
+    for _, area in ipairs(areasOf(continent)) do
+        local mapID, instance, minX, maxX, minY, maxY = area[1], area[2], area[3], area[4], area[5], area[6]
+        if mapID ~= player.uiMapID and instance == player.instance then
+            -- the player's distance to the zone's area (0 inside it)
+            local dx = math.max(minX - player.x, 0, player.x - maxX)
+            local dy = math.max(minY - player.y, 0, player.y - maxY)
+            if dx * dx + dy * dy <= radius * radius then
+                maps[#maps + 1] = mapID
+            end
+        end
+    end
+    return maps
+end
+
+-- The cache holds the current map's nodes (with "Icons from nearby zones" also those of the zones
+-- around); read again on a map change, a HandyNotes update message, a settings change (see
+-- restyle) or after REFRESH seconds.
 local function refreshCache()
     local cache = handyNotesNodes.cache
     local now = GetTime()
@@ -233,11 +291,20 @@ local function refreshCache()
     local profile = HandyNotes.db and HandyNotes.db.profile
     if profile and profile.enabled == false then return cache.entries end
     local enabledPlugins = profile and profile.enabledPlugins
+    -- off: only the current map, as HandyNotes' minimap
+    local maps = Options.HandyNotesNearbyZones and nearbyMaps() or nil
+    local places = maps and {} or nil
     for pluginName, handler in pairs(HandyNotes.plugins) do
         if type(handler) == "table" and type(handler.GetNodes2) == "function"
             and not (enabledPlugins and enabledPlugins[pluginName] == false)
             and Options.HandyNotesPlugins[pluginName] ~= false then
-            readPlugin(pluginName, handler, cache.entries)
+            if maps then
+                for _, uiMapID in ipairs(maps) do
+                    readPlugin(pluginName, handler, cache.entries, uiMapID, places)
+                end
+            else
+                readPlugin(pluginName, handler, cache.entries, player.uiMapID)
+            end
         end
     end
     return cache.entries
