@@ -782,6 +782,17 @@ for index, look in ipairs(looks) do
         name = function() return trying(look) and (look.name .. "  |cnGREEN_FONT_COLOR:(trying)|r") or look.name end,
         hidden = look.available and function() return not look.available() end,
         args = {
+            -- Media\Looks\<id>.tga: the compass with sample markers on the Sky preview background
+            -- (made from docs/looks/<id>.png, see TODO.md); a look without one sets picture = false
+            Picture = look.picture ~= false and {
+                type = "description",
+                order = 0.5,
+                name = "",
+                image = [[Interface\AddOns\]] .. ADDON_NAME .. [[\Media\Looks\]] .. look.id,
+                imageWidth = 384,
+                imageHeight = 96,
+                width = "full",
+            } or nil,
             Desc = {
                 type = "description",
                 order = 1,
