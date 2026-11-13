@@ -51,8 +51,6 @@ local SOURCE_DEFAULTS = {
     HideAtTarget       = true,
 }
 
-local sourceCount = 0
-
 -- Calls a function of a source; an error goes to the game's error handler (BugGrabber shows it)
 -- and counts towards turning the source off. Returns ok and the function's first result.
 local function call(source, fn, ...)
@@ -256,7 +254,6 @@ function API.RegisterMarkerSource(def)
         end
     end
 
-    sourceCount = sourceCount + 1
     local source = { prefix = id, publicName = name, errors = 0 }
     local handle = setmetatable({ id = id, source = source, multiDefaults = {} }, Handle)
     local scan = setmetatable({ source = source }, Scan)
@@ -292,8 +289,9 @@ function API.RegisterMarkerSource(def)
     end
     source.defaults = defaults
     local speech = type(def.speech) == "table" and def.speech or {}
+    -- the same order for all: the Speech tab and Minimap tracking list them alphabetically
     source.speech = {
-        order = 100 + sourceCount,
+        order = 100,
         default = speech.default and true or false,
         name = speech.name or name,
         desc = speech.desc or ("The markers shown by Minimap tracking -> " .. name .. " (turn them on there)."),
@@ -304,9 +302,14 @@ function API.RegisterMarkerSource(def)
 
     source.optionsPage = markerModuleOptions(id, {
         name = name,
-        order = 1100 + sourceCount,
+        order = 1100,
         description = type(def.description) == "string" and def.description or "",
-        hidden = function() return not source.isAvailable() end,
+        -- (not hidden when the source failed: its page may hold more, e.g. TomTom's crazy arrow tab)
+        hidden = function()
+            if not def.isAvailable then return false end
+            local ok, available = pcall(def.isAvailable)
+            return ok and not available
+        end,
         enabledDesc = def.enabledDesc,
         what = type(def.what) == "string" and def.what or "marker",
         titleHeader = type(def.titleHeader) == "string" and def.titleHeader or "Name",

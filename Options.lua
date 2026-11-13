@@ -2392,24 +2392,6 @@ HandyNotesOptions = markerModuleOptions("HandyNotes", {
     },
 })
 
-TomTomOptions = markerModuleOptions("TomTom", {
-    name = "TomTom",
-    order = 1030,
-    description = "Shows your TomTom waypoints on the current map. The crazy arrow's waypoint is shown as the TomTom pointer instead. The supertracker keybinding makes the waypoint you face the crazy arrow's target.",
-    hidden = function() return not TomTom end,
-    what = "waypoint",
-    titleHeader = "Waypoint name",
-    extraArgs = {
-        TomTomOtherZones = {
-            type = "toggle",
-            order = 14,
-            name = "Waypoints from other zones",
-            desc = "Also show waypoints set on other maps of the continent you are on (e.g. in the zone around a city). Off: only waypoints set on the map you are on.",
-            width = "full",
-        },
-    },
-})
-
 function Addon:GetPointerTypes()
     local pointerTypes = {}
     for k, v in pairs(Options.Pointers) do
@@ -3149,7 +3131,12 @@ function Addon:ConstructDefaultsAndOptions()
     arrowOptions.inline = true
     arrowOptions.name = ""
     arrowOptions.order = 10
-    TomTomOptions.args.Pointers = {
+    -- the TomTom waypoints' page, built by their registration (Markers/TomTom.lua, API.lua)
+    local tomTomPage
+    for _, source in ipairs(markerModules) do
+        if source.prefix == "TomTom" then tomTomPage = source.optionsPage end
+    end
+    tomTomPage.args.Pointers = {
         type = "group",
         order = 30,
         name = "Crazy arrow",
@@ -3205,7 +3192,6 @@ function Addon:ConstructDefaultsAndOptions()
     TrackingOption.args.Group = GroupOptions
     TrackingOption.args.GatherMate = GatherMateOptions
     TrackingOption.args.Questie = QuestieOptions
-    TrackingOption.args.TomTom = TomTomOptions
     TrackingOption.args.HandyNotes = HandyNotesOptions
     -- sources registered through the public interface (API.lua) bring their own page
     for _, source in ipairs(markerModules) do
