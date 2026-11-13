@@ -2,8 +2,8 @@
 
 ## Good to know
 
+- ⚠️ **The TomTom pointer's settings have moved.** Look for them in **`Minimap tracking → TomTom → Crazy arrow`**, a new page next to Questie and GatherMate2 (shown when TomTom is loaded). The `TomTom` entry under `Supertracker → Pointers` and `Hide duplicate TomTom pointer` under `Supertracker → General` are gone from there. Your settings are kept.
 - **Minimap icons:** after you cross into another zone, the previous zone's icons stay until the next scan (as gathering nodes and Questie icons always did), and a changed filter shows on the next scan.
-- **TomTom pointer settings moved:** the crazy arrow pointer's textures and texts, and `Hide duplicate TomTom pointer`, are now in `Minimap tracking → TomTom → Crazy arrow` (no longer under `Supertracker → Pointers`). Your settings are kept.
 
 ## New
 
@@ -16,6 +16,7 @@
 
 ## Fix
 
+- **TomTom pointer:** it now goes away when the crazy arrow's waypoint is cleared in any way (it could stay on the compass), and hides while TomTom hides its arrow, e.g. when the waypoint is on another continent.
 - **TomTom pointer:** the turn-in texture is now also used for "Turn in: …" waypoints of TomTom's quest objectives when the game is not in English.
 
 ## Misc

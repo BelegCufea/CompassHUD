@@ -222,9 +222,7 @@ function getQuestOfferInfo(questID, uiMapID)
 end
 
 function resolveSuperTrackedTarget(event,...)
-    if TomTom and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() and supertrackTargets[tomTom] then
-        supertrackTargets[tomTom].track = false
-    end
+    -- (the TomTom pointer follows TomTom's arrow on every update: setSupertrackerPointers)
     local questID = GetSuperTrackedQuestID()
     local completed = false
     if questID and questID > 0 then

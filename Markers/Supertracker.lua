@@ -188,6 +188,17 @@ function setSupertrackerPointers()
 
     local hideTomTom = false
     local tt = supertrackTargets[tomTom]
+    -- The TomTom pointer follows TomTom's arrow: gone when the arrow has no waypoint any more
+    -- (cleared or removed in any way, not all of which go through the hooked functions), hidden
+    -- while TomTom hides its arrow (e.g. the waypoint is on another continent). With TomTom's
+    -- arrow turned off in its settings, only the first applies.
+    if tt and TomTom then
+        if TomTom.IsCrazyArrowEmpty and TomTom:IsCrazyArrowEmpty() then
+            tt.track = false
+        end
+        local arrowOn = TomTom.profile and TomTom.profile.arrow and TomTom.profile.arrow.enable
+        tt.arrowHidden = arrowOn and TomTomCrazyArrow and not TomTomCrazyArrow:IsShown() or false
+    end
     -- "Use TomTom's arrow": follow a change of TomTom's minimap theme (it sends no message for it)
     if tt and tt.frame and Options.Pointers[tt.frame.pointerType].worldmapTexture then
         local icon = tomTomArrowIcon()
@@ -221,7 +232,7 @@ function setSupertrackerPointers()
         if not quest then
             -- dropped above
         else
-        local questHide = (questID == tomTom) and hideTomTom
+        local questHide = (questID == tomTom) and (hideTomTom or quest.arrowHidden)
         if quest.moreArgs and quest.moreArgs.vignetteGUID and quest.moreArgs.vignetteGUID == vignetteGUID and quest.frame and quest.frame.minDistance and quest.frame.minDistance < 10 then
             questHide = true
             ClearAllSuperTracked()
