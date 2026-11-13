@@ -2355,6 +2355,35 @@ function Addon:CopyPointerSettings(from, to, what)
     StaticPopup_Show(copyPointersDialogName)
 end
 
+-- Sets the pointer textures of every pointer type from a texture preset (texturePresets, Data.lua),
+-- as the Presets page's "Set" button and the looks (Looks.lua) do. The caller re-applies the settings.
+function applyTexturePreset(presetName)
+    local presetTable = texturePresets[presetName]
+    if not presetTable then return end
+    for _, v in pairs(Options.Pointers) do
+        local questPointer = questPointers[v.value]
+        if questPointer then
+            local preset = presetTable[v.value]
+            local default = texturePresets[defaultTexturePreset][v.value]
+            local reference = preset and preset.reference and presetTable[preset.reference]
+            local atlasID = preset and (preset.atlasIDavailable or (reference and reference.atlasIDavailable)) or default.atlasIDavailable
+            local atlasAltID = preset and (preset.atlasIDturnin or (reference and reference.atlasIDturnin)) or default.atlasIDturnin or (reference and reference.atlasIDavailable) or default.atlasIDavailable
+            v.atlasID = atlasID
+            v.atlasAltID = atlasAltID
+            local texture = getPointerTextureByAtlasID(v.atlasID)
+            if texture then
+                v.textureScale = texture.textureScale or 1
+                v.textureRotate = texture.textureRotate and 1 or -1
+            end
+            texture = getPointerTextureByAtlasID(v.atlasAltID)
+            if texture then
+                v.textureAltScale = texture.textureScale or 1
+                v.textureAltRotate = texture.textureRotate and 1 or -1
+            end
+        end
+    end
+end
+
 function Addon:ConstructDefaultsAndOptions()
     local function atlasIDExists(atlasID)
         for _, data in pairs(pointerTextures) do
@@ -2495,28 +2524,7 @@ function Addon:ConstructDefaultsAndOptions()
                 order = 20,
                 name = "Set",
                 func = function()
-                    for k, v in pairs(Options.Pointers) do
-                        local questPointer = questPointers[v.value]
-                        if questPointer then
-                            local preset = texturePresets[texturePreset][v.value]
-                            local default = texturePresets[defaultTexturePreset][v.value]
-                            local reference = preset and preset.reference and texturePresets[texturePreset][preset.reference]
-                            local atlasID = preset and (preset.atlasIDavailable or (reference and reference.atlasIDavailable)) or default.atlasIDavailable
-                            local atlasAltID = preset and (preset.atlasIDturnin or (reference and reference.atlasIDturnin)) or default.atlasIDturnin or (reference and reference.atlasIDavailable) or default.atlasIDavailable
-                            v.atlasID = atlasID
-                            v.atlasAltID = atlasAltID
-                            local texture = getPointerTextureByAtlasID(v.atlasID)
-                            if texture then
-                                v.textureScale = texture.textureScale or 1
-                                v.textureRotate = texture.textureRotate and 1 or -1
-                            end
-                            texture = getPointerTextureByAtlasID(v.atlasAltID)
-                            if texture then
-                                v.textureAltScale = texture.textureScale or 1
-                                v.textureAltRotate = texture.textureRotate and 1 or -1
-                            end
-                        end
-                    end
+                    applyTexturePreset(texturePreset)
                     Addon:UpdateHUDSettings()
                 end
             },

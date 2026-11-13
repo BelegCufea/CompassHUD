@@ -30,6 +30,7 @@ Data.lua
 Defaults.lua
 Util.lua
 Options.lua
+Looks.lua
 Compass.lua
 API.lua
 Markers\Common.lua
