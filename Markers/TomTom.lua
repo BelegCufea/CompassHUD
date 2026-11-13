@@ -43,21 +43,25 @@ function tomTomArrowIcon()
     return themeTexture("GetThemeArrowTexture") or FALLBACK_ARROW
 end
 
--- The waypoints of one map, except 'skip' (the crazy arrow's); waypoints off the player's
--- continent are not added (Add returns nil).
-local function scanMap(scan, uiMapID, waypoints, skip, icon)
+-- The waypoints of one map; waypoints off the player's continent are not added (Add returns nil).
+-- The crazy arrow's one ('arrow') is hidden: it is shown as the TomTom pointer, but stays the
+-- faced marker for the keybinding, which then clears the arrow.
+local function scanMap(scan, uiMapID, waypoints, arrow, icon)
     for key, waypoint in pairs(waypoints) do
         local xZone, yZone = waypoint[2], waypoint[3]
-        if key ~= skip and type(xZone) == "number" and type(yZone) == "number" then
+        if type(xZone) == "number" and type(yZone) == "number" then
             local node = scan:Get(key)
             -- TomTom's minimap theme changed: the icon too
             if not node or node.texture ~= icon then
-                scan:Add(key, {
+                node = scan:Add(key, {
                     mapID = uiMapID, mapX = xZone, mapY = yZone,
                     name = type(waypoint.title) == "string" and waypoint.title or "TomTom waypoint",
                     texture = icon,
                     data = waypoint,
                 })
+            end
+            if node then
+                node.hidden = key == arrow
             end
         end
     end
@@ -67,7 +71,7 @@ local source
 source = CompassHUD.RegisterMarkerSource({
     id = "TomTom",
     name = "TomTom",
-    description = "Shows your TomTom waypoints on the current map. The crazy arrow's waypoint is shown as the TomTom pointer instead. The supertracker keybinding makes the waypoint you face the crazy arrow's target.",
+    description = "Shows your TomTom waypoints on the current map. The crazy arrow's waypoint is shown as the TomTom pointer instead. The supertracker keybinding makes the waypoint you face the crazy arrow's target, or clears the arrow when you face its waypoint.",
     what = "waypoint",
     titleHeader = "Waypoint name",
     isAvailable = tomTomLoaded,
@@ -90,25 +94,42 @@ source = CompassHUD.RegisterMarkerSource({
     },
 
     scan = function(scan)
-        local skip, icon = arrowKey(), tomTomWaypointIcon()
+        local arrow, icon = arrowKey(), tomTomWaypointIcon()
         if source:GetSetting("OtherZones") then
             for uiMapID, waypoints in pairs(TomTom.waypoints) do
                 if type(waypoints) == "table" then
-                    scanMap(scan, uiMapID, waypoints, skip, icon)
+                    scanMap(scan, uiMapID, waypoints, arrow, icon)
                 end
             end
         elseif type(TomTom.waypoints[scan.uiMapID]) == "table" then
-            scanMap(scan, scan.uiMapID, TomTom.waypoints[scan.uiMapID], skip, icon)
+            scanMap(scan, scan.uiMapID, TomTom.waypoints[scan.uiMapID], arrow, icon)
         end
     end,
 
+    -- The crazy arrow's waypoint can be faced at any distance, as its pointer is shown at any distance.
+    bypassesRadius = function(node)
+        return node.hidden
+    end,
+
     -- Supertrack keybinding: the faced waypoint becomes the crazy arrow's target (it then shows as
-    -- the TomTom pointer instead of a marker).
+    -- the TomTom pointer instead of a marker); on the crazy arrow's waypoint it clears the arrow
+    -- (the waypoint stays, as with "Clear waypoint from arrow" in TomTom's menu).
     supertrack = function(node)
         local waypoint = node.data
-        if not (TomTom.SetCrazyArrow and waypoint) then return false end
+        if not waypoint then return false end
+        if node.hidden then
+            if TomTom.ClearCrazyArrowPoint then
+                -- before the clear: TomTom may set the closest waypoint right away (hook sets it again)
+                supertrackTargets[tomTom].track = false
+                TomTom:ClearCrazyArrowPoint(false)
+            end
+            source:Rescan()
+            return true
+        end
+        if not TomTom.SetCrazyArrow then return false end
         local arrival = waypoint.arrivaldistance or (TomTom.profile and TomTom.profile.arrow and TomTom.profile.arrow.arrival)
         TomTom:SetCrazyArrow(waypoint, arrival, waypoint.title)
+        source:Rescan()
         return true
     end,
 })

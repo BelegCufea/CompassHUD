@@ -524,8 +524,11 @@ function drawMarkerNodes(module)
             if angle < visible and angle > -visible then
                 node.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, offset)
                 shown = true
+                -- hidden by its source (e.g. the crazy arrow's waypoint, shown as the TomTom pointer)
+                if node.hidden then
+                    shown = false
                 -- already shown as the supertracker pointer: no second marker
-                if target then
+                elseif target then
                     local distance = HBD:GetWorldDistance(node.instance, node.x, node.y, target.x, target.y)
                     if distance and distance <= SAME_POINT_YARDS then
                         shown = false
@@ -635,7 +638,8 @@ end
 -- if neither); optional name, scale (icon size factor), circle (round icon with a border),
 -- texCoords ({ left, right, top, bottom } of the texture), color ({ r, g, b, a } tint),
 -- waypointMapID (the map the node lies on, if it can be outside the current one: the supertrack
--- keybinding's waypoint is set there), and anything the source or the supertrack keybinding needs
+-- keybinding's waypoint is set there), hidden (not drawn, but can still be the faced node for the
+-- supertrack keybinding; may be changed on every scan), and anything the source or the supertrack keybinding needs
 -- (questID, areaPoiID, ...).
 function newMarkerNode(source, key, node)
     node.instance = node.instance or player.uiMapID

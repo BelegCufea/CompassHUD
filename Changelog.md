@@ -1,5 +1,9 @@
 # v2.0.0 (unreleased)
 
+## New
+
+- **TomTom:** the supertracker keybinding now also clears the crazy arrow: press it while facing the TomTom pointer (at any distance). The waypoint stays in TomTom and shows as a marker again, as with `Clear waypoint from arrow` in TomTom's menu.
+
 ## *For developers only*
 
 - *The compass frame is now called `CompassHUDFrame` (it was `CompassHUD`), e.g. for anchoring to it in WeakAuras or a layout addon. `CompassHUD` is now the addon's interface for other addons.*
