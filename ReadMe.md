@@ -15,6 +15,7 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 
 - Fully movable and resizable compass strip.
 - Optional numeric heading display.
+- Ready-made looks for the whole compass (try them live, keep or revert), and looks shared as text.
 - Support for predefined or custom compass textures, or a strip built from configurable letters and degree marks.
 - Plethora of markers to be displayed on the compass:
   - the quest, map pin, POI or vignette you are tracking (supertracking), each quest type with its own look,
@@ -50,7 +51,7 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 
 ## Configuration
 
-Find the `CompassHUD` addon in the `Options` -> `AddOns` section of the game menu. It has the main page and the `Supertracker`, `Minimap tracking` and `Profiles` subpages. The AddOns compartment entry (and the optional minimap button) opens the settings too.
+Find the `CompassHUD` addon in the `Options` -> `AddOns` section of the game menu. It has the main page and the `Supertracker`, `Minimap tracking` and `Profiles` subpages. The AddOns compartment entry (and the optional minimap button) opens the settings too: left-click in a window you can drag away from the compass, right-click in the game's settings.
 
 Most settings have a tooltip with more details when you hover over them.
 
@@ -67,6 +68,15 @@ Most settings have a tooltip with more details when you hover over them.
 
 *The compass in the game's Edit Mode (drag it to move, click it for the options):*</br>
 ![EditMode](https://i.imgur.com/pf4eOgR.png)
+
+- The `Looks` tab has ready-made looks for the whole compass: frame, letters, fonts, colors and pointer textures, each with a picture. A look never changes the compass size, position or what it shows.
+  - `Try` shows a look on the compass right away; then `Keep` it or `Revert` to the look you had, in the same row.
+  - Looks: `Clean`, `Fade`, `Line`, `Night`, `Classic gold`, `Gilded`, `Forever`, `Forever, no frame`, `ElvUI` and `EllesmereUI` (shown when that addon is loaded, with its font and colors), and `Original` (CompassHUD's look on a fresh install, also undoes your look changes).
+  - `Your own look`: `Restore` brings back the look you had before you first tried one, even after `Keep`. `Export` shows your current look as text to share or keep; `Import` tries a look someone shared. Only the look is shared.
+  - `Preview background` puts a plain background (snow, sand, sky, grass, stone, night, ...) behind the compass, to see how a look reads on different surroundings. It is not saved.
+  - Tweak a look further in the other tabs.
+
+![Looks](https://i.imgur.com/1GSQnvs.png)
 
 - The `Appearance` tab styles the HUD frame (central pin, opacity, border, background, edge line). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one. Party/raid names keep their own color setting. `Max title width` cuts off long titles of the supertracker pointers and of all icon markers with "..." (0 = no limit).
 
