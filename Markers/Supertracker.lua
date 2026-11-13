@@ -188,6 +188,15 @@ function setSupertrackerPointers()
 
     local hideTomTom = false
     local tt = supertrackTargets[tomTom]
+    -- "Use TomTom's arrow": follow a change of TomTom's minimap theme (it sends no message for it)
+    if tt and tt.frame and Options.Pointers[tt.frame.pointerType].worldmapTexture then
+        local icon = tomTomArrowIcon()
+        if icon ~= tt.texture then
+            tt.texture = icon
+            applyPointerTexture(tt)
+            updatePointerFrame(tt.frame)
+        end
+    end
     if Options.HideTomTomAtTarget and tt and tt.track and tt.x and tt.y and target and target.x and target.y
         and target.instance == tt.instance and target.frame and Options.Pointers[target.frame.pointerType].enabled then
         local distance = HBD:GetWorldDistance(target.instance, tt.x, tt.y, target.x, target.y)
