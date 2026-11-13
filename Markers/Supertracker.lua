@@ -42,7 +42,7 @@ function updatePointerFrame(questPointer)
     questPointer.flipped = false
     if questPointer.position > 0 then
         questPointer.flipped = true
-        if (completed and (options.textureAltRotate == 1)) or (not completed and (options.textureRotate == 1)) then
+        if pointer.rotateIcon or (completed and (options.textureAltRotate == 1)) or (not completed and (options.textureRotate == 1)) then
             questPointer.texture:SetTexCoord(cropX, 1 - cropX, 1 - cropY, cropY)
         end
         point = "BOTTOM"
@@ -231,7 +231,7 @@ function setSupertrackerPointers()
                         local side = math.abs(angle)/angle
                         local option = Options.Pointers[quest.frame.pointerType]
                         -- "a or b and not c" parsed as "a or (b and not c)": compute the flag once instead
-                        local rotates = (quest.completed and option.textureAltRotate == 1) or (not quest.completed and option.textureRotate == 1)
+                        local rotates = quest.rotateIcon or (quest.completed and option.textureAltRotate == 1) or (not quest.completed and option.textureRotate == 1)
                         if rotates and not quest.overrideRotation then
                             pointerRotate = (PI/2 * side * ((quest.frame.flipped and 1) or -1))
                         elseif Options.StayArrow then
@@ -277,12 +277,19 @@ function applyPointerTexture(entry)
     local options = Options.Pointers[frame.pointerType]
     local moreArgs = entry.moreArgs
     entry.overrideRotation = false
+    entry.rotateIcon = false
     entry.circle = entry.category == Enum.QuestClassification.WorldQuest
     frame.scaleMultiplier = 1.5
     if entry.texture and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         frame.texture:SetTexture(entry.texture)
-        entry.overrideRotation = true
         frame.scaleMultiplier = 1
+        if frame.pointerType == questPointerIdent .. tomTom then
+            -- TomTom's minimap arrow: turns like the rotating pointer textures (at the strip and,
+            -- with "Pointers stay on the compass", sideways toward the target)
+            entry.rotateIcon = true
+        else
+            entry.overrideRotation = true
+        end
     elseif entry.atlasName and (options.worldmapTexture or (moreArgs and moreArgs.worldmapTexture)) then
         frame.texture:SetAtlas(entry.atlasName)
         entry.overrideRotation = true

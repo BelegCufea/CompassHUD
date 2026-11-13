@@ -91,8 +91,8 @@ function tomtomSetCrazyArrow(self, uid, dist, title)
     -- the text around %s, matched literally (TomTom adds the route on a second line)
     local pattern = "^" .. turnIn:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"):gsub("%%%%s", ".+")
     local completed = type(title) == "string" and title:match(pattern) ~= nil or false
-    -- the icon of TomTom's minimap theme, used with "Use TomTom's icon" (worldmapTexture)
-    setSupertrackTarget(questID, uid[2], uid[3], uid[1], questType, title, completed, nil, tomTomWaypointIcon())
+    -- the arrow of TomTom's minimap theme, used with "Use TomTom's arrow" (worldmapTexture)
+    setSupertrackTarget(questID, uid[2], uid[3], uid[1], questType, title, completed, nil, tomTomArrowIcon())
     tomTomActive = TomTom:GetKey(uid)
     supertrackTargets[tomTom].track = true
 end

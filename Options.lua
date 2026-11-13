@@ -3148,8 +3148,8 @@ function Addon:ConstructDefaultsAndOptions()
             ArrowTomTomIcon = {
                 type = "toggle",
                 order = 3,
-                name = "Use TomTom's icon",
-                desc = "Show the waypoint icon of TomTom's minimap theme for the pointer, both in progress and for a turn-in, instead of the textures below.",
+                name = "Use TomTom's arrow",
+                desc = "Show the arrow of TomTom's minimap theme (the one at the minimap edge) for the pointer, both in progress and for a turn-in, instead of the textures below. It points at the compass, and sideways toward the waypoint when the pointer stays at the compass edge.",
                 width = "full",
                 get = function() return Options.Pointers[arrowKey].worldmapTexture end,
                 set = function(_, value)

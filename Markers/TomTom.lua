@@ -41,14 +41,24 @@ end
 
 local FALLBACK_ICON = "Interface\\AddOns\\TomTom\\Images\\GoldGreenDot"
 
--- The icon TomTom uses for waypoints on the minimap (its minimap theme), also used for the TomTom
--- pointer with "Use TomTom's icon".
-function tomTomWaypointIcon()
+local FALLBACK_ARROW = "Interface\\AddOns\\TomTom\\Images\\MinimapArrow-Green"
+
+-- A texture of TomTom's minimap theme ('getter': GetThemeDotTexture or GetThemeArrowTexture).
+local function themeTexture(getter)
     local registry = TomTom and TomTom.waypointThemeRegistry
     local minimap = TomTom and TomTom.profile and TomTom.profile.minimap
-    local texture = registry and registry.GetThemeDotTexture and minimap
-        and registry:GetThemeDotTexture(minimap.theme)
-    return texture or FALLBACK_ICON
+    return registry and registry[getter] and minimap and registry[getter](registry, minimap.theme)
+end
+
+-- The icon TomTom uses for waypoints on the minimap.
+function tomTomWaypointIcon()
+    return themeTexture("GetThemeDotTexture") or FALLBACK_ICON
+end
+
+-- The arrow TomTom shows at the minimap edge for waypoints out of range: the TomTom pointer's
+-- texture with "Use TomTom's arrow" (it turns like the rotating pointer textures).
+function tomTomArrowIcon()
+    return themeTexture("GetThemeArrowTexture") or FALLBACK_ARROW
 end
 
 -- The waypoints of one map: those on the player's continent (world instance), at their place
