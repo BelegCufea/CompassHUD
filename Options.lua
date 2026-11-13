@@ -26,7 +26,7 @@ speechSourceArgs = {
         type = "toggle",
         order = 10,
         name = "Supertracked target",
-        desc = "The quest, map pin, POI or vignette you are tracking.",
+        desc = "The quest, map pin, POI or vignette you are tracking, and the TomTom arrow's waypoint.",
         width = 1,
     },
 }
