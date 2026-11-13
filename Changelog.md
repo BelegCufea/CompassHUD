@@ -10,6 +10,7 @@
 
   ![Looks](https://i.imgur.com/1GSQnvs.png)
 - **Minimap button / broker / AddOn compartment:** left-click opens the options in a window you can drag away from the compass (click again to close it), right-click in the game's settings as before.
+- **TomTom waypoints:** `Any distance` (on by default) shows them beyond the scanning radius, as TomTom's minimap does with its edge arrows, also when using the minimap icons settings. Far ones fade to the minimum opacity.
 - **TomTom:** the supertracker keybinding now also clears the crazy arrow: press it while facing the TomTom pointer (at any distance). The waypoint stays in TomTom and shows as a marker again, as with `Clear waypoint from arrow` in TomTom's menu.
 
 ## *For developers only*

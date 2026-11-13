@@ -86,6 +86,14 @@ source = CompassHUD.RegisterMarkerSource({
             desc = "Also show waypoints set on other maps of the continent you are on (e.g. in the zone around a city). Off: only waypoints set on the map you are on.",
             default = true,
         },
+        {
+            -- as TomTom's minimap shows far waypoints as an arrow at its edge
+            key = "AnyDistance",
+            type = "toggle",
+            name = "Any distance",
+            desc = "Show waypoints at any distance, beyond the scanning radius (also when using the minimap icons settings). Far ones fade to the minimum opacity.",
+            default = true,
+        },
     },
     speech = {
         default = true,
@@ -106,9 +114,9 @@ source = CompassHUD.RegisterMarkerSource({
         end
     end,
 
-    -- The crazy arrow's waypoint can be faced at any distance, as its pointer is shown at any distance.
+    -- "Any distance"; the crazy arrow's waypoint always, as its pointer is shown at any distance.
     bypassesRadius = function(node)
-        return node.hidden
+        return node.hidden or source:GetSetting("AnyDistance")
     end,
 
     -- Supertrack keybinding: the faced waypoint becomes the crazy arrow's target (it then shows as
