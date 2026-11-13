@@ -11,6 +11,10 @@
   - `Waypoints from other zones` (on by default): also waypoints set on other maps of the continent you are on, e.g. in the zone around a city.
   - The crazy arrow's waypoint is not shown twice: it stays the TomTom pointer.
   - `Use supertracker keybinding` (on by default): the keybind makes the waypoint you face the crazy arrow's target. `Use text to speech` reads it out.
+- **HandyNotes** in `Minimap tracking → HandyNotes` (shown when HandyNotes is loaded, off by default): the icons HandyNotes plugins place on the minimap (e.g. MapNotes, the expansion plugins), with the same settings as the other icon sections (uses the `Minimap icons` settings by default).
+  - `Plugins`: which plugins appear on the compass (all by default). Plugins turned off in HandyNotes are not shown either.
+  - Names come from the plugins' own data where they provide it; other icons are titled with the plugin's name.
+  - `Use supertracker keybinding` (on by default) sets a map waypoint on the icon you face. `Use text to speech` reads it out.
 - **TomTom pointer:** `Use TomTom's arrow` (`Crazy arrow` tab, off by default) shows the arrow of TomTom's minimap theme instead of the pointer textures, both in progress and for a turn-in. It points at the compass, and sideways toward the waypoint when the pointer stays at the compass edge.
 - **Speech:** `TomTom crazy arrow` (on by default, also on the `Crazy arrow` tab) reads out the crazy arrow's waypoint, and `TomTom waypoints` the other waypoints.
 
