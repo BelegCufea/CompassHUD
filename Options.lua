@@ -2698,14 +2698,6 @@ function Addon:ConstructDefaultsAndOptions()
                 name = "Use reward texture"
             }
         end
-        if k == tomTom then
-            pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
-                type = "toggle",
-                order = 20,
-                name = "Use TomTom's icon",
-                desc = "Show the waypoint icon of TomTom's minimap theme instead of the textures below.",
-            }
-        end
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.pointerOffset = {
             type = "range",
             order = 30,
@@ -3151,6 +3143,19 @@ function Addon:ConstructDefaultsAndOptions()
                 disabled = function() return not Options.SpeechEnabled end,
                 get = function() return Options.SpeechTomTomArrow end,
                 set = function(_, value) Options.SpeechTomTomArrow = value end,
+            },
+            -- the pointer type's worldmapTexture: the texture given with the target (setSupertrackTarget)
+            ArrowTomTomIcon = {
+                type = "toggle",
+                order = 3,
+                name = "Use TomTom's icon",
+                desc = "Show the waypoint icon of TomTom's minimap theme for the pointer, both in progress and for a turn-in, instead of the textures below.",
+                width = "full",
+                get = function() return Options.Pointers[arrowKey].worldmapTexture end,
+                set = function(_, value)
+                    Options.Pointers[arrowKey].worldmapTexture = value
+                    Addon:UpdateHUDSettings()
+                end,
             },
             [arrowKey] = arrowOptions,
         },
