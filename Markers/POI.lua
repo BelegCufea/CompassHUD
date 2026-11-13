@@ -299,25 +299,30 @@ function poiNodes.scan()
 end
 
 -- The icon the supertrack keybinding acts on: the minimap icon or a node of a marker module with
--- "Use supertracker keybinding" (Questie, GatherMate), whichever is closest to the facing direction.
+-- "Use supertracker keybinding" (Questie, GatherMate, TomTom), whichever is closest to the facing
+-- direction, and its module.
 local function faceTrackedIcon()
-    local best = Options.POITrackEnabled and poiNodes.heading
+    local best, bestModule = Options.POITrackEnabled and poiNodes.heading, poiNodes
     if best and not (best.frame and best.instance == player.uiMapID and best.angle) then
         best = nil
     end
     for _, module in ipairs(markerModules) do
         local node = markerModuleHeading(module, "Supertrack")
         if node and (not best or math.abs(node.angle) < math.abs(best.angle)) then
-            best = node
+            best, bestModule = node, module
         end
     end
-    return best
+    return best, bestModule
 end
 
 function supertrackPOITrack()
     if not player.uiMapID then return end
 
-    local poi = faceTrackedIcon()
+    local poi, module = faceTrackedIcon()
+    -- a source with its own way of tracking (TomTom: the crazy arrow)
+    if poi and module.supertrack and module.supertrack(poi) then
+        return
+    end
     if poi then
         local stType = GetHighestPrioritySuperTrackingType()
         if poi.questID then

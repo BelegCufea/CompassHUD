@@ -582,6 +582,8 @@ end
 --                it has, by name without the prefix (e.g. { Radius = 150, Supertrack = false })
 --   speech       { name, desc, order, default }: its toggle on the Speech tab (What to read out),
 --                setting Speech<prefix> or speechOption (optional)
+--   supertrack   function(node) -> true when it tracked the node its own way (optional; else the
+--                supertrack keybinding uses the game's tracking, see supertrackPOITrack)
 --   title, bypassesRadius  optional, see markerTitle and drawMarkerNodes
 -- The shared code does the rest: scan throttle, frames and their pool, styling, drawing, nodes no
 -- longer reported, settings changes, and the supertrack keybinding and speech (markerModules).

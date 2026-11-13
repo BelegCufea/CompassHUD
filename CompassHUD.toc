@@ -37,6 +37,7 @@ Markers\Group.lua
 Markers\Gathering.lua
 Markers\POI.lua
 Markers\Questie.lua
+Markers\TomTom.lua
 CompassHUD.lua
 EditMode.lua
 Speech.lua

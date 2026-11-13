@@ -2351,6 +2351,15 @@ QuestieOptions = markerModuleOptions("Questie", {
     },
 })
 
+TomTomOptions = markerModuleOptions("TomTom", {
+    name = "TomTom",
+    order = 1030,
+    description = "Shows your TomTom waypoints on the current map. The crazy arrow's waypoint is shown as the TomTom pointer instead. The supertracker keybinding makes the waypoint you face the crazy arrow's target.",
+    hidden = function() return not TomTom end,
+    what = "waypoint",
+    titleHeader = "Waypoint name",
+})
+
 function Addon:GetPointerTypes()
     local pointerTypes = {}
     for k, v in pairs(Options.Pointers) do
@@ -3085,6 +3094,7 @@ function Addon:ConstructDefaultsAndOptions()
     TrackingOption.args.Group = GroupOptions
     TrackingOption.args.GatherMate = GatherMateOptions
     TrackingOption.args.Questie = QuestieOptions
+    TrackingOption.args.TomTom = TomTomOptions
     self.Options.args.Supertracker = SupertrackerOptions
     buildPresetPreviews()
     self.Options.args.TrackingIntegrations = TrackingOption
