@@ -47,6 +47,13 @@ POI_TRACK_WORLD_QUEST = "WorldQuest" -- world quests have their own bypass toggl
 -- expired, turned in) give their frame back to the pool. The game API records become the nodes.
 poiNodes = registerMarkerSource({
     prefix = "POITrack",
+    speechOption = "SpeechPOI", -- older name
+    speech = {
+        order = 20,
+        default = true,
+        name = "Minimap icons",
+        desc = "The icons shown by Minimap tracking -> Minimap icons (turn them on there).",
+    },
     -- tracked = the icon the supertrack keybinding set a user waypoint for (supertrackPOITrack)
 })
 

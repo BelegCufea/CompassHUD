@@ -23,6 +23,12 @@ end
 questieNodes = registerMarkerSource({
     prefix = "Questie",
     isAvailable = questieLoaded,
+    speech = {
+        order = 30,
+        default = true,
+        name = "Questie icons",
+        desc = "The icons shown by Minimap tracking -> Questie (turn them on there).",
+    },
     -- the minimap icons' values, which are used instead while UseMinimapSettings is on
     defaults = {
         UseMinimapSettings = true,

@@ -15,6 +15,12 @@ gatherNodes = registerMarkerSource({
     prefix = "GatherMate",
     -- GatherMate2 if loaded, else GatherLite
     isAvailable = function() return (GatherMate2 or GatherLite) and true or false end,
+    speech = {
+        order = 40,
+        default = false,
+        name = "Gathering nodes",
+        desc = "The herbs, ores and other nodes shown by Minimap tracking -> GatherMate2 / GatherLite (turn them on there).",
+    },
     -- full opacity (1/1, no fading) keeps the look from before the option existed; texts only on
     -- the faced node (texts visibility angle 2.5, was effectively 0 before v1.8)
     defaults = {

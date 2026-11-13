@@ -71,14 +71,7 @@ function updateSpeech()
         end
     end
 
-    local poi = Options.SpeechPOI and Options.POITrackEnabled and poiNodes.heading
-    if poi and poi.name and poi.angle and poi.frame and poi.frame:IsShown() and math.abs(poi.angle) < limit
-        and nameShown(poi.frame, poi.frame.Title) then
-        limit = math.abs(poi.angle)
-        candidate, name, distance = poi, poi.name, poi.distance
-    end
-
-    -- marker modules (Questie, GatherMate) with text to speech on
+    -- marker sources (minimap icons, Questie, gathering) with text to speech on
     for _, module in ipairs(markerModules) do
         local node = markerModuleHeading(module, "Speech")
         if node and node.name and node.frame:IsShown() and math.abs(node.angle) < limit

@@ -332,10 +332,15 @@ end
 -- loop and the features that look at all of them (supertrack keybinding, speech, faced texts).
 markerModules = {}
 
+-- The name of a module's text to speech setting: Speech<prefix>, or its own (speechOption).
+function markerSpeechOption(module)
+    return module.speechOption or ("Speech" .. module.prefix)
+end
+
 -- The node of a module closest to the facing direction, if the module is on and 'option'
 -- (e.g. "Supertrack", or "Speech" for Speech<prefix>) is enabled for it.
 function markerModuleHeading(module, option)
-    local enabled = option == "Speech" and Options["Speech" .. module.prefix] or Options[module.prefix .. option]
+    local enabled = option == "Speech" and Options[markerSpeechOption(module)] or Options[module.prefix .. option]
     local node = Options[module.prefix .. "Enabled"] and enabled and module.heading
     if node and node.frame and node.angle and node.instance == player.uiMapID then
         return node
@@ -575,11 +580,27 @@ end
 --                coordinates), radius: the scanning radius in yards (markerRadius)
 --   defaults     the source's setting defaults that differ from markerSourceDefaults, or that only
 --                it has, by name without the prefix (e.g. { Radius = 150, Supertrack = false })
+--   speech       { name, desc, order, default }: its toggle on the Speech tab (What to read out),
+--                setting Speech<prefix> or speechOption (optional)
 --   title, bypassesRadius  optional, see markerTitle and drawMarkerNodes
 -- The shared code does the rest: scan throttle, frames and their pool, styling, drawing, nodes no
 -- longer reported, settings changes, and the supertrack keybinding and speech (markerModules).
 function registerMarkerSource(source)
     addMarkerSourceDefaults(source.prefix, source.defaults)
+    local speech = source.speech
+    if speech then
+        local key = markerSpeechOption(source)
+        Addon.Defaults.profile[key] = speech.default
+        local isAvailable = source.isAvailable
+        speechSourceArgs[key] = {
+            type = "toggle",
+            order = speech.order,
+            name = speech.name,
+            desc = speech.desc,
+            width = 1,
+            hidden = isAvailable and function() return not isAvailable() end,
+        }
+    end
     source.nodes = source.nodes or {}
     source.framePool = source.framePool or {}
     source.seen = source.seen or {}

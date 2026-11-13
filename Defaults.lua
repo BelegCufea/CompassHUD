@@ -82,10 +82,7 @@ Addon.Defaults = {
         PointerFontColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
         PointerTitleMaxWidth   = 0,
         SpeechEnabled          = false,
-        SpeechPOI              = true,
-        SpeechSupertracked     = true,
-        SpeechQuestie          = true,
-        SpeechGatherMate       = false,
+        SpeechSupertracked     = true, -- the marker sources' Speech<prefix>: see registerMarkerSource
         SpeechDistance         = false,
         SpeechOnlyShownNames   = false,
         SpeechDegrees          = 10,

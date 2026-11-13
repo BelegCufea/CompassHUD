@@ -13,6 +13,24 @@ local AceConfig         = LibStub("AceConfig-3.0")
 local AceConfigDialog   = LibStub("AceConfigDialog-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
+-- Speech tab -> What to read out. Each marker source adds its toggle when it registers
+-- (registerMarkerSource, Markers/Common.lua).
+speechSourceArgs = {
+    SpeechSourcesDesc = {
+        type = "description",
+        order = 1,
+        name = "Of everything selected here, the one closest to the direction you are facing is read out. Icons are only read out while they are turned on in Minimap tracking.",
+        width = "full",
+    },
+    SpeechSupertracked = {
+        type = "toggle",
+        order = 10,
+        name = "Supertracked target",
+        desc = "The quest, map pin, POI or vignette you are tracking.",
+        width = 1,
+    },
+}
+
 Addon.Options = {
     type = "group",
     name = Const.METADATA.NAME,
@@ -972,44 +990,7 @@ Addon.Options = {
                             name = "What to read out",
                             inline = true,
                             disabled = function() return not Options.SpeechEnabled end,
-                            args = {
-                                SpeechSourcesDesc = {
-                                    type = "description",
-                                    order = 1,
-                                    name = "Of everything selected here, the one closest to the direction you are facing is read out. Icons are only read out while they are turned on in Minimap tracking.",
-                                    width = "full",
-                                },
-                                SpeechSupertracked = {
-                                    type = "toggle",
-                                    order = 10,
-                                    name = "Supertracked target",
-                                    desc = "The quest, map pin, POI or vignette you are tracking.",
-                                    width = 1,
-                                },
-                                SpeechPOI = {
-                                    type = "toggle",
-                                    order = 20,
-                                    name = "Minimap icons",
-                                    desc = "The icons shown by Minimap tracking -> Minimap icons (turn them on there).",
-                                    width = 1,
-                                },
-                                SpeechQuestie = {
-                                    type = "toggle",
-                                    order = 30,
-                                    name = "Questie icons",
-                                    desc = "The icons shown by Minimap tracking -> Questie (turn them on there).",
-                                    width = 1,
-                                    hidden = function() return not questieLoaded() end,
-                                },
-                                SpeechGatherMate = {
-                                    type = "toggle",
-                                    order = 40,
-                                    name = "Gathering nodes",
-                                    desc = "The herbs, ores and other nodes shown by Minimap tracking -> GatherMate2 / GatherLite (turn them on there).",
-                                    width = 1,
-                                    hidden = function() return not (GatherMate2 or GatherLite) end,
-                                },
-                            },
+                            args = speechSourceArgs,
                         },
                         SpeechDistance = {
                             type = "toggle",
