@@ -11,6 +11,8 @@ local LSM               = LibStub("LibSharedMedia-3.0")
 
 function addToLSM()
     LSM:Register("background", "CompassHUD gradient", [[Interface\Addons\]].. ADDON_NAME .. [[\Media\CompassHUD-gradient]])
+    -- a plain border (edge size = its thickness in pixels), for the flat looks (Looks.lua)
+    LSM:Register("border", "CompassHUD Pixel", [[Interface\Buttons\WHITE8X8]])
 end
 
 Addon.Defaults = {

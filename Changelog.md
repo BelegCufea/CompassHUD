@@ -2,7 +2,9 @@
 
 ## New
 
-- **Looks** tab (`Options → Looks`): ready-made looks for the whole compass (frame, letters, fonts, colors, pointer textures). `Try` puts one on the compass right away, then `Keep` it or `Revert` to your own look; `New profile` puts it into a copy of your profile instead. A look never changes the compass size, position or what it shows. `Default` brings back CompassHUD's own look after your changes.
+- **Looks** tab (`Options → Looks`): ready-made looks for the whole compass (frame, letters, fonts, colors, pointer textures). `Try` puts one on the compass right away, then `Keep` it or `Revert` to your own look; `New profile` puts it into a copy of your profile instead. A look never changes the compass size, position or what it shows.
+  - Looks: `Default` (CompassHUD's own look, also to undo your changes), `Clean` (flat and dark), `Classic gold`, `Forever` (dark leather, copper and antique gold), and `ElvUI` / `EllesmereUI` (shown when that addon is loaded, with its font and colors).
+  - `Restore my own look` brings back your look from before you first tried one, even after `Keep`.
 - **TomTom:** the supertracker keybinding now also clears the crazy arrow: press it while facing the TomTom pointer (at any distance). The waypoint stays in TomTom and shows as a marker again, as with `Clear waypoint from arrow` in TomTom's menu.
 
 ## *For developers only*
