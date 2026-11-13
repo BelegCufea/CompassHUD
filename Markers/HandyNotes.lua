@@ -8,8 +8,10 @@ local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
 
-local pairs, type, pcall, tostring, math, table, wipe = pairs, type, pcall, tostring, math, table, wipe
+local pairs, type, pcall, tostring, tonumber, select, math, table, wipe = pairs, type, pcall, tostring, tonumber, select, math, table, wipe
 local GetTime = GetTime
+local C_TooltipInfo, C_QuestLog, C_Item, C_CurrencyInfo, C_Spell, C_Map = C_TooltipInfo, C_QuestLog, C_Item, C_CurrencyInfo, C_Spell, C_Map
+local GetAchievementInfo, EJ_GetInstanceInfo = GetAchievementInfo, EJ_GetInstanceInfo
 
 local HBD = LibStub("HereBeDragons-2.0")
 
@@ -56,26 +58,87 @@ end
 -- HandyNotes asks for its plugins' nodes again when they change: so do we.
 Addon:RegisterMessage("HandyNotes_NotifyUpdate", function() handyNotesNodes.cache.time = 0 end)
 
--- A label without color codes, textures, links' placeholders ({npc:123}) and further lines.
-local function cleanName(text)
-    if type(text) ~= "string" then return end
-    text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T.-|t", ""):gsub("|A.-|a", "")
-        :gsub("{.-}", ""):gsub("\n.*", "")
-    text = text:match("^%s*(.-)%s*$")
-    return text ~= "" and text or nil
+-- NPC names by ID, from the game's tooltip data (as the plugins do it). A name not known yet is
+-- asked again on the next read of the plugins.
+local npcNames = {}
+local function npcName(id)
+    id = tonumber(id)
+    if not id then return end
+    if npcNames[id] then return npcNames[id] end
+    local data = C_TooltipInfo and C_TooltipInfo.GetHyperlink
+        and C_TooltipInfo.GetHyperlink("unit:Creature-0-0-0-0-" .. id .. "-0000000000")
+    local line = data and data.lines and data.lines[1]
+    local name = line and line.leftText
+    if type(name) == "string" and name ~= "" then
+        npcNames[id] = name
+        return name
+    end
 end
 
+-- The plugins' placeholders ({npc:123}, {achievement:40606}, ...) as names, like the expansion
+-- plugins render them in their tooltips; unknown ones are dropped.
+local linkNames = {
+    npc = npcName,
+    achievement = function(id) return GetAchievementInfo and select(2, GetAchievementInfo(id)) end,
+    quest = function(id) return C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(id) end,
+    item = function(id) return C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(id) end,
+    currency = function(id)
+        local info = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(id)
+        return info and info.name
+    end,
+    spell = function(id) return C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(id) end,
+    map = function(id)
+        local info = C_Map.GetMapInfo(id)
+        return info and info.name
+    end,
+    area = function(id) return C_Map.GetAreaInfo and C_Map.GetAreaInfo(id) end,
+}
+linkNames.daily = linkNames.quest
+
+local function renderLinks(text)
+    return (text:gsub("{(%l+):(%d+)(%l*)}", function(kind, id, suffix)
+        local get = linkNames[kind]
+        local ok, name = get and pcall(get, tonumber(id))
+        return ok and type(name) == "string" and (name .. (suffix or "")) or ""
+    end))
+end
+
+-- A label without color codes, textures and further lines, placeholders rendered.
+local function cleanName(text)
+    if type(text) ~= "string" then return end
+    text = renderLinks(text)
+    text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T.-|t", ""):gsub("|A.-|a", "")
+        :gsub("\n.*", "")
+    text = text:match("^%s*(.-)%s*$")
+    -- the expansion plugins' default label
+    if text == "" or text == UNKNOWN then return end
+    return text
+end
+
+-- An expansion plugin node (label), or anything else with a name, label or title.
 local function nameOf(data)
     if type(data) ~= "table" then return end
     return cleanName(data.name) or cleanName(data.label) or cleanName(data.title)
 end
 
+-- A MapNotes node: its name, else its NPC (npcID, npcIDs1, ...), its dungeon or raid (id: the
+-- dungeon journal's), else the kind of icon (type, e.g. "Jewelcrafting").
+local function mapNotesName(data)
+    if type(data) ~= "table" then return end
+    local name = nameOf(data) or npcName(data.npcID) or npcName(data.npcIDs1)
+    if not name and type(data.id) == "number" and type(data.type) == "string"
+        and (data.type:find("Dungeon") or data.type:find("Raid")) and EJ_GetInstanceInfo then
+        name = EJ_GetInstanceInfo(data.id)
+    end
+    return name or (type(data.type) == "string" and data.type ~= "" and data.type or nil)
+end
+
 -- The node's name, if the plugin passes its node table (coord -> node) as the iterator's state:
--- directly (the expansion plugins: node.label) or as state.data (MapNotes: node.name).
+-- directly (the expansion plugins: node.label) or as state.data (MapNotes).
 local function nodeName(state, coord)
     if type(state) ~= "table" then return end
     local ok, name = pcall(function()
-        return nameOf(state[coord]) or (type(state.data) == "table" and nameOf(state.data[coord]))
+        return nameOf(state[coord]) or (type(state.data) == "table" and mapNotesName(state.data[coord]))
     end)
     return ok and name or nil
 end
@@ -147,8 +210,9 @@ end
 function handyNotesNodes.scan()
     for key, entry in pairs(refreshCache()) do
         local node = markerNode(handyNotesNodes, key)
-        -- built on another map (instance is the player's map when built) or the icon changed
-        if node and (node.instance ~= player.uiMapID or node.iconKey ~= entry.iconKey) then
+        -- built on another map (instance is the player's map when built), the icon changed or the
+        -- name is known now (NPC names come from the game's cache)
+        if node and (node.instance ~= player.uiMapID or node.iconKey ~= entry.iconKey or node.name ~= entry.name) then
             releaseMarkerNode(handyNotesNodes, key)
             node = nil
         end
