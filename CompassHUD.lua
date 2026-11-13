@@ -63,7 +63,6 @@ function updateHUD(force)
     setSupertrackerPointers()
     setGroupIcons()
     setAllMarkerSources()
-    setPOITrackNodes()
     -- after all marker modules: texts only on the closest faced marker of all of them
     showFacedMarkerTexts()
     updateSpeech()
@@ -77,7 +76,6 @@ function onUpdate(_, elapsed)
     timer = 0
     groupThrottle = groupThrottle + 1
     tickMarkerSources()
-    poiTrackThrottle = poiTrackThrottle + 1
     updateHUD(false)
 end
 
@@ -399,7 +397,6 @@ function schedulePointerFontRefresh()
         end
         updateGroupTexts()
         restyleAllMarkerSources()
-        updatePoiTrack()
     end)
 end
 
@@ -577,7 +574,6 @@ function Addon:UpdateHUDSettings()
     updatePointerTextures()
     updateGroupTexts()
     restyleAllMarkerSources()
-    updatePoiTrack()
     UnregisterAttributeDriver(HUD, 'state-hudvisibility')
     RegisterAttributeDriver(HUD, "state-hudvisibility", Options.Visibility)
 end

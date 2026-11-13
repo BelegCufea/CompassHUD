@@ -328,8 +328,8 @@ end
 --   bypassesRadius  optional function(node) -> whether a node is drawn beyond the scanning radius
 ------------------------------------------------------------------------------------------------
 
--- The integration marker modules, for features that look at all of them (supertrack keybinding,
--- speech). Filled by each module file when it loads.
+-- The marker sources (minimap icons, gathering, Questie; see registerMarkerSource), for the update
+-- loop and the features that look at all of them (supertrack keybinding, speech, faced texts).
 markerModules = {}
 
 -- The node of a module closest to the facing direction, if the module is on and 'option'
@@ -495,9 +495,8 @@ function drawMarkerNodes(module)
     for _, node in pairs(module.nodes) do
         local shown = false
         local angle
-        -- filtered out (visible == false) or out of the scanning radius nodes are not drawn and
-        -- cannot be the faced one
-        if node.frame and node.visible ~= false and player.angle then
+        -- nodes out of the scanning radius are not drawn and cannot be the faced one
+        if node.frame and player.angle then
             node.distance = HBD:GetWorldDistance(node.instance, player.x, player.y, node.x, node.y)
             if radius == 0 or (node.distance and node.distance <= radius)
                 or (module.bypassesRadius and module.bypassesRadius(node)) then
@@ -670,24 +669,18 @@ end
 -- The marker sources' part of the HUD update loop (updateHUD), settings refresh and update tick.
 function setAllMarkerSources()
     for _, source in ipairs(markerModules) do
-        if source.scan then
-            setMarkerSourceNodes(source)
-        end
+        setMarkerSourceNodes(source)
     end
 end
 
 function restyleAllMarkerSources()
     for _, source in ipairs(markerModules) do
-        if source.scan then
-            restyleMarkerSource(source)
-        end
+        restyleMarkerSource(source)
     end
 end
 
 function tickMarkerSources()
     for _, source in ipairs(markerModules) do
-        if source.throttle then
-            source.throttle = source.throttle + 1
-        end
+        source.throttle = source.throttle + 1
     end
 end

@@ -20,7 +20,6 @@ Options = nil
 HUD = nil
 timer = 0
 groupThrottle = 0
-poiTrackThrottle = 0
 player ={x = 0, y = 0, angle = 0}
 tomTomActive = nil
 poiTypeEnum = {
@@ -40,8 +39,6 @@ poiCache = {}
 poiCacheContinents = {}
 supertrackTargets = {}
 groupPointsTable = {}
-poiTrackPointTable = {}
-poiTrackCurrentMap = nil
 STtexture = { last = {} } -- SuperTracker retexture state; last = what was applied to the icon
 editModeActive = false -- the game's Edit Mode is open (EditMode.lua)
 directions = {
