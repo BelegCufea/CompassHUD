@@ -12,8 +12,9 @@ local pairs, ipairs, type, next, tostring = pairs, ipairs, type, next, tostring
 local string, table = string, table
 
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
-local pcall = pcall
+local pcall, math = pcall, math
 
 ------------------------------------------------------------------------------------------------
 -- The look settings
@@ -547,6 +548,65 @@ function dropLookTry()
 end
 
 ------------------------------------------------------------------------------------------------
+-- Preview background: a plain area behind the compass and its texts, to judge a look on light,
+-- dark or busy surroundings. Only for this session (not saved); Off or /reload removes it.
+------------------------------------------------------------------------------------------------
+
+local PREVIEW_BACKGROUNDS = {
+    Off    = { name = "Off" },
+    Snow   = { name = "Snow (light)", color = { 0.92, 0.94, 0.97 } },
+    Sand   = { name = "Sand", color = { 0.80, 0.68, 0.45 } },
+    Sky    = { name = "Sky", color = { 0.45, 0.65, 0.85 } },
+    Grass  = { name = "Grass", color = { 0.30, 0.45, 0.20 } },
+    Stone  = { name = "Stone (mid grey)", color = { 0.45, 0.45, 0.45 } },
+    Night  = { name = "Night (dark)", color = { 0.04, 0.05, 0.08 } },
+    Marble = { name = "Marble (light texture)", texture = [[Interface\FrameGeneral\UI-Background-Marble]] },
+    Rock   = { name = "Rock (dark texture)", texture = [[Interface\FrameGeneral\UI-Background-Rock]] },
+}
+local PREVIEW_ORDER = { "Off", "Snow", "Sand", "Sky", "Grass", "Stone", "Night", "Marble", "Rock" }
+
+local previewFrame
+local previewChoice = "Off"
+
+local function setPreviewBackground(key)
+    local background = PREVIEW_BACKGROUNDS[key]
+    previewChoice = background and key or "Off"
+    if previewChoice == "Off" then
+        if previewFrame then previewFrame:Hide() end
+        return
+    end
+    if not previewFrame then
+        previewFrame = CreateFrame("Frame", nil, UIParent)
+        previewFrame.texture = previewFrame:CreateTexture(nil, "BACKGROUND")
+        previewFrame.texture:SetAllPoints()
+    end
+    -- just below the compass, around it and under the pointer and marker texts
+    previewFrame:SetFrameStrata(HUD:GetFrameStrata())
+    previewFrame:SetFrameLevel(math.max(HUD:GetFrameLevel() - 1, 0))
+    previewFrame:ClearAllPoints()
+    previewFrame:SetPoint("TOPLEFT", HUD, "TOPLEFT", -40, 30)
+    previewFrame:SetPoint("BOTTOMRIGHT", HUD, "BOTTOMRIGHT", 40, -90)
+    local texture = previewFrame.texture
+    if background.texture then
+        texture:SetTexture(background.texture, "REPEAT", "REPEAT")
+        texture:SetHorizTile(true)
+        texture:SetVertTile(true)
+        texture:SetVertexColor(1, 1, 1, 1)
+    else
+        local c = background.color
+        texture:SetColorTexture(c[1], c[2], c[3], 1)
+    end
+    previewFrame:Show()
+end
+
+-- These options in AceConfig's own window, which can be dragged away from the compass.
+local function openMovableOptions()
+    local name = Addon.CONST.METADATA.NAME
+    AceConfigDialog:Open(name)
+    AceConfigDialog:SelectGroup(name, "Tabs", "Looks")
+end
+
+------------------------------------------------------------------------------------------------
 -- The Looks tab: a row per look with Try; while it is being tried, Keep and Revert in its row.
 ------------------------------------------------------------------------------------------------
 
@@ -560,6 +620,28 @@ local looksArgs = {
         order = 1,
         name = "|cnACCOUNT_WIDE_FONT_COLOR:Ready-made looks for the whole compass: frame, letters, fonts, colors and pointer textures. They don't change its size, position or what it shows. Try one: it is shown on the compass right away, then Keep it or Revert to the look you had. Tweak it further in the other tabs.|r\n",
         fontSize = "medium",
+    },
+    PreviewBackground = {
+        type = "select",
+        order = 2,
+        name = "Preview background",
+        desc = "A plain background behind the compass and its texts, to see how a look reads on light, dark or busy surroundings. Only while you choose looks: it is not saved and goes away with Off or /reload.",
+        values = function()
+            local values = {}
+            for key, background in pairs(PREVIEW_BACKGROUNDS) do values[key] = background.name end
+            return values
+        end,
+        sorting = PREVIEW_ORDER,
+        get = function() return previewChoice end,
+        set = function(_, key) setPreviewBackground(key) end,
+    },
+    MovableWindow = {
+        type = "execute",
+        order = 3,
+        name = "Open in a movable window",
+        desc = "Opens these options in a window you can drag away from the compass, so its pointers and markers stay visible. Close the game's options window then.",
+        width = 1.3,
+        func = openMovableOptions,
     },
     -- the player's own look, saved when a look was first tried in this profile
     OwnLook = {
