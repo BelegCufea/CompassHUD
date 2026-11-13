@@ -633,8 +633,10 @@ end
 -- Adds a node reported by a scan under 'key'. 'node' holds at least x, y (world coordinates, the
 -- current map's instance unless node.instance) and the icon: atlasName or texture (a question mark
 -- if neither); optional name, scale (icon size factor), circle (round icon with a border),
--- texCoords ({ left, right, top, bottom } of the texture), color ({ r, g, b, a } tint), and
--- anything the source or the supertrack keybinding needs (questID, areaPoiID, ...).
+-- texCoords ({ left, right, top, bottom } of the texture), color ({ r, g, b, a } tint),
+-- waypointMapID (the map the node lies on, if it can be outside the current one: the supertrack
+-- keybinding's waypoint is set there), and anything the source or the supertrack keybinding needs
+-- (questID, areaPoiID, ...).
 function newMarkerNode(source, key, node)
     node.instance = node.instance or player.uiMapID
     local frame = acquireMarkerFrame(source)
