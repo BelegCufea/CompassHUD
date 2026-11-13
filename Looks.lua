@@ -144,15 +144,26 @@ local function frameSettings(settings, border, thickness, borderColor, backgroun
     return settings
 end
 
--- The custom letters: main (N, E, S, W), secondary (NE, ...) and degrees, each { font, size, flags, color }.
+-- The custom letters: main (N, E, S, W), secondary (NE, ...) and degrees, each { font, size,
+-- flags, color } or false (not shown).
 local function letterSettings(settings, main, secondary, degrees)
     settings.UseCustomCompass = true
     for part, style in pairs({ Main = main, Secondary = secondary, Degrees = degrees }) do
-        settings["CompassCustom" .. part .. "Font"] = style.font
-        settings["CompassCustom" .. part .. "Size"] = style.size
-        settings["CompassCustom" .. part .. "Flags"] = style.flags
-        settings["CompassCustom" .. part .. "Color"] = style.color
+        if style then
+            settings["CompassCustom" .. part .. "Font"] = style.font
+            settings["CompassCustom" .. part .. "Size"] = style.size
+            settings["CompassCustom" .. part .. "Flags"] = style.flags
+            settings["CompassCustom" .. part .. "Color"] = style.color
+        else
+            settings["CompassCustom" .. part .. "Visible"] = false
+        end
     end
+    return settings
+end
+
+-- An edge line: "TOP", "BOTTOM" or "BOTH", thickness, color.
+local function lineSettings(settings, where, thickness, color)
+    settings.Line, settings.LineThickness, settings.LinePosition, settings.LineColor = where, thickness, 0, color
     return settings
 end
 
@@ -162,14 +173,64 @@ local function headingFont(settings, font, size, flags, color)
     return settings
 end
 
--- Clean: flat and dark, thin border, white and grey letters (fits modern and minimal UIs).
+local WHITE, LIGHT_GREY, GREY = rgb(0.95, 0.95, 0.95), rgb(0.70, 0.72, 0.76), rgb(0.50, 0.52, 0.55)
+local GOLD, PALE_GOLD = rgb(1, 0.82, 0), rgb(0.93, 0.85, 0.66)
+
+-- Clean: flat and dark, thin border, white and grey letters, no degrees (modern and minimal UIs).
 local function cleanSettings()
     local s = frameSettings({}, "CompassHUD Pixel", 1, rgb(0, 0, 0, 1), "Solid", rgb(0.06, 0.06, 0.07, 0.75))
     letterSettings(s,
-        { font = "Arial Narrow", size = 14, flags = "OUTLINE", color = rgb(0.95, 0.95, 0.95) },
-        { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = rgb(0.62, 0.64, 0.68) },
-        { font = "Arial Narrow", size = 9, flags = "", color = rgb(0.5, 0.52, 0.55) })
-    headingFont(s, "Arial Narrow", 14, "OUTLINE", rgb(0.95, 0.95, 0.95))
+        { font = "Arial Narrow", size = 14, flags = "OUTLINE", color = WHITE },
+        { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = LIGHT_GREY },
+        false)
+    headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
+    return s
+end
+
+-- Fade: no border, a dark band that fades out to both sides (the gradient), white letters.
+local function fadeSettings()
+    local s = frameSettings({}, "None", 1, rgb(0, 0, 0, 0), "CompassHUD gradient", rgb(0, 0, 0, 0.7))
+    letterSettings(s,
+        { font = "Arial Narrow", size = 15, flags = "OUTLINE", color = WHITE },
+        { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = LIGHT_GREY },
+        { font = "Arial Narrow", size = 9, flags = "OUTLINE", color = GREY })
+    headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
+    return s
+end
+
+-- Line: no frame and no background, a thin line on top; outlined letters read on any background.
+local function lineOnlySettings()
+    local s = frameSettings({}, "None", 1, rgb(0, 0, 0, 0), "None", rgb(0, 0, 0, 0))
+    lineSettings(s, "TOP", 1, rgb(1, 1, 1, 0.6))
+    letterSettings(s,
+        { font = "Arial Narrow", size = 15, flags = "OUTLINE", color = WHITE },
+        { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = LIGHT_GREY },
+        false)
+    headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
+    return s
+end
+
+-- Gilded: no frame, gold lines above and below a faint gradient, gold and parchment letters.
+local function gildedSettings()
+    local s = frameSettings({}, "None", 1, rgb(0, 0, 0, 0), "CompassHUD gradient", rgb(0, 0, 0, 0.45))
+    lineSettings(s, "BOTH", 1, rgb(1, 0.82, 0, 0.8))
+    letterSettings(s,
+        { font = "Friz Quadrata TT", size = 13, flags = "OUTLINE", color = GOLD },
+        { font = "Friz Quadrata TT", size = 11, flags = "OUTLINE", color = PALE_GOLD },
+        { font = "Friz Quadrata TT", size = 8, flags = "OUTLINE", color = rgb(0.78, 0.72, 0.58) })
+    headingFont(s, "Friz Quadrata TT", 14, "OUTLINE", GOLD)
+    return s
+end
+
+-- Night: dark glass with a cyan accent line below, cyan main letters.
+local function nightSettings()
+    local s = frameSettings({}, "CompassHUD Pixel", 1, rgb(0.20, 0.55, 0.65, 0.6), "Solid", rgb(0.02, 0.04, 0.07, 0.8))
+    lineSettings(s, "BOTTOM", 2, rgb(0.25, 0.85, 1, 0.9))
+    letterSettings(s,
+        { font = "Arial Narrow", size = 14, flags = "OUTLINE", color = rgb(0.35, 0.90, 1) },
+        { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = rgb(0.75, 0.85, 0.90) },
+        { font = "Arial Narrow", size = 9, flags = "", color = rgb(0.40, 0.55, 0.62) })
+    headingFont(s, "Arial Narrow", 14, "OUTLINE", rgb(0.35, 0.90, 1))
     return s
 end
 
@@ -193,6 +254,18 @@ local function foreverSettings()
         { font = "Friz Quadrata TT", size = 8, flags = "", color = rgb(0.68, 0.58, 0.46) })
     headingFont(s, "Morpheus", 15, "OUTLINE", rgb(0.92, 0.74, 0.42))
     s.Line, s.LineThickness, s.LinePosition, s.LineColor = "BOTTOM", 1, 1, rgb(0.72, 0.45, 0.25, 0.9)
+    return s
+end
+
+-- Forever, frameless: copper lines above and below a fading leather-brown band.
+local function foreverFadeSettings()
+    local s = frameSettings({}, "None", 1, rgb(0, 0, 0, 0), "CompassHUD gradient", rgb(0.16, 0.10, 0.06, 0.75))
+    lineSettings(s, "BOTH", 1, rgb(0.78, 0.50, 0.28, 0.9))
+    letterSettings(s,
+        { font = "Morpheus", size = 15, flags = "OUTLINE", color = rgb(0.92, 0.74, 0.42) },
+        { font = "Friz Quadrata TT", size = 11, flags = "OUTLINE", color = rgb(0.80, 0.56, 0.36) },
+        false)
+    headingFont(s, "Morpheus", 15, "OUTLINE", rgb(0.92, 0.74, 0.42))
     return s
 end
 
@@ -289,32 +362,66 @@ local function ellesmereText()
     return { font = font, size = 12, flags = flags, color = rgb(1, 1, 1) }
 end
 
+local WHITE_TEXT = { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = rgb(0.92, 0.92, 0.92) }
+local GOLD_TEXT = { font = "Friz Quadrata TT", size = 12, flags = "OUTLINE", color = GOLD }
+local FOREVER_TEXT = { font = "Friz Quadrata TT", size = 12, flags = "OUTLINE", color = rgb(0.95, 0.85, 0.65) }
+
 looks = {
-    {
-        id = "Default",
-        name = "Default",
-        desc = "CompassHUD's own look: gold border, gold and cyan letters, gold arrows. Also brings back the default look after your own changes.",
-    },
     {
         id = "Clean",
         name = "Clean",
-        desc = "Flat and dark with a thin border, white and grey letters. Fits modern and minimal interfaces.",
+        desc = "Flat and dark with a thin border, white and grey letters, no degree numbers. Fits modern and minimal interfaces.",
         settings = cleanSettings,
-        text = { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = rgb(0.92, 0.92, 0.92) },
+        text = WHITE_TEXT,
+    },
+    {
+        id = "Fade",
+        name = "Fade",
+        desc = "No frame: a dark band behind the letters that fades out to both sides, white letters.",
+        settings = fadeSettings,
+        text = WHITE_TEXT,
+    },
+    {
+        id = "Line",
+        name = "Line",
+        desc = "No frame and no background, just a thin line on top and outlined white letters, no degree numbers.",
+        settings = lineOnlySettings,
+        text = WHITE_TEXT,
+    },
+    {
+        id = "Night",
+        name = "Night",
+        desc = "Dark glass with a cyan line below, cyan main letters.",
+        settings = nightSettings,
+        text = { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = rgb(0.80, 0.92, 0.96) },
     },
     {
         id = "Classic",
         name = "Classic gold",
         desc = "The game's own dialog style: gold trim, dark background, gold and parchment letters in Friz Quadrata.",
         settings = classicSettings,
-        text = { font = "Friz Quadrata TT", size = 12, flags = "OUTLINE", color = rgb(1, 0.82, 0) },
+        text = GOLD_TEXT,
+    },
+    {
+        id = "Gilded",
+        name = "Gilded",
+        desc = "No frame: gold lines above and below a faint fading band, gold and parchment letters.",
+        settings = gildedSettings,
+        text = GOLD_TEXT,
     },
     {
         id = "Forever",
         name = "Forever",
         desc = "In the style of WoW: Forever: dark leather, copper trim and antique gold lettering.",
         settings = foreverSettings,
-        text = { font = "Friz Quadrata TT", size = 12, flags = "OUTLINE", color = rgb(0.95, 0.85, 0.65) },
+        text = FOREVER_TEXT,
+    },
+    {
+        id = "ForeverFade",
+        name = "Forever, no frame",
+        desc = "Forever's colors without a frame: copper lines above and below a fading leather-brown band.",
+        settings = foreverFadeSettings,
+        text = FOREVER_TEXT,
     },
     {
         id = "ElvUI",
@@ -331,6 +438,11 @@ looks = {
         available = function() return ellesmere() ~= nil end,
         settings = ellesmereSettings,
         text = ellesmereText,
+    },
+    {
+        id = "Original",
+        name = "Original",
+        desc = "CompassHUD's look on a fresh install: gold border, gold and cyan letters. Also undoes all your own look changes.",
     },
 }
 
@@ -434,70 +546,42 @@ function dropLookTry()
     lookTry = nil
 end
 
--- A copy of the current profile (as it was before trying a look), named after the look, with the look.
-local function newProfileWithLook(look)
-    local db = Addon.db
-    if lookTry then
-        restoreSnapshot(lookTry.snapshot)
-        lookTry = nil
-    end
-    local existing = {}
-    for _, name in ipairs(db:GetProfiles()) do existing[name] = true end
-    local name, n = look.name, 1
-    while existing[name] do
-        n = n + 1
-        name = look.name .. " " .. n
-    end
-    local current = db:GetCurrentProfile()
-    db:SetProfile(name)
-    db:CopyProfile(current)
-    applyLook(look)
-    Addon:Print(string.format("New profile \"%s\" with the look \"%s\" (Profiles to switch back).", name, look.name))
-    refreshOptions()
-end
+------------------------------------------------------------------------------------------------
+-- The Looks tab: a row per look with Try; while it is being tried, Keep and Revert in its row.
+------------------------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------------
--- The Looks tab
-------------------------------------------------------------------------------------------------
+local function trying(look)
+    return lookTry ~= nil and lookTry.look == look
+end
 
 local looksArgs = {
     LooksDesc = {
         type = "description",
         order = 1,
-        name = "|cnACCOUNT_WIDE_FONT_COLOR:Ready-made looks for the whole compass: frame, letters, fonts, colors and pointer textures. They don't change its size, position or what it shows. Try one, then keep it or go back to your own look, and tweak it further in the other tabs.|r\n",
+        name = "|cnACCOUNT_WIDE_FONT_COLOR:Ready-made looks for the whole compass: frame, letters, fonts, colors and pointer textures. They don't change its size, position or what it shows. Try one: it is shown on the compass right away, then Keep it or Revert to the look you had. Tweak it further in the other tabs.|r\n",
         fontSize = "medium",
     },
-    Trying = {
+    -- the player's own look, saved when a look was first tried in this profile
+    OwnLook = {
         type = "group",
         order = 5,
         inline = true,
-        name = function() return lookTry and ("Trying: " .. lookTry.look.name) or "" end,
-        hidden = function() return not lookTry end,
+        name = "Your own look",
+        hidden = function() return not Options.LookBackup end,
         args = {
-            Keep = {
-                type = "execute",
+            Desc = {
+                type = "description",
                 order = 1,
-                name = "Keep",
-                desc = "Keep this look.",
-                func = keepLook,
+                name = "The look you had before you first tried one here. Brings it back, also after you kept another look.",
+                fontSize = "medium",
             },
-            Revert = {
+            Restore = {
                 type = "execute",
                 order = 2,
-                name = "Revert",
-                desc = "Go back to your look from before trying.",
-                func = revertLook,
+                name = "Restore",
+                func = restoreOwnLook,
             },
         },
-    },
-    RestoreOwn = {
-        type = "execute",
-        order = 6,
-        name = "Restore my own look",
-        desc = "Bring back your own look from before you first tried a look in this profile, also after Keep.",
-        width = 1.5,
-        hidden = function() return not Options.LookBackup or lookTry ~= nil end,
-        func = restoreOwnLook,
     },
 }
 
@@ -506,7 +590,7 @@ for index, look in ipairs(looks) do
         type = "group",
         order = 10 + index,
         inline = true,
-        name = look.name,
+        name = function() return trying(look) and (look.name .. "  |cnGREEN_FONT_COLOR:(trying)|r") or look.name end,
         hidden = look.available and function() return not look.available() end,
         args = {
             Desc = {
@@ -519,16 +603,25 @@ for index, look in ipairs(looks) do
                 type = "execute",
                 order = 2,
                 name = "Try",
-                desc = "Put this look on the compass now; then Keep or Revert at the top.",
+                desc = "Show this look on the compass now; then Keep or Revert here.",
                 func = function() tryLook(look) end,
-                disabled = function() return lookTry and lookTry.look == look end,
+                hidden = function() return trying(look) end,
             },
-            NewProfile = {
+            Keep = {
                 type = "execute",
                 order = 3,
-                name = "New profile",
-                desc = "Copy your current profile into a new one named after this look, with this look. Your current profile stays as it was.",
-                func = function() newProfileWithLook(look) end,
+                name = "Keep",
+                desc = "Keep this look.",
+                func = keepLook,
+                hidden = function() return not trying(look) end,
+            },
+            Revert = {
+                type = "execute",
+                order = 4,
+                name = "Revert",
+                desc = "Go back to the look you had before trying.",
+                func = revertLook,
+                hidden = function() return not trying(look) end,
             },
         },
     }
