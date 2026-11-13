@@ -1123,14 +1123,6 @@ SupertrackerOptions = {
                     width = 1.5,
                     order = 66,
                 },
-                HideTomTomAtTarget = {
-                    type = "toggle",
-                    name = "Hide duplicate TomTom pointer",
-                    desc = "If a TomTom waypoint is at the same place (within 10 yards) as the quest, map pin or POI the game is tracking, show only the game's pointer. The TomTom pointer comes back as soon as the game tracks something else.",
-                    width = 1.5,
-                    order = 67,
-                    hidden = function() return not TomTom end,
-                },
             },
         },
         Pointers = {
@@ -3090,6 +3082,43 @@ function Addon:ConstructDefaultsAndOptions()
     self.Defaults.profile.Pointers = pointersDefaults
     self.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", self.Defaults, true)
     SupertrackerOptions.args.Pointers.args = pointersOptionsArgs
+    -- The TomTom pointer's settings live on the TomTom page (Crazy arrow tab), next to the
+    -- waypoints. Its options read and write Options.Pointers[<pointer type>] by their place in the
+    -- tree (two levels up), so the tab keeps the key "Pointers" and the pointer type's key.
+    local arrowKey = questPointerIdent .. tomTom
+    local arrowOptions = pointersOptionsArgs[arrowKey]
+    pointersOptionsArgs[arrowKey] = nil
+    arrowOptions.inline = true
+    arrowOptions.name = ""
+    arrowOptions.order = 10
+    TomTomOptions.args.Pointers = {
+        type = "group",
+        order = 30,
+        name = "Crazy arrow",
+        get = SupertrackerOptions.args.Pointers.get,
+        set = SupertrackerOptions.args.Pointers.set,
+        args = {
+            ArrowDescription = {
+                type = "description",
+                order = 0,
+                name = "The waypoint of TomTom's crazy arrow is shown as a pointer, like the target the game tracks.\n",
+                fontSize = "medium",
+            },
+            HideTomTomAtTarget = {
+                type = "toggle",
+                order = 1,
+                name = "Hide duplicate TomTom pointer",
+                desc = "If the crazy arrow's waypoint is at the same place (within 10 yards) as the quest, map pin or POI the game is tracking, show only the game's pointer. The TomTom pointer comes back as soon as the game tracks something else.",
+                width = "full",
+                get = function() return Options.HideTomTomAtTarget end,
+                set = function(_, value)
+                    Options.HideTomTomAtTarget = value
+                    Addon:UpdateHUDSettings()
+                end,
+            },
+            [arrowKey] = arrowOptions,
+        },
+    }
     TrackingOption.args.POITrack = POITrackOptions
     TrackingOption.args.Group = GroupOptions
     TrackingOption.args.GatherMate = GatherMateOptions
