@@ -1,3 +1,13 @@
+# v1.9.0 (unreleased)
+
+## Good to know
+
+- **Minimap icons:** after you cross into another zone, the previous zone's icons stay until the next scan (as gathering nodes and Questie icons always did), and a changed filter shows on the next scan.
+
+## Misc
+
+- Minimap icons, gathering nodes and Questie icons now share one implementation (marker sources), so other addons' map icons can be added the same way.
+
 # v1.8.0 (10.11.2026)
 
 ## Good to know
