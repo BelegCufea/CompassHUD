@@ -85,11 +85,14 @@ function tomtomSetCrazyArrow(self, uid, dist, title)
     if type(uid) ~= "table" then return end
     local questID = tomTom
     local questType = tomTom
-    local completed = false
-    if title and title:find("^Turn in: ") then
-        completed = true
-    end
-    setSupertrackTarget(questID, uid[2], uid[3], uid[1], questType, title, completed)
+    -- a quest ready to turn in: TomTom's quest objectives title it "Turn in: <quest>" (localized)
+    local turnIn = TomTom.L and TomTom.L["Turn in: %s"]
+    if type(turnIn) ~= "string" or not turnIn:find("%s", 1, true) then turnIn = "Turn in: %s" end
+    -- the text around %s, matched literally (TomTom adds the route on a second line)
+    local pattern = "^" .. turnIn:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"):gsub("%%%%s", ".+")
+    local completed = type(title) == "string" and title:match(pattern) ~= nil or false
+    -- the icon of TomTom's minimap theme, used with "Use TomTom's icon" (worldmapTexture)
+    setSupertrackTarget(questID, uid[2], uid[3], uid[1], questType, title, completed, nil, tomTomWaypointIcon())
     tomTomActive = TomTom:GetKey(uid)
     supertrackTargets[tomTom].track = true
 end

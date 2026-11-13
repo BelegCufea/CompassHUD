@@ -83,6 +83,7 @@ Addon.Defaults = {
         PointerTitleMaxWidth   = 0,
         SpeechEnabled          = false,
         SpeechSupertracked     = true, -- the marker sources' Speech<prefix>: see registerMarkerSource
+        SpeechTomTomArrow      = true,
         SpeechDistance         = false,
         SpeechOnlyShownNames   = false,
         SpeechDegrees          = 10,

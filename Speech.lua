@@ -63,10 +63,11 @@ function updateSpeech()
 
     -- the supertracker pointers: the game's tracked target, and TomTom's arrow target while its
     -- pointer is shown (not when hidden as a duplicate of the game's target)
-    if Options.SpeechSupertracked then
-        local arrow = supertrackTargets[tomTom]
-        arrow = arrow and arrow.track and arrow.frame and arrow.frame:IsShown() and arrow or nil
-        for _, target in ipairs({ shownGameTarget or false, arrow or false }) do
+    local game = Options.SpeechSupertracked and shownGameTarget
+    local arrow = Options.SpeechTomTomArrow and supertrackTargets[tomTom]
+    arrow = arrow and arrow.track and arrow.frame and arrow.frame:IsShown() and arrow
+    if game or arrow then
+        for _, target in ipairs({ game or false, arrow or false }) do
             if target and target.text and target.x and target.y
                 and nameShown(target.frame, target.frame and target.frame.QuestText) then
                 local angle = relativeAngle(target.instance, target.x, target.y)

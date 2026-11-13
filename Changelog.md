@@ -7,10 +7,16 @@
 
 ## New
 
-- **TomTom waypoints** in `Minimap tracking → TomTom` (shown when TomTom is loaded, off by default): all your TomTom waypoints on the current map, with the same settings as the other icon sections (uses the `Minimap icons` settings by default).
+- **TomTom waypoints** in `Minimap tracking → TomTom` (shown when TomTom is loaded, off by default): your TomTom waypoints, with the same settings as the other icon sections (uses the `Minimap icons` settings by default), shown with the icon of TomTom's minimap theme.
+  - `Waypoints from other zones` (on by default): also waypoints set on other maps of the continent you are on, e.g. in the zone around a city.
   - The crazy arrow's waypoint is not shown twice: it stays the TomTom pointer.
   - `Use supertracker keybinding` (on by default): the keybind makes the waypoint you face the crazy arrow's target. `Use text to speech` reads it out.
-- **Speech:** `Supertracked target` also reads out the TomTom crazy arrow's waypoint.
+- **TomTom pointer:** `Use TomTom's icon` (`Crazy arrow → Textures`, off by default) shows the waypoint icon of TomTom's minimap theme instead of the pointer textures.
+- **Speech:** `TomTom crazy arrow` (on by default, also on the `Crazy arrow` tab) reads out the crazy arrow's waypoint, and `TomTom waypoints` the other waypoints.
+
+## Fix
+
+- **TomTom pointer:** the turn-in texture is now also used for "Turn in: …" waypoints of TomTom's quest objectives when the game is not in English.
 
 ## Misc
 

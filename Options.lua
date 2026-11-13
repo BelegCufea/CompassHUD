@@ -26,8 +26,16 @@ speechSourceArgs = {
         type = "toggle",
         order = 10,
         name = "Supertracked target",
-        desc = "The quest, map pin, POI or vignette you are tracking, and the TomTom arrow's waypoint.",
+        desc = "The quest, map pin, POI or vignette you are tracking.",
         width = 1,
+    },
+    SpeechTomTomArrow = {
+        type = "toggle",
+        order = 15,
+        name = "TomTom crazy arrow",
+        desc = "The waypoint of TomTom's crazy arrow (the TomTom pointer).",
+        width = 1,
+        hidden = function() return not TomTom end,
     },
 }
 
@@ -2350,6 +2358,15 @@ TomTomOptions = markerModuleOptions("TomTom", {
     hidden = function() return not TomTom end,
     what = "waypoint",
     titleHeader = "Waypoint name",
+    extraArgs = {
+        TomTomOtherZones = {
+            type = "toggle",
+            order = 14,
+            name = "Waypoints from other zones",
+            desc = "Also show waypoints set on other maps of the continent you are on (e.g. in the zone around a city). Off: only waypoints set on the map you are on.",
+            width = "full",
+        },
+    },
 })
 
 function Addon:GetPointerTypes()
@@ -2679,6 +2696,14 @@ function Addon:ConstructDefaultsAndOptions()
                 type = "toggle",
                 order = 20,
                 name = "Use reward texture"
+            }
+        end
+        if k == tomTom then
+            pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.worldmapTexture = {
+                type = "toggle",
+                order = 20,
+                name = "Use TomTom's icon",
+                desc = "Show the waypoint icon of TomTom's minimap theme instead of the textures below.",
             }
         end
         pointersOptionsArgs[questPointerIdent .. k].args.Textures.args.pointerOffset = {
@@ -3115,6 +3140,17 @@ function Addon:ConstructDefaultsAndOptions()
                     Options.HideTomTomAtTarget = value
                     Addon:UpdateHUDSettings()
                 end,
+            },
+            -- the same setting as on the Speech tab
+            SpeechTomTomArrow = {
+                type = "toggle",
+                order = 2,
+                name = "Use text to speech",
+                desc = "Read out the crazy arrow's waypoint when you face it (the same setting as on the Speech tab). Text to speech itself is turned on on the Speech tab.",
+                width = "full",
+                disabled = function() return not Options.SpeechEnabled end,
+                get = function() return Options.SpeechTomTomArrow end,
+                set = function(_, value) Options.SpeechTomTomArrow = value end,
             },
             [arrowKey] = arrowOptions,
         },
