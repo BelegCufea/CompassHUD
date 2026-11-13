@@ -4,42 +4,24 @@
 -- (icon.hidden) are skipped. Questie has no public API for its icons, so its map module is read
 -- directly and every table and field is presence-checked; when something is missing the module
 -- turns itself off for the session.
+-- Uses only the public interface for the marker source (CompassHUD.RegisterMarkerSource, API.lua).
 local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
 
 local pairs, ipairs, type, pcall, tostring = pairs, ipairs, type, pcall, tostring
-local math, table, wipe = math, table, wipe
 
-local HBD = LibStub("HereBeDragons-2.0")
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local GetTradeSkillDisplayName = C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillDisplayName
 
-function questieLoaded()
+local function questieLoaded()
     return IsAddOnLoaded("Questie") and true or false
 end
 
--- a marker source (Markers/Common.lua), plus Questie's own state
-questieNodes = registerMarkerSource({
-    prefix = "Questie",
-    isAvailable = questieLoaded,
-    speech = {
-        order = 30,
-        default = true,
-        name = "Questie icons",
-        desc = "The icons shown by Minimap tracking -> Questie (turn them on there).",
-    },
-    -- the minimap icons' values, which are used instead while UseMinimapSettings is on
-    defaults = {
-        UseMinimapSettings = true,
-        ShowType           = true,
-        Supertrack         = true,
-        HideAtTarget       = true,
-    },
-    map = nil,       -- Questie's map module, once found
-    broken = false,  -- something expected was missing: stop trying for this session
-    l10n = nil,      -- Questie's translation function
-})
+-- Questie's own state
+local questieMap        -- Questie's map module, once found
+local questieBroken     -- something expected was missing: stop trying for this session
+local questieL10n       -- Questie's translation function
 
 -- Questie icon types (data.Type): the label shown in parentheses, and whether the quest is in the
 -- quest log (then the supertrack keybinding tracks the quest itself)
@@ -61,18 +43,18 @@ local professionNames = {
 }
 
 local function getQuestieMap()
-    if questieNodes.map or questieNodes.broken then return questieNodes.map end
+    if questieMap or questieBroken then return questieMap end
     if not (questieLoaded() and Questie and Questie.API and Questie.API.isReady and QuestieLoader) then return end
     local ok, map = pcall(QuestieLoader.ImportModule, QuestieLoader, "QuestieMap")
     if ok and type(map) == "table" and type(map.questIdFrames) == "table" and type(map.manualFrames) == "table" then
-        questieNodes.map = map
+        questieMap = map
         local found, l10n = pcall(QuestieLoader.ImportModule, QuestieLoader, "l10n")
-        questieNodes.l10n = found and l10n or nil
+        questieL10n = found and l10n or nil
     else
-        questieNodes.broken = true
+        questieBroken = true
         Addon.DEBUG:Print("Questie map module not found, Questie markers are off")
     end
-    return questieNodes.map
+    return questieMap
 end
 
 -- The kind of icon: quest icon type, or the townsfolk category of Questie's menu
@@ -86,79 +68,100 @@ local function typeLabel(data, category)
     end
     if type(category) == "string" then
         -- same words as Questie's menu, in its language
-        local l10n = questieNodes.l10n
+        local l10n = questieL10n
         local ok, text = l10n and pcall(l10n, category)
         return (ok and type(text) == "string" and text) or category
     end
 end
 
--- name, and the kind of icon in parentheses if enabled (also read out by Speech.lua)
-function questieTitle(node)
-    if Options.QuestieShowType and node.typeLabel then
-        return (node.name or "") .. " (" .. node.typeLabel .. ")"
-    end
-    return node.name or ""
-end
-questieNodes.title = questieTitle
+local source -- the registration's handle (settings)
 
--- One Questie minimap icon frame -> one node, if it is on this map, shown by Questie and in range.
-local function addIcon(frameName, category)
+-- One Questie minimap icon frame -> one marker, if it is on this map and shown by Questie.
+-- (the scanning radius is checked when drawing, as for the other icon sections)
+local function addIcon(scan, frameName, category)
     local icon = _G[frameName]
-    if not (icon and icon.miniMapIcon and icon.UiMapID == player.uiMapID and not icon.hidden and icon.x and icon.y) then return end
+    if not (icon and icon.miniMapIcon and icon.UiMapID == scan.uiMapID and not icon.hidden and icon.x and icon.y) then return end
     local data = icon.data
     if not (type(data) == "table" and data.Type) then return end
-    -- (the scanning radius is checked when drawing, as for the other icon sections)
-    local xWorld, yWorld = HBD:GetWorldCoordinatesFromZone(icon.x / 100, icon.y / 100, player.uiMapID)
-    if not (xWorld and yWorld) then return end
+    local xZone, yZone = icon.x / 100, icon.y / 100
 
     local key = frameName
-    local node = markerNode(questieNodes, key)
-    if node and node.questieData ~= data then
-        -- Questie reuses its frames: another icon now, build the node again
-        releaseMarkerNode(questieNodes, key)
+    local node = scan:Get(key)
+    -- Questie reuses its frames: another icon now, build the marker again
+    if node and node.data ~= data then
         node = nil
     end
     if not node then
         local quest = data.Type ~= "manual" and data.QuestData
         local questType = questTypes[data.Type]
-        newMarkerNode(questieNodes, key, {
-            questieData = data,
+        scan:Add(key, {
+            mapID = scan.uiMapID, mapX = xZone, mapY = yZone,
+            data = data,
             -- quest title for quest icons, NPC/object name for townsfolk
             name = (quest and quest.name) or data.Name,
             typeLabel = typeLabel(data, category),
             questID = questType and questType.inLog and data.Id or nil,
             -- (a question mark icon if Questie's is unknown)
             texture = icon.texture and icon.texture:GetTexture(),
-            x = xWorld, y = yWorld,
         })
     else
-        moveMarkerNode(node, xWorld, yWorld)
+        scan:Move(key, xZone, yZone, scan.uiMapID)
     end
 end
 
--- icons gone, hidden by Questie, out of range or on another map are not reported and give their
--- frame back (Markers/Common.lua)
-function questieNodes.scan()
-    local map = getQuestieMap()
-    if not map then return end
-    -- quest icons: { [questId] = { [frameName] = frameName } }
-    for _, names in pairs(map.questIdFrames) do
-        if type(names) == "table" then
-            for name in pairs(names) do
-                addIcon(name)
+source = CompassHUD.RegisterMarkerSource({
+    id = "Questie",
+    name = "Questie",
+    description = "Shows the icons Questie places on the minimap. Which ones is decided by Questie's own settings.",
+    enabledDesc = "Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.",
+    what = "icon",
+    isAvailable = questieLoaded,
+    options = {
+        {
+            key = "ShowType",
+            type = "toggle",
+            name = "Show the type after the name",
+            desc = "Adds the kind of icon in parentheses after the name, e.g. \"Innkeeper Farley (Innkeeper)\" or \"Princess Must Die! (Turn-in)\".",
+            default = true,
+        },
+    },
+    speech = {
+        default = true,
+        name = "Questie icons",
+        desc = "The icons shown by Minimap tracking -> Questie (turn them on there).",
+    },
+
+    -- icons gone, hidden by Questie or on another map are not reported and are removed
+    scan = function(scan)
+        local map = getQuestieMap()
+        if not map then return end
+        -- quest icons: { [questId] = { [frameName] = frameName } }
+        for _, names in pairs(map.questIdFrames) do
+            if type(names) == "table" then
+                for name in pairs(names) do
+                    addIcon(scan, name)
+                end
             end
         end
-    end
-    -- townsfolk chosen in Questie's menu: { [category] = { [npcId] = { frameName, ... } } }
-    for category, ids in pairs(map.manualFrames) do
-        if type(ids) == "table" then
-            for _, names in pairs(ids) do
-                if type(names) == "table" then
-                    for _, name in ipairs(names) do
-                        addIcon(name, category)
+        -- townsfolk chosen in Questie's menu: { [category] = { [npcId] = { frameName, ... } } }
+        for category, ids in pairs(map.manualFrames) do
+            if type(ids) == "table" then
+                for _, names in pairs(ids) do
+                    if type(names) == "table" then
+                        for _, name in ipairs(names) do
+                            addIcon(scan, name, category)
+                        end
                     end
                 end
             end
         end
-    end
-end
+    end,
+
+    -- name, and the kind of icon in parentheses if enabled (also read out by Speech.lua)
+    title = function(node)
+        if source:GetSetting("ShowType") and node.typeLabel then
+            return (node.name or "") .. " (" .. node.typeLabel .. ")"
+        end
+        return node.name or ""
+    end,
+})

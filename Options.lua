@@ -2322,76 +2322,6 @@ function markerModuleOptions(prefix, info)
     }
 end
 
-GatherMateOptions = markerModuleOptions("GatherMate", {
-    name = "GatherMate2 / GatherLite",
-    order = 1010,
-    description = "Shows gathering nodes from GatherMate2, or from GatherLite when GatherMate2 is not loaded. Which node types is decided by the addon's own settings.",
-    -- only with one of the two addons loaded
-    hidden = function() return not (GatherMate2 or GatherLite) end,
-    what = "node",
-    titleHeader = "Node name",
-})
-
-QuestieOptions = markerModuleOptions("Questie", {
-    name = "Questie",
-    order = 1020,
-    description = "Shows the icons Questie places on the minimap. Which ones is decided by Questie's own settings.",
-    hidden = function() return not questieLoaded() end,
-    enabledDesc = "Questie has no public interface for its icons, so a Questie update may turn this off until CompassHUD is updated.",
-    what = "icon",
-    titleHeader = "Name",
-    extraArgs = {
-        QuestieShowType = {
-            type = "toggle",
-            order = 14,
-            name = "Show the type after the name",
-            desc = "Adds the kind of icon in parentheses after the name, e.g. \"Innkeeper Farley (Innkeeper)\" or \"Princess Must Die! (Turn-in)\".",
-            width = "full",
-        },
-    },
-})
-
-HandyNotesOptions = markerModuleOptions("HandyNotes", {
-    name = "HandyNotes",
-    order = 1040,
-    description = "Shows the icons HandyNotes plugins (e.g. MapNotes, the expansion plugins) place on the minimap. Plugins turned off in HandyNotes are not shown here either.",
-    hidden = function() return not handyNotesLoaded() end,
-    enabledDesc = "Names are read from the plugins' own data where they provide it; other icons are titled with the plugin's name.",
-    what = "icon",
-    titleHeader = "Name",
-    extraArgs = {
-        HandyNotesNearbyZones = {
-            type = "toggle",
-            order = 13.5,
-            name = "Icons from nearby zones",
-            desc = "Also show the icons of zones and cities around you that are within the scanning radius, not only of the zone you are in (HandyNotes' minimap shows only the zone you are in). Asks the plugins about more maps, so it costs a bit more.",
-            width = "full",
-            set = function(_, value)
-                Options.HandyNotesNearbyZones = value
-                handyNotesPluginsChanged()
-            end,
-        },
-        HandyNotesPlugins = {
-            type = "multiselect",
-            order = 14,
-            name = "Plugins",
-            desc = "The HandyNotes plugins whose icons are shown on the compass.",
-            values = function() return handyNotesPluginList() end,
-            get = function(_, key) return Options.HandyNotesPlugins[key] ~= false end,
-            set = function(_, key, value)
-                -- only the turned off ones are stored: new plugins start shown
-                if value then
-                    Options.HandyNotesPlugins[key] = nil
-                else
-                    Options.HandyNotesPlugins[key] = false
-                end
-                handyNotesPluginsChanged()
-            end,
-            width = "full",
-        },
-    },
-})
-
 function Addon:GetPointerTypes()
     local pointerTypes = {}
     for k, v in pairs(Options.Pointers) do
@@ -3190,9 +3120,6 @@ function Addon:ConstructDefaultsAndOptions()
     }
     TrackingOption.args.POITrack = POITrackOptions
     TrackingOption.args.Group = GroupOptions
-    TrackingOption.args.GatherMate = GatherMateOptions
-    TrackingOption.args.Questie = QuestieOptions
-    TrackingOption.args.HandyNotes = HandyNotesOptions
     -- sources registered through the public interface (API.lua) bring their own page
     for _, source in ipairs(markerModules) do
         if source.optionsPage then

@@ -3,7 +3,8 @@
 -- HandyNotes.plugins[name]:GetNodes2(uiMapID, minimap) returns an iterator of
 -- coord, uiMapID, iconpath, scale, alpha. Names are not part of it: they are read from the node
 -- table many plugins pass as the iterator's state (see nodeName). Plugins turned off in HandyNotes,
--- or here (HandyNotesPlugins), are skipped; every plugin call is protected (pcall).
+-- or here (setting Plugins), are skipped; every plugin call is protected (pcall).
+-- Uses only the public interface for the marker source (CompassHUD.RegisterMarkerSource, API.lua).
 local ADDON_NAME, Addon = ...
 -- shared environment of the addon's files (see Init.lua)
 setfenv(1, Addon.env)
@@ -19,48 +20,39 @@ local HBD = LibStub("HereBeDragons-2.0")
 local MAX_NODES = 2000   -- per plugin and scan, against a runaway iterator
 local REFRESH = 10       -- seconds: plugin data is read again at least this often
 
-function handyNotesLoaded()
+local source -- the registration's handle (settings)
+
+-- the plugins' nodes of the current map, read from the plugins only when needed
+local cache = { uiMapID = nil, time = 0, entries = {} }
+
+local function handyNotesLoaded()
     return HandyNotes ~= nil and type(HandyNotes.plugins) == "table"
 end
 
-handyNotesNodes = registerMarkerSource({
-    prefix = "HandyNotes",
-    isAvailable = handyNotesLoaded,
-    defaults = {
-        UseMinimapSettings = true,
-        Supertrack         = true,
-        HideAtTarget       = true,
-        Plugins            = {}, -- [plugin name] = false: not shown on the compass
-        NearbyZones        = false, -- also the nodes of zones around (off: as HandyNotes' minimap)
-    },
-    speech = {
-        order = 60,
-        default = true,
-        name = "HandyNotes icons",
-        desc = "The icons shown by Minimap tracking -> HandyNotes (turn them on there).",
-    },
-    -- the plugins' nodes of the current map, read from the plugins only when needed (cache)
-    cache = { uiMapID = nil, time = 0, entries = {} },
-})
-
 -- A name readable as a plugin's label: "HandyNotes_TheWarWithin" -> "TheWarWithin"; HandyNotes'
 -- own notes plugin is called "HandyNotes".
-function handyNotesPluginLabel(pluginName)
+local function pluginLabel(pluginName)
     local label = tostring(pluginName):gsub("^HandyNotes[_ ]?", "")
     return label ~= "" and label or "HandyNotes (your own notes)"
 end
 
 -- The plugins HandyNotes has, for the options (name -> label).
-function handyNotesPluginList()
+local function pluginList()
     local list = {}
     for pluginName in pairs(handyNotesLoaded() and HandyNotes.plugins or {}) do
-        list[pluginName] = handyNotesPluginLabel(pluginName)
+        list[pluginName] = pluginLabel(pluginName)
     end
     return list
 end
 
+-- A plugin or "Icons from nearby zones" changed here: read the plugins again (the registration
+-- asks for a scan on the next update).
+local function settingsChanged()
+    cache.time = 0
+end
+
 -- HandyNotes asks for its plugins' nodes again when they change: so do we.
-Addon:RegisterMessage("HandyNotes_NotifyUpdate", function() handyNotesNodes.cache.time = 0 end)
+Addon:RegisterMessage("HandyNotes_NotifyUpdate", function() cache.time = 0 end)
 
 -- NPC names by ID, from the game's tooltip data (as the plugins do it). A name not known yet is
 -- asked again on the next read of the plugins.
@@ -194,10 +186,10 @@ end
 -- Reads one plugin's nodes of a map (the current one, or a nearby one) into the cache. 'places'
 -- (nearby zones only): nodes already read at the same place from another map are skipped (a
 -- plugin may show a city's nodes on its zone's map too).
-local function readPlugin(pluginName, handler, entries, uiMapID, places)
+local function readPlugin(pluginName, handler, entries, uiMapID, playerInstance, places)
     local ok, iter, state, value = pcall(handler.GetNodes2, handler, uiMapID, true)
     if not (ok and type(iter) == "function") then return end
-    local label = handyNotesPluginLabel(pluginName)
+    local label = pluginLabel(pluginName)
     for _ = 1, MAX_NODES do
         local found, coord, mapID, iconpath, scale = pcall(iter, state, value)
         if not found or coord == nil then return end
@@ -214,15 +206,13 @@ local function readPlugin(pluginName, handler, entries, uiMapID, places)
             elseif place then
                 places[place] = true
             end
-            if x and y and instance == player.instance then
+            if x and y and instance == playerInstance then
                 entries[pluginName .. ":" .. mapID .. ":" .. coord] = {
-                    x = x, y = y,
+                    -- the map its coordinates are on: the supertrack keybinding's waypoint goes there
+                    mapID = mapID, mapX = xZone, mapY = yZone,
                     name = nodeName(state, coord) or label,
                     texture = texture, texCoords = texCoords, color = color,
                     scale = type(scale) == "number" and math.min(math.max(scale, 0.3), 3) or nil,
-                    plugin = label,
-                    -- the map its coordinates are on: the supertrack keybinding's waypoint goes there
-                    waypointMapID = mapID,
                     -- tells a changed icon (e.g. a rare killed) from the same one
                     iconKey = tostring(texture) .. (texCoords and table.concat(texCoords, ",") or "")
                         .. (color and (tostring(color.r) .. tostring(color.g) .. tostring(color.b)) or ""),
@@ -260,17 +250,17 @@ local function areasOf(continent)
     return areas
 end
 
-local function nearbyMaps()
-    local maps = { player.uiMapID }
-    local continent = continentOf(player.uiMapID)
-    if not (continent and player.x and player.y) then return maps end
-    local radius = markerRadius(handyNotesNodes)
+local function nearbyMaps(scan)
+    local maps = { scan.uiMapID }
+    local continent = continentOf(scan.uiMapID)
+    if not (continent and scan.x and scan.y) then return maps end
+    local radius = scan.radius
     for _, area in ipairs(areasOf(continent)) do
         local mapID, instance, minX, maxX, minY, maxY = area[1], area[2], area[3], area[4], area[5], area[6]
-        if mapID ~= player.uiMapID and instance == player.instance then
+        if mapID ~= scan.uiMapID and instance == scan.instance then
             -- the player's distance to the zone's area (0 inside it)
-            local dx = math.max(minX - player.x, 0, player.x - maxX)
-            local dy = math.max(minY - player.y, 0, player.y - maxY)
+            local dx = math.max(minX - scan.x, 0, scan.x - maxX)
+            local dy = math.max(minY - scan.y, 0, scan.y - maxY)
             if dx * dx + dy * dy <= radius * radius then
                 maps[#maps + 1] = mapID
             end
@@ -281,54 +271,80 @@ end
 
 -- The cache holds the current map's nodes (with "Icons from nearby zones" also those of the zones
 -- around); read again on a map change, a HandyNotes update message, a settings change (see
--- restyle) or after REFRESH seconds.
-local function refreshCache()
-    local cache = handyNotesNodes.cache
+-- settingsChanged) or after REFRESH seconds.
+local function refreshCache(scan)
     local now = GetTime()
-    if cache.uiMapID == player.uiMapID and now - cache.time < REFRESH then return cache.entries end
-    cache.uiMapID, cache.time = player.uiMapID, now
+    if cache.uiMapID == scan.uiMapID and now - cache.time < REFRESH then return cache.entries end
+    cache.uiMapID, cache.time = scan.uiMapID, now
     wipe(cache.entries)
     local profile = HandyNotes.db and HandyNotes.db.profile
     if profile and profile.enabled == false then return cache.entries end
     local enabledPlugins = profile and profile.enabledPlugins
     -- off: only the current map, as HandyNotes' minimap
-    local maps = Options.HandyNotesNearbyZones and nearbyMaps() or nil
+    local maps = source:GetSetting("NearbyZones") and nearbyMaps(scan) or nil
     local places = maps and {} or nil
     for pluginName, handler in pairs(HandyNotes.plugins) do
         if type(handler) == "table" and type(handler.GetNodes2) == "function"
             and not (enabledPlugins and enabledPlugins[pluginName] == false)
-            and Options.HandyNotesPlugins[pluginName] ~= false then
+            and source:GetSetting("Plugins", pluginName) then
             if maps then
                 for _, uiMapID in ipairs(maps) do
-                    readPlugin(pluginName, handler, cache.entries, uiMapID, places)
+                    readPlugin(pluginName, handler, cache.entries, uiMapID, scan.instance, places)
                 end
             else
-                readPlugin(pluginName, handler, cache.entries, player.uiMapID)
+                readPlugin(pluginName, handler, cache.entries, scan.uiMapID, scan.instance)
             end
         end
     end
     return cache.entries
 end
 
-function handyNotesNodes.scan()
-    for key, entry in pairs(refreshCache()) do
-        local node = markerNode(handyNotesNodes, key)
-        -- built on another map (instance is the player's map when built), the icon changed or the
-        -- name is known now (NPC names come from the game's cache)
-        if node and (node.instance ~= player.uiMapID or node.iconKey ~= entry.iconKey or node.name ~= entry.name) then
-            releaseMarkerNode(handyNotesNodes, key)
-            node = nil
-        end
-        if not node then
-            local fields = {}
-            for k, v in pairs(entry) do fields[k] = v end
-            newMarkerNode(handyNotesNodes, key, fields)
-        end
-    end
-end
+source = CompassHUD.RegisterMarkerSource({
+    id = "HandyNotes",
+    name = "HandyNotes",
+    description = "Shows the icons HandyNotes plugins (e.g. MapNotes, the expansion plugins) place on the minimap. Plugins turned off in HandyNotes are not shown here either.",
+    enabledDesc = "Names are read from the plugins' own data where they provide it; other icons are titled with the plugin's name.",
+    what = "icon",
+    isAvailable = handyNotesLoaded,
+    options = {
+        {
+            key = "NearbyZones",
+            type = "toggle",
+            name = "Icons from nearby zones",
+            desc = "Also show the icons of zones and cities around you that are within the scanning radius, not only of the zone you are in (HandyNotes' minimap shows only the zone you are in). Asks the plugins about more maps, so it costs a bit more.",
+            default = false,
+            onChange = settingsChanged,
+        },
+        {
+            -- only the turned off ones are stored: new plugins start shown
+            key = "Plugins",
+            type = "multiselect",
+            name = "Plugins",
+            desc = "The HandyNotes plugins whose icons are shown on the compass.",
+            values = pluginList,
+            default = true,
+            onChange = settingsChanged,
+        },
+    },
+    speech = {
+        default = true,
+        name = "HandyNotes icons",
+        desc = "The icons shown by Minimap tracking -> HandyNotes (turn them on there).",
+    },
 
--- A plugin turned on or off here: read the plugins again on the next scan.
-function handyNotesPluginsChanged()
-    handyNotesNodes.cache.time = 0
-    handyNotesNodes.throttle = math.huge
-end
+    scan = function(scan)
+        for key, entry in pairs(refreshCache(scan)) do
+            local node = scan:Get(key)
+            -- the icon changed or the name is known now (NPC names come from the game's cache)
+            if not node or node.data.iconKey ~= entry.iconKey or node.name ~= entry.name then
+                scan:Add(key, {
+                    mapID = entry.mapID, mapX = entry.mapX, mapY = entry.mapY,
+                    name = entry.name,
+                    texture = entry.texture, texCoords = entry.texCoords, color = entry.color,
+                    scale = entry.scale,
+                    data = { iconKey = entry.iconKey },
+                })
+            end
+        end
+    end,
+})
