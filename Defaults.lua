@@ -161,69 +161,9 @@ Addon.Defaults = {
         GroupRaidNameBackground       = 'Blizzard Tooltip',
         GroupRaidNameBackgroundClass  = false,
         GroupRaidNameBackgroundColor  = {r = 1, g = 1, b = 1, a = 1},
-        -- GatherMate markers: the same settings as the Questie markers and the minimap icons
-        -- (Markers/Common.lua); full opacity keeps the earlier look, texts only on the faced node
-        GatherMateEnabled            = false,
-        GatherMateUseMinimapSettings = false,
-        GatherMateSupertrack         = false,
-        GatherMateHideAtTarget       = true,
-        GatherMateTextsDegrees       = 2.5, -- like the minimap icons (was effectively 0 before v1.8)
-        GatherMateOpacitySelected    = 1,
-        GatherMateOpacityMaxRadius   = 1000,
-        GatherMateRadius             = 150,
-        GatherMateInterval           = 6,
-        GatherMateOffset             = 20,
-        GatherMateScale              = 0.8,
-        -- 1/1: no fading by default, nodes look as before the option existed
-        GatherMateOpacityMin         = 1,
-        GatherMateOpacityMax         = 1,
-        GatherMateOpacityMinRadius   = 50,
-        GatherMateShowDistance       = false,
-        GatherMateShowTTA            = false,
-        GatherMateShowTitle          = false,
-        GatherMateDistanceOffset     = 0,
-        GatherMateTtaOffset          = 0,
-        GatherMateTitleOffset        = 0,
-        -- Questie markers: the same settings (and defaults) as the minimap icons (POITrack...),
-        -- which are used instead while QuestieUseMinimapSettings is on (Markers/Questie.lua)
-        QuestieEnabled               = false,
-        QuestieUseMinimapSettings    = true,
-        QuestieShowType              = true,
-        QuestieSupertrack            = true,
-        QuestieRadius                = 1000, -- 0 = whole zone
-        QuestieInterval              = 30,
-        QuestieOffset                = 20,
-        QuestieScale                 = 1,
-        QuestieHideAtTarget          = true,
-        QuestieOpacityMax            = 0.7,
-        QuestieOpacityMin            = 0.2,
-        QuestieOpacitySelected       = 1,
-        QuestieOpacityMaxRadius      = 1000,
-        QuestieOpacityMinRadius      = 100,
-        QuestieTextsDegrees          = 2.5,
-        QuestieShowDistance          = true,
-        QuestieShowTTA               = true,
-        QuestieShowTitle             = true,
-        QuestieDistanceOffset        = 0,
-        QuestieTtaOffset             = 0,
-        QuestieTitleOffset           = 0,
-        POITrackEnabled            = false,
-        POITrackRadius             = 1000,
-        POITrackInterval           = 30,
-        POITrackOffset             = 20,
-        POITrackScale              = 1,
-        POITrackOpacityMax         = 0.7,
-        POITrackOpacityMin         = 0.2,
-        POITrackOpacitySelected    = 1,
-        POITrackOpacityMaxRadius   = 1000,
-        POITrackOpacityMinRadius   = 100,
-        POITrackTextsDegrees       = 2.5,
-        POITrackShowDistance       = true,
-        POITrackShowTTA            = true,
-        POITrackShowTitle          = true,
-        POITrackDistanceOffset     = 0,
-        POITrackTtaOffset          = 0,
-        POITrackTitleOffset        = 0,
+        -- The marker sources' settings (<prefix>Radius, ...) are added by registerMarkerSource from
+        -- markerSourceDefaults below and each source's own defaults (Markers/*.lua). The minimap
+        -- icons' filters and other settings of their own:
         POITrackFilter             = {
             [poiTypeEnum.TAXI] = false,
             [poiTypeEnum.TAXI.."_min"] = false,
@@ -250,10 +190,41 @@ Addon.Defaults = {
     },
 }
 
--- Font defaults of the three texts (distance, time to arrive, name) of an icon section: the same
--- for each section, named <prefix><text><setting>. Each color gets a table of its own (a shared
--- one would link the colors of all texts).
-local function addTextDefaults(profile, prefix)
+-- The settings every marker source has, named <prefix><name>, with the minimap icons' values. A
+-- source changes some of them and adds its own (Enabled, UseMinimapSettings, Supertrack, ...) in
+-- its 'defaults' (see registerMarkerSource).
+markerSourceDefaults = {
+    Enabled          = false,
+    Radius           = 1000, -- 0 = whole zone
+    Interval         = 30,
+    Offset           = 20,
+    Scale            = 1,
+    OpacityMax       = 0.7,
+    OpacityMin       = 0.2,
+    OpacitySelected  = 1,
+    OpacityMaxRadius = 1000,
+    OpacityMinRadius = 100,
+    TextsDegrees     = 2.5,
+    ShowDistance     = true,
+    ShowTTA          = true,
+    ShowTitle        = true,
+    DistanceOffset   = 0,
+    TtaOffset        = 0,
+    TitleOffset      = 0,
+}
+
+-- Adds a marker source's defaults to the profile defaults: the shared ones, the source's own
+-- ('defaults', by name without the prefix) and the fonts of its three texts (distance, time to
+-- arrive, name). Each color gets a table of its own (a shared one would link the colors of all
+-- texts). Runs while the files load, before AceDB is set up (OnInitialize).
+function addMarkerSourceDefaults(prefix, defaults)
+    local profile = Addon.Defaults.profile
+    for name, value in pairs(markerSourceDefaults) do
+        profile[prefix .. name] = value
+    end
+    for name, value in pairs(defaults or {}) do
+        profile[prefix .. name] = value
+    end
     for _, text in ipairs({ "Distance", "Tta", "Title" }) do
         profile[prefix .. text .. "CustomFont"] = false
         profile[prefix .. text .. "Font"]       = "Friz Quadrata TT"
@@ -262,7 +233,3 @@ local function addTextDefaults(profile, prefix)
         profile[prefix .. text .. "FontFlags"]  = ""
     end
 end
-
-addTextDefaults(Addon.Defaults.profile, "POITrack")
-addTextDefaults(Addon.Defaults.profile, "GatherMate")
-addTextDefaults(Addon.Defaults.profile, "Questie")

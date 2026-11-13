@@ -15,6 +15,22 @@ gatherNodes = registerMarkerSource({
     prefix = "GatherMate",
     -- GatherMate2 if loaded, else GatherLite
     isAvailable = function() return (GatherMate2 or GatherLite) and true or false end,
+    -- full opacity (1/1, no fading) keeps the look from before the option existed; texts only on
+    -- the faced node (texts visibility angle 2.5, was effectively 0 before v1.8)
+    defaults = {
+        UseMinimapSettings = false,
+        Supertrack         = false,
+        HideAtTarget       = true,
+        Radius             = 150,
+        Interval           = 6,
+        Scale              = 0.8,
+        OpacityMin         = 1,
+        OpacityMax         = 1,
+        OpacityMinRadius   = 50,
+        ShowDistance       = false,
+        ShowTTA            = false,
+        ShowTitle          = false,
+    },
     liteTypes = { "mining", "herbalism", "containers", "fishing" }, -- GatherLite node types
     liteObjects = {},   -- object ID -> GatherLite object (GetNodeObject searches its whole list)
 })

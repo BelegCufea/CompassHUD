@@ -573,10 +573,13 @@ end
 --   scan         function(source, x, y, radius): reports the nodes around the player with
 --                markerNode/newMarkerNode. x, y: player position on the current map (zone
 --                coordinates), radius: the scanning radius in yards (markerRadius)
+--   defaults     the source's setting defaults that differ from markerSourceDefaults, or that only
+--                it has, by name without the prefix (e.g. { Radius = 150, Supertrack = false })
 --   title, bypassesRadius  optional, see markerTitle and drawMarkerNodes
 -- The shared code does the rest: scan throttle, frames and their pool, styling, drawing, nodes no
 -- longer reported, settings changes, and the supertrack keybinding and speech (markerModules).
 function registerMarkerSource(source)
+    addMarkerSourceDefaults(source.prefix, source.defaults)
     source.nodes = source.nodes or {}
     source.framePool = source.framePool or {}
     source.seen = source.seen or {}

@@ -23,6 +23,13 @@ end
 questieNodes = registerMarkerSource({
     prefix = "Questie",
     isAvailable = questieLoaded,
+    -- the minimap icons' values, which are used instead while UseMinimapSettings is on
+    defaults = {
+        UseMinimapSettings = true,
+        ShowType           = true,
+        Supertrack         = true,
+        HideAtTarget       = true,
+    },
     map = nil,       -- Questie's map module, once found
     broken = false,  -- something expected was missing: stop trying for this session
     l10n = nil,      -- Questie's translation function
