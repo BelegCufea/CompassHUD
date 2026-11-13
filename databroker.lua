@@ -2,8 +2,20 @@ local Addon = select(2, ...)
 local ADDON_NAME = ...
 
 local LibDataBroker = LibStub("LibDataBroker-1.1")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 local ldbLabelText = "A compass tape for your UI"
+
+-- The options in AceConfig's own window, which can be dragged away from the compass; closes it
+-- when it is open.
+local function toggleOptionsWindow()
+    local name = Addon.CONST.METADATA.NAME
+    if AceConfigDialog.OpenFrames[name] then
+        AceConfigDialog:Close(name)
+    else
+        AceConfigDialog:Open(name)
+    end
+end
 local settings = {
     type = "data source",
     label = ADDON_NAME,
@@ -15,11 +27,18 @@ local settings = {
             tooltip:AddLine(Addon.CONST.METADATA.NAME .. " (v" .. Addon.CONST.METADATA.VERSION .. ")")
             tooltip:AddLine(" ")
             tooltip:AddLine(ldbLabelText, 1, 1, 1)
+            tooltip:AddLine(" ")
+            tooltip:AddLine("|cnGREEN_FONT_COLOR:Left-click:|r options in a movable window", 1, 1, 1)
+            tooltip:AddLine("|cnGREEN_FONT_COLOR:Right-click:|r options in the game's settings", 1, 1, 1)
             tooltip:Show()
         end
     end,
     OnClick = function(self, button, down)
-        Settings.OpenToCategory(Addon.categoryID)
+        if button == "RightButton" then
+            Settings.OpenToCategory(Addon.categoryID)
+        else
+            toggleOptionsWindow()
+        end
     end,
 }
 

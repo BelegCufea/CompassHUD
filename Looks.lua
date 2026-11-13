@@ -12,7 +12,6 @@ local pairs, ipairs, type, next, tostring = pairs, ipairs, type, next, tostring
 local string, table = string, table
 
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
-local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local pcall, math = pcall, math
 
@@ -580,11 +579,11 @@ local function setPreviewBackground(key)
         previewFrame.texture = previewFrame:CreateTexture(nil, "BACKGROUND")
         previewFrame.texture:SetAllPoints()
     end
-    -- just below the compass, around it and under the pointer and marker texts
+    -- just below the compass, around it and under the marker texts (above) and pointer texts (below)
     previewFrame:SetFrameStrata(HUD:GetFrameStrata())
     previewFrame:SetFrameLevel(math.max(HUD:GetFrameLevel() - 1, 0))
     previewFrame:ClearAllPoints()
-    previewFrame:SetPoint("TOPLEFT", HUD, "TOPLEFT", -40, 30)
+    previewFrame:SetPoint("TOPLEFT", HUD, "TOPLEFT", -40, 90)
     previewFrame:SetPoint("BOTTOMRIGHT", HUD, "BOTTOMRIGHT", 40, -90)
     local texture = previewFrame.texture
     if background.texture then
@@ -597,13 +596,6 @@ local function setPreviewBackground(key)
         texture:SetColorTexture(c[1], c[2], c[3], 1)
     end
     previewFrame:Show()
-end
-
--- These options in AceConfig's own window, which can be dragged away from the compass.
-local function openMovableOptions()
-    local name = Addon.CONST.METADATA.NAME
-    AceConfigDialog:Open(name)
-    AceConfigDialog:SelectGroup(name, "Tabs", "Looks")
 end
 
 ------------------------------------------------------------------------------------------------
@@ -634,14 +626,6 @@ local looksArgs = {
         sorting = PREVIEW_ORDER,
         get = function() return previewChoice end,
         set = function(_, key) setPreviewBackground(key) end,
-    },
-    MovableWindow = {
-        type = "execute",
-        order = 3,
-        name = "Open in a movable window",
-        desc = "Opens these options in a window you can drag away from the compass, so its pointers and markers stay visible. Close the game's options window then.",
-        width = 1.3,
-        func = openMovableOptions,
     },
     -- the player's own look, saved when a look was first tried in this profile
     OwnLook = {
