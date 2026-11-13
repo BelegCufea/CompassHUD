@@ -1,4 +1,4 @@
-# v1.9.0 (unreleased)
+# v1.9.0 (13.11.2026)
 
 ## Good to know
 
