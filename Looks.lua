@@ -89,15 +89,32 @@ local function copy(value)
     return result
 end
 
+-- A full copy of a setting. AceDB saves only what differs from the defaults: a color saved as
+-- { a = 0 } gets r, g, b from the defaults through a metatable, which pairs() does not see. The
+-- default's keys are read through the value, so the copy is complete.
+local function copyResolved(value, default)
+    if type(value) ~= "table" then return value end
+    local result = {}
+    if type(default) == "table" then
+        for k in pairs(default) do result[k] = copyResolved(value[k], default[k]) end
+    end
+    for k, v in pairs(value) do
+        result[k] = copyResolved(v, type(default) == "table" and default[k] or nil)
+    end
+    return result
+end
+
 -- The current look settings, for Revert.
 local function takeSnapshot()
+    local defaults = Addon.Defaults.profile
     local snapshot = { keys = {}, pointers = {} }
     for _, key in ipairs(lookKeys()) do
-        snapshot.keys[key] = copy(Options[key])
+        snapshot.keys[key] = copyResolved(Options[key], defaults[key])
     end
     for typeKey, pointer in pairs(Options.Pointers) do
+        local default = defaults.Pointers[typeKey] or {}
         local fields = {}
-        for _, field in ipairs(POINTER_FIELDS) do fields[field] = copy(pointer[field]) end
+        for _, field in ipairs(POINTER_FIELDS) do fields[field] = copyResolved(pointer[field], default[field]) end
         snapshot.pointers[typeKey] = fields
     end
     return snapshot
@@ -125,6 +142,7 @@ end
 --             other sources); texts with their own custom font follow it too
 --             (settings and text may be functions returning the table, called when applied)
 --   pointers  a texture preset (texturePresets, Data.lua) for the pointer textures
+--   pointerSettings  { [pointer type] = { [POINTER_FIELDS field] = value } } (imported looks)
 --   available optional function() -> whether the look can be offered (e.g. its UI addon is loaded)
 local function rgb(r, g, b, a)
     return { r = r, g = g, b = b, a = a or 1 }
@@ -475,6 +493,13 @@ function applyLook(look)
     if look.pointers then
         applyTexturePreset(look.pointers)
     end
+    -- single pointer type fields (an imported look)
+    for typeKey, fields in pairs(look.pointerSettings or {}) do
+        local pointer = Options.Pointers[typeKey]
+        if pointer then
+            for field, value in pairs(fields) do pointer[field] = copy(value) end
+        end
+    end
     Addon:UpdateHUDSettings()
 end
 
@@ -544,6 +569,133 @@ end
 -- Another profile chosen (or copied, reset): a look being tried belongs to the previous one.
 function dropLookTry()
     lookTry = nil
+end
+
+------------------------------------------------------------------------------------------------
+-- Sharing a look as text: only the look settings that differ from the Original look, serialized
+-- (AceSerializer), compressed and made printable (LibDeflate), after a versioned prefix. Importing
+-- never runs anything from the text: only known look settings with the default's type are taken.
+------------------------------------------------------------------------------------------------
+
+local AceSerializer = LibStub("AceSerializer-3.0")
+local LibDeflate = LibStub("LibDeflate")
+
+local SHARE_PREFIX = "CompassHUD-Look:1:"
+local MAX_SHARE_LENGTH = 20000 -- characters of pasted text
+local MAX_STRING_SETTING = 300 -- characters of one text setting (font names, texture paths)
+
+local function same(a, b)
+    if type(a) ~= type(b) then return false end
+    if type(a) ~= "table" then return a == b end
+    for k, v in pairs(a) do if not same(v, b[k]) then return false end end
+    for k in pairs(b) do if a[k] == nil then return false end end
+    return true
+end
+
+-- The current look as text.
+local function exportLook()
+    local defaults = Addon.Defaults.profile
+    local data = { s = {}, p = {} }
+    for _, key in ipairs(lookKeys()) do
+        local value = copyResolved(Options[key], defaults[key])
+        if not same(value, defaults[key]) then data.s[key] = value end
+    end
+    for typeKey, pointer in pairs(Options.Pointers) do
+        local default = defaults.Pointers[typeKey]
+        if default then
+            for _, field in ipairs(POINTER_FIELDS) do
+                local value = copyResolved(pointer[field], default[field])
+                if not same(value, default[field]) then
+                    data.p[typeKey] = data.p[typeKey] or {}
+                    data.p[typeKey][field] = value
+                end
+            end
+        end
+    end
+    local compressed = LibDeflate:CompressDeflate(AceSerializer:Serialize(data), { level = 9 })
+    return SHARE_PREFIX .. LibDeflate:EncodeForPrint(compressed)
+end
+
+-- An imported value, if it has the default's kind: a number, a short text, true/false, or a
+-- color { r, g, b, a } of numbers; else nil.
+local function checkedValue(value, default)
+    local kind = type(default)
+    if type(value) ~= kind then return nil end
+    if kind == "number" then
+        return (value == value and value > -1e6 and value < 1e6) and value or nil
+    elseif kind == "string" then
+        return #value <= MAX_STRING_SETTING and value or nil
+    elseif kind == "boolean" then
+        return value
+    elseif kind == "table" then
+        local color = {}
+        for _, c in ipairs({ "r", "g", "b", "a" }) do
+            local part = value[c]
+            if type(part) ~= "number" or part ~= part or part < 0 or part > 1 then return nil end
+            color[c] = part
+        end
+        return color
+    end
+end
+
+-- A look from shared text, or nil and why not.
+local function importLook(text)
+    if type(text) ~= "string" then return nil, "Paste a look first." end
+    text = text:gsub("^%s+", ""):gsub("%s+$", "")
+    if #text > MAX_SHARE_LENGTH then return nil, "That text is far too long for a look." end
+    if text:sub(1, #SHARE_PREFIX) ~= SHARE_PREFIX then
+        return nil, "That is not a CompassHUD look: it should start with " .. SHARE_PREFIX
+    end
+    local decoded = LibDeflate:DecodeForPrint(text:sub(#SHARE_PREFIX + 1))
+    local inflated = decoded and LibDeflate:DecompressDeflate(decoded)
+    local ok, data
+    if inflated then ok, data = AceSerializer:Deserialize(inflated) end
+    if not (ok and type(data) == "table") then
+        return nil, "The look text is damaged or incomplete: copy it again, all of it."
+    end
+    local defaults = Addon.Defaults.profile
+    local allowed = {}
+    for _, key in ipairs(lookKeys()) do allowed[key] = true end
+    local settings, pointerSettings, count = {}, {}, 0
+    for key, value in pairs(type(data.s) == "table" and data.s or {}) do
+        local checked = allowed[key] and checkedValue(value, defaults[key])
+        if checked ~= nil then
+            settings[key] = checked
+            count = count + 1
+        end
+    end
+    local pointerField = {}
+    for _, field in ipairs(POINTER_FIELDS) do pointerField[field] = true end
+    for typeKey, fields in pairs(type(data.p) == "table" and data.p or {}) do
+        local default = defaults.Pointers[typeKey]
+        if default and type(fields) == "table" then
+            for field, value in pairs(fields) do
+                local checked = pointerField[field] and checkedValue(value, default[field])
+                if checked ~= nil then
+                    pointerSettings[typeKey] = pointerSettings[typeKey] or {}
+                    pointerSettings[typeKey][field] = checked
+                    count = count + 1
+                end
+            end
+        end
+    end
+    return { id = "Imported", name = "Imported look", settings = settings, pointerSettings = pointerSettings }, count
+end
+
+local shareText, shareError -- pasted text, and why it could not be used
+local importedLook -- the look imported last (its row shows Keep/Revert while it is tried)
+
+local function tryImportedLook(text)
+    shareText = text
+    local look, result = importLook(text)
+    if not look then
+        shareError = result
+        refreshOptions()
+        return
+    end
+    shareError = nil
+    importedLook = look
+    tryLook(look)
 end
 
 ------------------------------------------------------------------------------------------------
@@ -826,6 +978,64 @@ for index, look in ipairs(looks) do
         },
     }
 end
+
+-- Sharing: your look as text to copy, and a box to paste someone's look into and try it.
+looksArgs.Share = {
+    type = "group",
+    order = 100,
+    inline = true,
+    name = function()
+        return trying(importedLook) and "Share a look  |cnGREEN_FONT_COLOR:(trying the pasted look)|r" or "Share a look"
+    end,
+    args = {
+        Desc = {
+            type = "description",
+            order = 1,
+            name = "Your look as text, to share it or keep it: click into the box, Ctrl+A, Ctrl+C. To use a look someone shared, paste it into the box below and press Enter: it is tried like the looks above. Only the look is shared, never size, position or what the compass shows.",
+            fontSize = "medium",
+        },
+        Export = {
+            type = "input",
+            order = 2,
+            name = "Your look",
+            width = "full",
+            get = function() return exportLook() end,
+            -- (the box shows your current look; anything typed into it is ignored)
+            set = function() refreshOptions() end,
+        },
+        Import = {
+            type = "input",
+            order = 3,
+            name = "Paste a look and press Enter",
+            width = "full",
+            get = function() return shareText or "" end,
+            set = function(_, text) tryImportedLook(text) end,
+        },
+        Error = {
+            type = "description",
+            order = 4,
+            name = function() return shareError and ("|cnRED_FONT_COLOR:" .. shareError .. "|r") or "" end,
+            hidden = function() return not shareError end,
+            fontSize = "medium",
+        },
+        Keep = {
+            type = "execute",
+            order = 5,
+            name = "Keep",
+            desc = "Keep the pasted look.",
+            func = keepLook,
+            hidden = function() return not trying(importedLook) end,
+        },
+        Revert = {
+            type = "execute",
+            order = 6,
+            name = "Revert",
+            desc = "Go back to the look you had before trying.",
+            func = revertLook,
+            hidden = function() return not trying(importedLook) end,
+        },
+    },
+}
 
 Addon.Options.args.Tabs.args.Looks = {
     type = "group",
