@@ -15,18 +15,18 @@ local HBD = LibStub("HereBeDragons-2.0")
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local GetTradeSkillDisplayName = C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillDisplayName
 
-questiePointTable = {}
--- the module for the shared marker functions (Markers/Common.lua), plus Questie's own state
-questieNodes = {
+function questieLoaded()
+    return IsAddOnLoaded("Questie") and true or false
+end
+
+-- a marker source (Markers/Common.lua), plus Questie's own state
+questieNodes = registerMarkerSource({
     prefix = "Questie",
-    nodes = questiePointTable,
-    framePool = {},
-    heading = nil,   -- node closest to the facing direction (supertrack keybinding, speech)
-    seen = {},       -- icons found by the current scan
+    isAvailable = questieLoaded,
     map = nil,       -- Questie's map module, once found
     broken = false,  -- something expected was missing: stop trying for this session
     l10n = nil,      -- Questie's translation function
-}
+})
 
 -- Questie icon types (data.Type): the label shown in parentheses, and whether the quest is in the
 -- quest log (then the supertrack keybinding tracks the quest itself)
@@ -46,10 +46,6 @@ local professionNames = {
     [202] = "Engineering", [333] = "Enchanting", [356] = "Fishing", [393] = "Skinning",
     [755] = "Jewelcrafting", [773] = "Inscription", [794] = "Archaeology",
 }
-
-function questieLoaded()
-    return IsAddOnLoaded("Questie") and true or false
-end
 
 local function getQuestieMap()
     if questieNodes.map or questieNodes.broken then return questieNodes.map end
@@ -91,7 +87,6 @@ function questieTitle(node)
     return node.name or ""
 end
 questieNodes.title = questieTitle
-table.insert(markerModules, questieNodes)
 
 -- One Questie minimap icon frame -> one node, if it is on this map, shown by Questie and in range.
 local function addIcon(frameName, category)
@@ -104,7 +99,7 @@ local function addIcon(frameName, category)
     if not (xWorld and yWorld) then return end
 
     local key = frameName
-    local node = questiePointTable[key]
+    local node = markerNode(questieNodes, key)
     if node and node.questieData ~= data then
         -- Questie reuses its frames: another icon now, build the node again
         releaseMarkerNode(questieNodes, key)
@@ -113,27 +108,24 @@ local function addIcon(frameName, category)
     if not node then
         local quest = data.Type ~= "manual" and data.QuestData
         local questType = questTypes[data.Type]
-        node = {
+        newMarkerNode(questieNodes, key, {
             questieData = data,
             -- quest title for quest icons, NPC/object name for townsfolk
             name = (quest and quest.name) or data.Name,
             typeLabel = typeLabel(data, category),
             questID = questType and questType.inLog and data.Id or nil,
+            -- (a question mark icon if Questie's is unknown)
             texture = icon.texture and icon.texture:GetTexture(),
-            instance = player.uiMapID,
-        }
-        local frame = acquireMarkerFrame(questieNodes)
-        frame.texture:SetTexture(node.texture or 134400) -- question mark icon if Questie's is unknown
-        node.frame = frame
-        questiePointTable[key] = node
-        styleMarkerNode(questieNodes, node)
+            x = xWorld, y = yWorld,
+        })
+    else
+        moveMarkerNode(node, xWorld, yWorld)
     end
-    node.x, node.y = xWorld, yWorld
-    node.frame.instance, node.frame.x, node.frame.y = node.instance, xWorld, yWorld
-    questieNodes.seen[key] = true
 end
 
-local function scanQuestie()
+-- icons gone, hidden by Questie, out of range or on another map are not reported and give their
+-- frame back (Markers/Common.lua)
+function questieNodes.scan()
     local map = getQuestieMap()
     if not map then return end
     -- quest icons: { [questId] = { [frameName] = frameName } }
@@ -156,33 +148,4 @@ local function scanQuestie()
             end
         end
     end
-end
-
--- Settings changed: re-apply them to all nodes, or drop all when the module is off.
-function updateQuestie()
-    for key, node in pairs(questiePointTable) do
-        if not Options.QuestieEnabled then
-            releaseMarkerNode(questieNodes, key)
-        elseif node.frame then
-            styleMarkerNode(questieNodes, node)
-        end
-    end
-end
-
-function setQuestieNodes()
-    if not Options.QuestieEnabled or not questieLoaded() then return end
-    if questieThrottle >= markerSetting(questieNodes, "Interval") then
-        questieThrottle = 0
-        if player.x and player.y and player.instance and player.uiMapID then
-            wipe(questieNodes.seen)
-            scanQuestie()
-            -- icons gone, hidden by Questie, out of range or on another map give their frame back
-            for key in pairs(questiePointTable) do
-                if not questieNodes.seen[key] then
-                    releaseMarkerNode(questieNodes, key)
-                end
-            end
-        end
-    end
-    drawMarkerNodes(questieNodes)
 end

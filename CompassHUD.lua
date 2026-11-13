@@ -64,7 +64,6 @@ function updateHUD(force)
     setGroupIcons()
     setAllMarkerSources()
     setPOITrackNodes()
-    setQuestieNodes()
     -- after all marker modules: texts only on the closest faced marker of all of them
     showFacedMarkerTexts()
     updateSpeech()
@@ -79,7 +78,6 @@ function onUpdate(_, elapsed)
     groupThrottle = groupThrottle + 1
     tickMarkerSources()
     poiTrackThrottle = poiTrackThrottle + 1
-    questieThrottle = questieThrottle + 1
     updateHUD(false)
 end
 
@@ -402,7 +400,6 @@ function schedulePointerFontRefresh()
         updateGroupTexts()
         restyleAllMarkerSources()
         updatePoiTrack()
-        updateQuestie()
     end)
 end
 
@@ -581,7 +578,6 @@ function Addon:UpdateHUDSettings()
     updateGroupTexts()
     restyleAllMarkerSources()
     updatePoiTrack()
-    updateQuestie()
     UnregisterAttributeDriver(HUD, 'state-hudvisibility')
     RegisterAttributeDriver(HUD, "state-hudvisibility", Options.Visibility)
 end

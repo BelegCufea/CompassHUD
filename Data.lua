@@ -21,7 +21,6 @@ HUD = nil
 timer = 0
 groupThrottle = 0
 poiTrackThrottle = 0
-questieThrottle = 0
 player ={x = 0, y = 0, angle = 0}
 tomTomActive = nil
 poiTypeEnum = {
