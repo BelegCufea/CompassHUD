@@ -2351,6 +2351,36 @@ QuestieOptions = markerModuleOptions("Questie", {
     },
 })
 
+HandyNotesOptions = markerModuleOptions("HandyNotes", {
+    name = "HandyNotes",
+    order = 1040,
+    description = "Shows the icons HandyNotes plugins (e.g. MapNotes, the expansion plugins) place on the minimap. Plugins turned off in HandyNotes are not shown here either.",
+    hidden = function() return not handyNotesLoaded() end,
+    enabledDesc = "Names are read from the plugins' own data where they provide it; other icons are titled with the plugin's name.",
+    what = "icon",
+    titleHeader = "Name",
+    extraArgs = {
+        HandyNotesPlugins = {
+            type = "multiselect",
+            order = 14,
+            name = "Plugins",
+            desc = "The HandyNotes plugins whose icons are shown on the compass.",
+            values = function() return handyNotesPluginList() end,
+            get = function(_, key) return Options.HandyNotesPlugins[key] ~= false end,
+            set = function(_, key, value)
+                -- only the turned off ones are stored: new plugins start shown
+                if value then
+                    Options.HandyNotesPlugins[key] = nil
+                else
+                    Options.HandyNotesPlugins[key] = false
+                end
+                handyNotesPluginsChanged()
+            end,
+            width = "full",
+        },
+    },
+})
+
 TomTomOptions = markerModuleOptions("TomTom", {
     name = "TomTom",
     order = 1030,
@@ -3165,6 +3195,7 @@ function Addon:ConstructDefaultsAndOptions()
     TrackingOption.args.GatherMate = GatherMateOptions
     TrackingOption.args.Questie = QuestieOptions
     TrackingOption.args.TomTom = TomTomOptions
+    TrackingOption.args.HandyNotes = HandyNotesOptions
     self.Options.args.Supertracker = SupertrackerOptions
     buildPresetPreviews()
     self.Options.args.TrackingIntegrations = TrackingOption

@@ -626,7 +626,8 @@ end
 
 -- Adds a node reported by a scan under 'key'. 'node' holds at least x, y (world coordinates, the
 -- current map's instance unless node.instance) and the icon: atlasName or texture (a question mark
--- if neither); optional name, scale (icon size factor), circle (round icon with a border), and
+-- if neither); optional name, scale (icon size factor), circle (round icon with a border),
+-- texCoords ({ left, right, top, bottom } of the texture), color ({ r, g, b, a } tint), and
 -- anything the source or the supertrack keybinding needs (questID, areaPoiID, ...).
 function newMarkerNode(source, key, node)
     node.instance = node.instance or player.uiMapID
@@ -638,7 +639,12 @@ function newMarkerNode(source, key, node)
         frame.texture:SetAtlas(node.atlasName)
     else
         frame.texture:SetTexture(node.texture or 134400)
+        -- (a frame from the pool may have had other ones; SetAtlas sets its own)
+        local c = node.texCoords
+        frame.texture:SetTexCoord(c and c[1] or 0, c and c[2] or 1, c and c[3] or 0, c and c[4] or 1)
     end
+    local color = node.color
+    frame.texture:SetVertexColor(color and color.r or 1, color and color.g or 1, color and color.b or 1, color and color.a or 1)
     setMarkerCircle(frame, node.circle)
     frame.elapsed = 0
     node.frame = frame

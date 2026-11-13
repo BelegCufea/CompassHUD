@@ -17,7 +17,7 @@
 ## Category-zhCN: 用户界面
 ## Category-zhTW: 使用者介面
 ## SavedVariables: CompassHUDDB
-## OptionalDeps: TomTom, GatherMate2, GatherLite, WorldQuestTracker, Questie
+## OptionalDeps: TomTom, GatherMate2, GatherLite, WorldQuestTracker, Questie, HandyNotes
 ## DefaultState: enabled
 ## X-Curse-Project-ID: 861865
 
@@ -38,6 +38,7 @@ Markers\Gathering.lua
 Markers\POI.lua
 Markers\Questie.lua
 Markers\TomTom.lua
+Markers\HandyNotes.lua
 CompassHUD.lua
 EditMode.lua
 Speech.lua
