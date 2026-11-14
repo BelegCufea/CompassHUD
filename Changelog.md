@@ -1,3 +1,9 @@
+# v2.0.1 (unreleased)
+
+## Fix
+
+- **While you are dead:** a flight point, map pin, rare (vignette) or waypoint you track was not shown as the supertracker pointer (only your corpse and quests were), and the supertracker keybinding could not untrack it. They now show next to your corpse.
+
 # v2.0.0 (14.11.2026)
 
 ## Good to know

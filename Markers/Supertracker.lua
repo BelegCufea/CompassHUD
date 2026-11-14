@@ -17,6 +17,27 @@ local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
 local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
 local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
 local GetNextWaypointForMapTracker = C_SuperTrack.GetNextWaypointForMap
+local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
+local IsSuperTrackingUserWaypoint = C_SuperTrack.IsSuperTrackingUserWaypoint
+
+-- The kind of target the game super-tracks (Enum.SuperTrackingType). The game's highest priority
+-- type is not enough: while the player is dead it is the corpse, but a map pin, vignette or user
+-- waypoint tracked before (or set then) stays tracked and is found by its own getter.
+function gameSuperTrackingType()
+    local stType = GetHighestPrioritySuperTrackingType()
+    local types = Enum.SuperTrackingType
+    if stType == types.Quest or stType == types.UserWaypoint or stType == types.MapPin or stType == types.Vignette then
+        return stType
+    end
+    if GetSuperTrackedMapPin() then
+        return types.MapPin
+    elseif GetSuperTrackedVignette() then
+        return types.Vignette
+    elseif IsSuperTrackingUserWaypoint and IsSuperTrackingUserWaypoint() then
+        return types.UserWaypoint
+    end
+    return stType
+end
 
 function updatePointerFrame(questPointer)
     local scale = Options.Scale * Options.IconScale
@@ -169,7 +190,7 @@ shownGameTarget = nil
 
 function setSupertrackerPointers()
     local vignetteGUID = GetSuperTrackedVignette()
-    local supertrackingType = GetHighestPrioritySuperTrackingType()
+    local supertrackingType = gameSuperTrackingType()
     local isTrackingUserWaypoint = (supertrackingType == Enum.SuperTrackingType.UserWaypoint)
     local trackingTypes = {[Enum.SuperTrackingType.MapPin] = true, [Enum.SuperTrackingType.Vignette] = true}
     local isTrackingPOI = trackingTypes[supertrackingType]

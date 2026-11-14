@@ -21,7 +21,6 @@ local GetUserWaypoint = C_Map.GetUserWaypoint
 local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
-local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
 local GetAreaPOIInfo = C_AreaPoiInfo.GetAreaPOIInfo
 local GetTaxiNodesForMap = C_TaxiMap.GetTaxiNodesForMap
 local GetVignettePosition = C_VignetteInfo.GetVignettePosition
@@ -244,7 +243,7 @@ function resolveSuperTrackedTarget(event,...)
             setSupertrackTarget(questID, x, y, uiMapID, 0, nil, completed)
         end
     else
-        local superTrackingType = GetHighestPrioritySuperTrackingType()
+        local superTrackingType = gameSuperTrackingType()
         if superTrackingType == Enum.SuperTrackingType.UserWaypoint then
             local point = GetUserWaypoint()
             if point then

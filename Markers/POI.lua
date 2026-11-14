@@ -22,7 +22,6 @@ local GetSuperTrackedQuestID = C_SuperTrack.GetSuperTrackedQuestID
 local GetSuperTrackedMapPin = C_SuperTrack.GetSuperTrackedMapPin
 local GetSuperTrackedVignette = C_SuperTrack.GetSuperTrackedVignette
 local ClearAllSuperTracked = C_SuperTrack.ClearAllSuperTracked
-local GetHighestPrioritySuperTrackingType = C_SuperTrack.GetHighestPrioritySuperTrackingType
 local SetSuperTrackedQuestID = C_SuperTrack.SetSuperTrackedQuestID
 local SetSuperTrackedMapPin = C_SuperTrack.SetSuperTrackedMapPin
 local SetSuperTrackedUserWaypoint = C_SuperTrack.SetSuperTrackedUserWaypoint
@@ -324,7 +323,7 @@ function supertrackPOITrack()
         return
     end
     if poi then
-        local stType = GetHighestPrioritySuperTrackingType()
+        local stType = gameSuperTrackingType()
         if poi.questID then
             if stType == Enum.SuperTrackingType.Quest then
                 local questID = GetSuperTrackedQuestID()
