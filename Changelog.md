@@ -1,4 +1,4 @@
-# v2.0.0 (unreleased)
+# v2.0.0 (14.11.2026)
 
 ## Good to know
 
