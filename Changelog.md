@@ -3,6 +3,7 @@
 ## Fix
 
 - **While you are dead:** a flight point, map pin, rare (vignette) or waypoint you track was not shown as the supertracker pointer (only your corpse and quests were), and the supertracker keybinding could not untrack it. They now show next to your corpse.
+- **Supertracker keybinding:** after moving to another map, it sometimes did nothing on a minimap icon you faced (e.g. a flight point, after stepping out of the Deeprun Tram into Ironforge) until a /reload. Icons that the game lists on several maps (flight points, quests next to your zone) kept the map they were first seen on, and the keybinding skipped them. They now belong to the map you are on.
 
 # v2.0.0 (14.11.2026)
 

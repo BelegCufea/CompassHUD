@@ -84,10 +84,24 @@ function poiTrackTypeByAtlas(poi, otherType)
     return poi.atlasName and poi.atlasName:sub(1, #("TaxiNode")) == "TaxiNode" and poiTypeEnum.PORTAL or otherType
 end
 
+-- The node of icon 'id' from an earlier scan, if it was made on the current map. The same icon is
+-- often listed on several maps (a flight point on its zone and on the neighboring ones, a quest on
+-- the maps next to it): one made on another map is dropped, so the scan makes it again with this
+-- map's position and node.instance. (A kept one never matched player.uiMapID again, so the
+-- supertrack keybinding ignored it until a /reload.)
+local function currentNode(id)
+    local node = poiNodes.nodes[id]
+    if node and node.instance ~= player.uiMapID then
+        releaseMarkerNode(poiNodes, id)
+        return nil
+    end
+    return node
+end
+
 -- Reports an icon found by the scan under 'id': the node it already has, or a new node made of the
 -- game API record 'data' at zone position xZone, yZone of the current map (icon size 'scale').
 local function reportIcon(id, data, xZone, yZone, scale, trackType)
-    local node = markerNode(poiNodes, id)
+    local node = currentNode(id) and markerNode(poiNodes, id)
     if not node then
         local x, y = HBD:GetWorldCoordinatesFromZone(xZone, yZone, player.uiMapID)
         if not (x and y) then return end
@@ -104,7 +118,7 @@ local function reportAreaPOI(poiID, poiType)
     local id = poiType .. "_" .. poiID
     -- current game data first; the continent cache (filled once per session) only as a fallback,
     -- so an event or other dynamic POI does not keep details from when the continent was cached
-    local poi = poiNodes.nodes[id] or GetAreaPOIInfo(player.uiMapID, poiID)
+    local poi = currentNode(id) or GetAreaPOIInfo(player.uiMapID, poiID)
         or (poiCache[poiID] and poiCache[poiID][player.uiMapID] and poiCache[poiID][player.uiMapID].poi)
     if not (poi and poi.position) then return end
     if not poi.atlasName then
@@ -145,7 +159,7 @@ local function scanMapLinks()
     local links = (filter[poiTypeEnum.PORTAL] or filter[poiTypeEnum.LINK]) and GetMapLinksForMap(player.uiMapID)
     for _, poi in ipairs(links or {}) do
         local id = poiTypeEnum.LINK .. "_" .. poi.areaPoiID
-        local trackType = poiTrackTypeByAtlas(poiNodes.nodes[id] or poi, poiTypeEnum.LINK)
+        local trackType = poiTrackTypeByAtlas(currentNode(id) or poi, poiTypeEnum.LINK)
         if filter[trackType] then
             reportIcon(id, poi, poi.position.x, poi.position.y, 1.3, trackType)
         end
@@ -191,7 +205,7 @@ local function scanVignettes()
         local position = GetVignettePosition(vignetteGUID, player.uiMapID)
         if vignetteInfo and position then
             local id = poiTypeEnum.VIGNETTE .. "_" .. vignetteInfo.vignetteGUID
-            local node = poiNodes.nodes[id]
+            local node = currentNode(id)
             if node then
                 -- vignettes can move (e.g. wandering rares): refresh the position on every scan
                 local x, y = HBD:GetWorldCoordinatesFromZone(position.x, position.y, player.uiMapID)
@@ -225,7 +239,7 @@ local function scanWorldQuests()
     for _, wq in ipairs(mapWQ) do
         if isTask(wq.questID) and wq.mapID == player.uiMapID and (wqFilter == "All" or trackedWQ[wq.questID]) then
             local id = "WorldQuest_" .. wq.questID
-            if not poiNodes.nodes[id] then
+            if not currentNode(id) then
                 wq.name = GetTitleForQuestID(wq.questID)
                 wq.atlasName = "completiondialog-warwithincampaign-worldquests-icon"
                 wq.circle = true
@@ -258,7 +272,7 @@ local function scanQuests()
         local wanted = which == "both" or (which == "complete") == completed
         if questID and quest.x and quest.y and not otherZone and wanted and not isTask(questID) then
             local id = poiTypeEnum.QUEST .. "_" .. questID
-            local node = poiNodes.nodes[id]
+            local node = currentNode(id)
             if node and (node.completed ~= completed or node.iconStyle ~= iconStyle) then
                 -- completed or no longer, or another icon style: build the node again
                 releaseMarkerNode(poiNodes, id)
