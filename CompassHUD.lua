@@ -51,11 +51,8 @@ function updateHUD(force)
     local facing = lookSamples and 0 or (readPlayerFacing() or 0)
     if force or facing ~= currentFacing then
         local coord = (facing < PI and 0.5 or 1) - (facing * ADJ_FACTOR)
-        -- rotate texture
-        HUD.compassTexture:SetTexCoord(coord - adjCoord, coord + adjCoord, 0, 1)
-        -- rotate letters
-        HUD.compassCustom.mask:ClearAllPoints()
-        HUD.compassCustom.mask:SetPoint('TOP', HUD.compassCustom, 'TOP', (1/2 - coord) * textureWidth, 0)
+        -- rotate the texture or letters (and their fade toward the edges)
+        rotateCompassStrip(coord)
         currentFacing = facing
     end
     if lookSamples then
@@ -562,6 +559,8 @@ function Addon:UpdateHUDSettings()
 	HUD:SetBackdrop(backdrop)
     HUD:SetBackdropColor(Options.BackgroundColor.r,Options.BackgroundColor.g, Options.BackgroundColor.b, Options.BackgroundColor.a)
 	HUD:SetBackdropBorderColor(Options.BorderColor.r,Options.BorderColor.g, Options.BorderColor.b, Options.BorderColor.a)
+    -- fade toward the edges: the background and border (Compass.lua)
+    fadeHUDFrame()
 
     Options.PositionX = HUD:GetLeft()
     Options.PositionY = HUD:GetBottom()

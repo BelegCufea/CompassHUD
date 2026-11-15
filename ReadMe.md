@@ -78,7 +78,7 @@ Most settings have a tooltip with more details when you hover over them.
 
 ![Looks](https://i.imgur.com/1GSQnvs.png)
 
-- The `Appearance` tab styles the HUD frame (central pin, opacity, border, background, edge line). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one. Party/raid names keep their own color setting. `Max title width` cuts off long titles of the supertracker pointers and of all icon markers with "..." (0 = no limit).
+- The `Appearance` tab styles the HUD frame (central pin, opacity, border, background, edge line). `Fade toward the edges` fades the compass and everything on it out toward the left and right edge: where the fading starts, the opacity before fading and at the edge, how it fades, and which parts fade (background and border, compass, edge lines, minimap tracking, supertracker, party/raid, markers held at the edge). Its `Pointer font` section sets a default font, size, outline and color for all pointer texts. A text with its own custom font enabled keeps using that one. Party/raid names keep their own color setting. `Max title width` cuts off long titles of the supertracker pointers and of all icon markers with "..." (0 = no limit).
 
 - The `Custom HUD` tab lets you choose between the compass texture or a strip built from its parts: main cardinal directions (N, E, S, W), ordinal directions (NE, SE, ...) and degrees, each with its own font, color and position. It also holds the numeric heading display (frame, font, decimal points, north shown as 0 or 360).
 

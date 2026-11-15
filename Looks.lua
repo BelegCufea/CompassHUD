@@ -27,6 +27,9 @@ local LOOK_SETTINGS = {
     -- central pin, arrow of a pointer staying at the edge, edge line
     "PinVisible", "PinTexture", "StayArrow", "StayAtlasID",
     "Line", "LineThickness", "LinePosition", "LineColor",
+    -- fade toward the edges
+    "EdgeFade", "EdgeFadeStart", "EdgeFadeInner", "EdgeFadeOuter", "EdgeFadeCurve", "EdgeFadeFrame", "EdgeFadeCompass",
+    "EdgeFadeLines", "EdgeFadeMarkers", "EdgeFadeGroup", "EdgeFadePointers", "EdgeFadeHeld",
     -- compass strip: texture, or custom letters (CompassCustom*)
     "UseCustomCompass", "CompassTextureTexture",
     -- heading box
@@ -287,6 +290,45 @@ local function foreverFadeSettings()
     return s
 end
 
+-- Fade toward the edges (Compass.lua): where it starts, opacity at the edge, curve, and whether
+-- markers held at the edge fade too; everything else fades (the defaults).
+local function edgeFadeSettings(settings, start, outer, curve, held)
+    settings.EdgeFade, settings.EdgeFadeStart, settings.EdgeFadeOuter = true, start, outer
+    settings.EdgeFadeCurve, settings.EdgeFadeHeld = curve, held
+    return settings
+end
+
+-- Horizon: letters between two thin lines on a faint dark band (so it reads on light skies and
+-- snow), all of it melting away to the sides; no degree numbers.
+local function horizonSettings()
+    local s = frameSettings({}, "None", 1, rgb(0, 0, 0, 0), "Solid", rgb(0, 0, 0, 0.4))
+    lineSettings(s, "BOTH", 1, rgb(1, 1, 1, 0.85))
+    letterSettings(s,
+        { font = "Arial Narrow", size = 16, flags = "OUTLINE", color = WHITE },
+        { font = "Arial Narrow", size = 13, flags = "OUTLINE", color = rgb(0.85, 0.87, 0.90) },
+        false)
+    headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
+    -- markers held at the edge stay fully visible: the edge itself is faint
+    return edgeFadeSettings(s, 0.3, 0.1, "SMOOTH", false)
+end
+
+-- Glass: Clean's dark band with a thin border, the whole frame fading out to the sides.
+local function glassSettings()
+    local s = frameSettings({}, "CompassHUD Pixel", 1, rgb(0.6, 0.65, 0.7, 0.6), "Solid", rgb(0.04, 0.05, 0.07, 0.8))
+    letterSettings(s,
+        { font = "Arial Narrow", size = 14, flags = "OUTLINE", color = WHITE },
+        { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = LIGHT_GREY },
+        { font = "Arial Narrow", size = 9, flags = "", color = GREY })
+    headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
+    return edgeFadeSettings(s, 0.4, 0.2, "SMOOTH", true)
+end
+
+-- Gold fading: Classic gold's dialog frame and letters, fading out to the sides.
+local function classicFadeSettings()
+    local s = classicSettings()
+    return edgeFadeSettings(s, 0.3, 0.2, "SMOOTH", true)
+end
+
 -- A font by its LibSharedMedia name, if LSM has it; else the first of the fallbacks it has.
 local function knownFont(name, ...)
     if type(name) == "string" and LSM:IsValid("font", name) then return name end
@@ -400,6 +442,20 @@ looks = {
         text = WHITE_TEXT,
     },
     {
+        id = "Horizon",
+        name = "Horizon",
+        desc = "No frame: letters between two thin lines on a faint dark band, no degree numbers; everything on the compass fades away toward the sides.",
+        settings = horizonSettings,
+        text = WHITE_TEXT,
+    },
+    {
+        id = "Glass",
+        name = "Glass",
+        desc = "A dark band with a thin border, white and grey letters; the whole compass fades out toward the sides.",
+        settings = glassSettings,
+        text = WHITE_TEXT,
+    },
+    {
         id = "Line",
         name = "Line",
         desc = "No frame and no background, just a thin line on top and outlined white letters, no degree numbers.",
@@ -418,6 +474,13 @@ looks = {
         name = "Classic gold",
         desc = "The game's own dialog style: gold trim, dark background, gold and parchment letters in Friz Quadrata.",
         settings = classicSettings,
+        text = GOLD_TEXT,
+    },
+    {
+        id = "ClassicFade",
+        name = "Classic gold, fading",
+        desc = "Classic gold's frame and letters, fading out toward the sides.",
+        settings = classicFadeSettings,
         text = GOLD_TEXT,
     },
     {

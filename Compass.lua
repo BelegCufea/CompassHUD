@@ -83,6 +83,216 @@ function getPlayerFacingAngle(questID)
     return relativeAngle(point.instance, point.x, point.y)
 end
 
+-- Fade toward the edges: opacity by the place on the strip, t = 0 in the middle, 1 at the edge.
+-- Not fading: EdgeFadeInner; from EdgeFadeStart to the edge it goes to EdgeFadeOuter along the curve.
+local fadeCurves = {
+    LINEAR = function(u) return u end,
+    EASE_IN = function(u) return u * u end,
+    EASE_OUT = function(u) return 1 - (1 - u) * (1 - u) end,
+    SMOOTH = function(u) return u * u * (3 - 2 * u) end,
+}
+
+function edgeFadeAt(t)
+    local start, inner = Options.EdgeFadeStart, Options.EdgeFadeInner
+    if t <= start then return inner end
+    local u = start < 1 and (t - start) / (1 - start) or 1
+    if u > 1 then u = 1 end
+    local curve = fadeCurves[Options.EdgeFadeCurve] or fadeCurves.LINEAR
+    return inner + (Options.EdgeFadeOuter - inner) * curve(u)
+end
+
+-- The fade of a marker at an angle from the facing (radians); 1 when fading is off or the part
+-- (option key, e.g. "EdgeFadeMarkers") is not faded.
+function edgeFade(part, angle)
+    if not (Options.EdgeFade and Options[part]) or not angle then return 1 end
+    return edgeFadeAt(math.abs(angle) / (math.rad(Options.Degrees) / 2))
+end
+
+-- The fade of a marker held at the edge (its target is outside the field of view).
+function edgeFadeHeld(part)
+    if not Options.EdgeFadeHeld then return 1 end
+    return edgeFade(part, math.rad(Options.Degrees) / 2)
+end
+
+-- A texture or color can't fade along its width, so a faded one is drawn as slices, each with a
+-- gradient between the fade at its two ends (piecewise linear along the curve).
+local FADE_SLICES = 32
+
+local function setSliceGradient(slice, i, r, g, b, a)
+    local left = edgeFadeAt(math.abs(2 * (i - 1) / FADE_SLICES - 1))
+    local right = edgeFadeAt(math.abs(2 * i / FADE_SLICES - 1))
+    slice:SetGradient("HORIZONTAL", CreateColor(r, g, b, a * left), CreateColor(r, g, b, a * right))
+end
+
+-- An edge line (HUD.edgeTOP/edgeBOTTOM) or its faded slices.
+local function layoutEdgeLine(key, shown, point, relativePoint, y)
+    local line = HUD[key]
+    local fade = shown and Options.EdgeFade and Options.EdgeFadeLines
+    local slices = HUD[key .. "Slices"]
+    line:SetShown(shown and not fade)
+    if not fade then
+        if slices then
+            for _, slice in ipairs(slices) do slice:Hide() end
+        end
+        return
+    end
+    slices = slices or {}
+    HUD[key .. "Slices"] = slices
+    local width = HUD:GetWidth()
+    local sliceWidth = width / FADE_SLICES
+    local color = Options.LineColor
+    for i = 1, FADE_SLICES do
+        local slice = slices[i] or HUD:CreateTexture(nil, "OVERLAY")
+        slices[i] = slice
+        slice:SetTexture("Interface\\BUTTONS\\WHITE8X8")
+        slice:ClearAllPoints()
+        slice:SetSize(sliceWidth, Options.LineThickness)
+        slice:SetPoint(point, HUD, relativePoint, -width / 2 + (i - 0.5) * sliceWidth, y)
+        setSliceGradient(slice, i, color.r, color.g, color.b, color.a)
+        slice:Show()
+    end
+end
+
+-- The compass texture as faded slices (HUD.compassSlices), when the compass fades.
+local function layoutCompassSlices(fade)
+    local slices = HUD.compassSlices
+    if not fade then
+        if slices then
+            for _, slice in ipairs(slices) do slice:Hide() end
+        end
+        return
+    end
+    slices = slices or {}
+    HUD.compassSlices = slices
+    local inset = Options.BorderThickness + 1
+    local sliceWidth = (HUD:GetWidth() - 2 * inset) / FADE_SLICES
+    for i = 1, FADE_SLICES do
+        local slice = slices[i] or HUD:CreateTexture(nil, "BORDER")
+        slices[i] = slice
+        slice:SetTexture(Options.CompassTextureTexture)
+        slice:ClearAllPoints()
+        slice:SetPoint("TOPLEFT", HUD, "TOPLEFT", inset + (i - 1) * sliceWidth, -inset)
+        slice:SetPoint("BOTTOMRIGHT", HUD, "BOTTOMLEFT", inset + i * sliceWidth, inset)
+        setSliceGradient(slice, i, 1, 1, 1, 1)
+        slice:Show()
+    end
+end
+
+-- The HUD's backdrop (BackdropTemplate pieces): the background (Center) and the top and bottom
+-- border (TopEdge/BottomEdge) span the width, so they are hidden and drawn as faded slices with
+-- the piece's texture and coordinates; corners and side borders sit at the edge and get its
+-- opacity. Called after SetBackdrop and its colors (UpdateHUDSettings). The pieces' opacity is
+-- never changed: the backdrop keeps the color's opacity there (vertex color, which the client
+-- shares with SetAlpha), so colors come from the settings (BackgroundColor/BorderColor).
+local FRAME_WIDE_PIECES = { Center = "BackgroundColor", TopEdge = "BorderColor", BottomEdge = "BorderColor" }
+local FRAME_EDGE_PIECES = { "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "LeftEdge", "RightEdge" }
+
+local function lerp(a, b, f) return a + (b - a) * f end
+
+local function fadeFramePiece(piece, slices, fade, color, wrap)
+    if slices then
+        for _, slice in ipairs(slices) do slice:Hide() end
+    end
+    if not piece then return slices end
+    -- hidden by an earlier fade: back (SetBackdrop may already have shown it)
+    if piece.compassFadeHidden then
+        piece.compassFadeHidden = nil
+        piece:Show()
+    end
+    if not fade or not piece:GetTexture() then return slices end
+    local hudLeft, hudBottom, half = HUD:GetLeft(), HUD:GetBottom(), HUD:GetWidth() / 2
+    local left, right, top, bottom = piece:GetLeft(), piece:GetRight(), piece:GetTop(), piece:GetBottom()
+    -- not laid out yet: left as it is
+    if not (hudLeft and hudBottom and left and right and top and bottom) or half <= 0 or right <= left then
+        return slices
+    end
+    piece.compassFadeHidden = true
+    piece:Hide()
+    slices = slices or {}
+    local ulx, uly, llx, lly, urx, ury, lrx, lry = piece:GetTexCoord()
+    local r, g, b, a = color.r, color.g, color.b, color.a
+    local layer, sublevel = piece:GetDrawLayer()
+    local texture = piece:GetTexture()
+    local blend = piece:GetBlendMode()
+    left, right = left - hudLeft, right - hudLeft
+    local width = (right - left) / FADE_SLICES
+    for i = 1, FADE_SLICES do
+        local slice = slices[i] or HUD:CreateTexture(nil, layer, nil, sublevel)
+        slices[i] = slice
+        slice:SetDrawLayer(layer, sublevel)
+        slice:SetTexture(texture, wrap, wrap)
+        slice:SetBlendMode(blend)
+        local f0, f1 = (i - 1) / FADE_SLICES, i / FADE_SLICES
+        slice:SetTexCoord(lerp(ulx, urx, f0), lerp(uly, ury, f0), lerp(llx, lrx, f0), lerp(lly, lry, f0),
+            lerp(ulx, urx, f1), lerp(uly, ury, f1), lerp(llx, lrx, f1), lerp(lly, lry, f1))
+        local x0, x1 = left + (i - 1) * width, left + i * width
+        slice:ClearAllPoints()
+        slice:SetPoint("TOPLEFT", HUD, "BOTTOMLEFT", x0, top - hudBottom)
+        slice:SetPoint("BOTTOMRIGHT", HUD, "BOTTOMLEFT", x1, bottom - hudBottom)
+        local fadeLeft = edgeFadeAt(math.min(math.abs(x0 - half) / half, 1))
+        local fadeRight = edgeFadeAt(math.min(math.abs(x1 - half) / half, 1))
+        slice:SetGradient("HORIZONTAL", CreateColor(r, g, b, a * fadeLeft), CreateColor(r, g, b, a * fadeRight))
+        slice:Show()
+    end
+    return slices
+end
+
+function fadeHUDFrame()
+    local fade = Options.EdgeFade and Options.EdgeFadeFrame
+    HUD.frameSlices = HUD.frameSlices or {}
+    for name, colorKey in pairs(FRAME_WIDE_PIECES) do
+        -- the backdrop tiles the border (repeating coordinates), not the background (tile is not set)
+        local wrap = name ~= "Center" and "REPEAT" or "CLAMP"
+        HUD.frameSlices[name] = fadeFramePiece(HUD[name], HUD.frameSlices[name], fade, Options[colorKey], wrap)
+    end
+    -- corners and side borders: the border color at the edge's opacity; without fading the
+    -- backdrop has just set the border color itself
+    if fade then
+        local color, edge = Options.BorderColor, edgeFadeAt(1)
+        for _, name in ipairs(FRAME_EDGE_PIECES) do
+            if HUD[name] then HUD[name]:SetVertexColor(color.r, color.g, color.b, color.a * edge) end
+        end
+    end
+end
+
+-- Turns the compass strip to the facing: coord is the middle of the strip in texture coordinates.
+-- With fading, the compass texture's slices and the opacity of the custom compass' letters,
+-- degrees and ticks (by their place on the strip) follow.
+function rotateCompassStrip(coord)
+    HUD.compassTexture:SetTexCoord(coord - adjCoord, coord + adjCoord, 0, 1)
+    local slices = HUD.compassSlices
+    if slices and slices[1]:IsShown() then
+        local step = 2 * adjCoord / FADE_SLICES
+        for i, slice in ipairs(slices) do
+            local left = coord - adjCoord + (i - 1) * step
+            slice:SetTexCoord(left, left + step, 0, 1)
+        end
+    end
+    local custom = HUD.compassCustom
+    custom.mask:ClearAllPoints()
+    custom.mask:SetPoint('TOP', custom, 'TOP', (1/2 - coord) * textureWidth, 0)
+    local fade = Options.EdgeFade and Options.EdgeFadeCompass and Options.UseCustomCompass
+    if not fade and not custom.faded then return end
+    custom.faded = fade
+    -- place on the strip: (degree / 720 + 1/2 - coord) * textureWidth, half the visible width
+    -- is adjCoord * textureWidth
+    local shift = 1/2 - coord
+    for _, list in ipairs({ custom.letters or {}, custom.degrees or {}, custom.ticks or {} }) do
+        for _, region in pairs(list) do
+            if region.degree then
+                local alpha = fade and edgeFadeAt(math.abs(region.degree / 720 + shift) / adjCoord) or 1
+                local color = region.fadeColor
+                if color then
+                    -- a tick: its color's opacity is the texture's own (shared with SetAlpha)
+                    region:SetVertexColor(color.r, color.g, color.b, color.a * alpha)
+                else
+                    region:SetAlpha(alpha)
+                end
+            end
+        end
+    end
+end
+
 function updateCompassHUD()
     local scale = Options.Scale * Options.VerticalScale
     -- middle HUD pointer texture
@@ -120,7 +330,7 @@ function updateCompassHUD()
     HUD.edgeTOP:ClearAllPoints()
     HUD.edgeTOP:SetPoint("BOTTOM", HUD, "TOP", 0, Options.LinePosition)
     HUD.edgeTOP:SetWidth(HUD:GetWidth())
-    HUD.edgeTOP:SetShown(Options.Line == "TOP" or Options.Line == "BOTH")
+    layoutEdgeLine("edgeTOP", Options.Line == "TOP" or Options.Line == "BOTH", "BOTTOM", "TOP", Options.LinePosition)
 
     -- bottom edge lines
     HUD.edgeBOTTOM = HUD.edgeBOTTOM or HUD:CreateTexture(nil, "OVERLAY")
@@ -129,7 +339,7 @@ function updateCompassHUD()
     HUD.edgeBOTTOM:ClearAllPoints()
     HUD.edgeBOTTOM:SetPoint("TOP", HUD, "BOTTOM", 0, -Options.LinePosition)
     HUD.edgeBOTTOM:SetWidth(HUD:GetWidth())
-    HUD.edgeBOTTOM:SetShown(Options.Line == "BOTTOM" or Options.Line == "BOTH")
+    layoutEdgeLine("edgeBOTTOM", Options.Line == "BOTTOM" or Options.Line == "BOTH", "TOP", "BOTTOM", -Options.LinePosition)
 
     local lettersMainFont = LSM:Fetch("font", Options.CompassCustomMainFont)
     local lettersSecondaryFont = LSM:Fetch("font", Options.CompassCustomSecondaryFont)
@@ -153,6 +363,8 @@ function updateCompassHUD()
             letters[k*side]:SetParent(HUD.compassCustom.mask)
             letters[k*side]:ClearAllPoints()
             letters[k*side].data = v
+            -- place on the strip in degrees (rotateCompassStrip fades by it)
+            letters[k*side].degree = (side == 1 and k) or (k - 360)
 
             if v.main then
                 letters[k*side]:SetPoint("TOP", HUD.compassCustom.mask, "TOP", ((side == 1 and k) or (k - 360)) / 720 * textureWidth + 1, Options.CompassCustomMainPosition)
@@ -182,6 +394,7 @@ function updateCompassHUD()
         if math.abs(i) ~= 360 then
             degrees[i] = degrees[i] or HUD.compassCustom.mask:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             degrees[i]:SetText(((i > 0) and i) or (360 + i))
+            degrees[i].degree = i
             degrees[i]:SetJustifyV("TOP")
             degrees[i]:SetSize(0, 16)
             degrees[i]:ClearAllPoints()
@@ -210,11 +423,14 @@ function updateCompassHUD()
         for i, v in pairs(letters) do
             ticks[tickPosition .. i] = ticks[tickPosition .. i] or HUD.compassCustom.mask:CreateTexture(nil, "OVERLAY")
             ticks[tickPosition .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
+            ticks[tickPosition .. i].degree = i
             if v:IsShown() then
                 if v.data.main then
                     ticks[tickPosition .. i]:SetVertexColor(Options.CompassCustomMainColor.r, Options.CompassCustomMainColor.g, Options.CompassCustomMainColor.b, Options.CompassCustomMainColor.a)
+                    ticks[tickPosition .. i].fadeColor = Options.CompassCustomMainColor
                 else
                     ticks[tickPosition .. i]:SetVertexColor(Options.CompassCustomSecondaryColor.r, Options.CompassCustomSecondaryColor.g, Options.CompassCustomSecondaryColor.b, Options.CompassCustomSecondaryColor.a)
+                    ticks[tickPosition .. i].fadeColor = Options.CompassCustomSecondaryColor
                 end
                 ticks[tickPosition .. i]:SetShown((Options.CompassCustomTicksPosition == tickPosition) or (Options.CompassCustomTicksPosition == "BOTH"))
             end
@@ -229,8 +445,10 @@ function updateCompassHUD()
         for i, v in pairs(degrees) do
             ticks[tickPosition .. i] = ticks[tickPosition .. i] or HUD.compassCustom.mask:CreateTexture(nil, "OVERLAY")
             ticks[tickPosition .. i]:SetTexture("Interface\\BUTTONS\\WHITE8X8.BLP")
+            ticks[tickPosition .. i].degree = i
             if not letters[i] or not letters[i]:IsShown() then
                 ticks[tickPosition .. i]:SetVertexColor(Options.CompassCustomDegreesColor.r, Options.CompassCustomDegreesColor.g, Options.CompassCustomDegreesColor.b, Options.CompassCustomDegreesColor.a)
+                ticks[tickPosition .. i].fadeColor = Options.CompassCustomDegreesColor
                 ticks[tickPosition .. i]:SetShown(v:IsShown() and ((Options.CompassCustomTicksPosition == tickPosition) or (Options.CompassCustomTicksPosition == "BOTH")))
                 ticks[tickPosition .. i]:SetSize(2, 4)
             end
@@ -272,7 +490,10 @@ function updateCompassHUD()
     HUD.heading.text:SetFont(headingFont, Options.HeadingFontSize * scale, Options.HeadingFontFlags)
     HUD.heading.text:SetTextColor(Options.HeadingFontColor.r, Options.HeadingFontColor.g, Options.HeadingFontColor.b, Options.HeadingFontColor.a)
 
-    HUD.compassTexture:SetShown(not Options.UseCustomCompass)
+    -- a fading compass texture is drawn as slices (rotateCompassStrip turns them)
+    local fadeTexture = Options.EdgeFade and Options.EdgeFadeCompass and not Options.UseCustomCompass
+    layoutCompassSlices(fadeTexture)
+    HUD.compassTexture:SetShown(not Options.UseCustomCompass and not fadeTexture)
     HUD.compassCustom:SetShown(Options.UseCustomCompass)
     HUD.heading:SetShown(Options.HeadingEnabled)
 

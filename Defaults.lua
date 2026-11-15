@@ -51,6 +51,20 @@ Addon.Defaults = {
         LineThickness   = 1,
         LinePosition    = 0,
         LineColor       = {r = 255/255, g = 215/255, b = 0/255, a = 1},
+        -- fade toward the edges (Compass.lua edgeFadeAt): from EdgeFadeStart (share of the way from
+        -- the middle to the edge) the opacity goes from EdgeFadeInner to EdgeFadeOuter along the curve
+        EdgeFade        = false,
+        EdgeFadeStart   = 0.3,
+        EdgeFadeInner   = 1,
+        EdgeFadeOuter   = 0.3,
+        EdgeFadeCurve   = "SMOOTH", -- LINEAR, EASE_IN, EASE_OUT, SMOOTH
+        EdgeFadeFrame   = true,
+        EdgeFadeCompass = true,
+        EdgeFadeLines   = true,
+        EdgeFadeMarkers = true,
+        EdgeFadeGroup   = true,
+        EdgeFadePointers = true,
+        EdgeFadeHeld    = true, -- also markers held at the edge (target outside the field of view)
         Visibility      = "[petbattle] hide; show",
         HideFar         = false,
         HideTomTomAtTarget = true,

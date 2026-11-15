@@ -1,4 +1,9 @@
-# v2.0.0a (unreleased)
+# v2.0.1 (unreleased)
+
+## New
+
+- **Fade toward the edges** (`Options → Appearance`): the compass and everything on it fades out toward the left and right edge, on its own or with the `CompassHUD gradient` background. Set where the fading starts, the opacity before fading and at the edge, and how it fades (even, slow then faster, fast then slower, slow at both ends). Choose what fades: the background and border, the compass (texture, or the custom compass' letters, degrees and ticks), the edge lines, minimap tracking, the supertracker and party/raid. `Also markers held at the edge` fades the supertracker and party/raid markers that stay at the edge while their target is outside the field of view; turn it off to keep them at full opacity.
+- **New looks** with the fading on (`Options → Looks`): `Horizon` (no frame, letters between two thin lines on a faint dark band, all fading away to the sides), `Glass` (a dark band with a thin border, the whole compass fading out) and `Classic gold, fading`.
 
 ## Fix
 

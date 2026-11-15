@@ -153,6 +153,8 @@ function setGroupIcons()
         if v and v.frame then
             local shown = false
             local markerRotate = 0
+            -- fade toward the edges
+            local fade = 1
             local differentZone = player.instance ~= v.instance
             local size = iconSize * (differentZone and Options.GroupZoneScale or Options.GroupScale)
             local flipped = (differentZone and Options.GroupZoneOffset > 0 and Options.GroupZoneRotate == 1) or (not differentZone and Options.GroupOffset > 0 and Options.GroupRotate == 1)
@@ -164,6 +166,7 @@ function setGroupIcons()
                         if angle < visible and angle > -visible then
                             v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, differentZone and Options.GroupZoneOffset or Options.GroupOffset)
                             shown = true
+                            fade = edgeFade("EdgeFadeGroup", angle)
                         elseif Options.GroupStay then
                             local side = math.abs(angle)/angle
                             if (differentZone and (Options.GroupZoneRotate == 1)) or (not differentZone and (Options.GroupRotate == 1)) then
@@ -171,6 +174,7 @@ function setGroupIcons()
                             end
                             v.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, differentZone and Options.GroupZoneOffset or Options.GroupOffset)
                             shown = true
+                            fade = edgeFadeHeld("EdgeFadeGroup")
                         end
                     end
                 end
@@ -179,7 +183,7 @@ function setGroupIcons()
             v.frame:SetShown(shown)
             if shown then
                 v.frame:SetSize(size, size)
-                v.frame:SetAlpha(differentZone and Options.GroupZoneTransparency or 1)
+                v.frame:SetAlpha((differentZone and Options.GroupZoneTransparency or 1) * fade)
                 v.frame:SetFrameLevel(Options.Level + (v.strataLevel or 0) + ((not differentZone and 50) or 0))
                 v.frame.texture:SetTexCoord(0, 1, flipped and 1 or 0, flipped and 0 or 1)
                 v.frame.texture:SetAtlas(differentZone and Options.GroupZoneTexture or Options.GroupTexture)

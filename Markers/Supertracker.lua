@@ -273,6 +273,7 @@ function setSupertrackerPointers()
                     local pointerRotate = 0
                     if angle < visible and angle > -visible then
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * angle, quest.frame.position)
+                        quest.frame:SetAlpha(edgeFade("EdgeFadePointers", angle))
                         quest.frame:Show()
                     elseif Options.PointerStay then
                         local side = math.abs(angle)/angle
@@ -292,6 +293,7 @@ function setSupertrackerPointers()
                             arrowShow = true
                         end
                         quest.frame:SetPoint("CENTER", HUD, "CENTER", texturePosition() * side * visible, quest.frame.position)
+                        quest.frame:SetAlpha(edgeFadeHeld("EdgeFadePointers"))
                         quest.frame:Show()
                     else
                         quest.frame:Hide()

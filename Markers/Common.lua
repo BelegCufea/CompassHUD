@@ -542,7 +542,7 @@ function drawMarkerNodes(module)
             if distance and distance > opacityMinRadius then
                 opacity = distance >= fadeEnd and opacityMin or opacityMax + (distance - opacityMinRadius) * fadeFactor
             end
-            node.frame:SetAlpha(opacity)
+            node.frame:SetAlpha(opacity * edgeFade("EdgeFadeMarkers", angle))
             showMarkerTexts(module, node.frame, textsDegrees == 0)
         end
         if node.frame then
@@ -562,7 +562,7 @@ end
 -- Shows the texts of a module's nominated node, at its own opacity.
 local function showModuleTexts(module, node)
     showMarkerTexts(module, node.frame, true)
-    node.frame:SetAlpha(markerSetting(module, "OpacitySelected"))
+    node.frame:SetAlpha(markerSetting(module, "OpacitySelected") * edgeFade("EdgeFadeMarkers", node.angle))
 end
 
 -- With a texts visibility angle, only one marker shows its texts: the one closest to the facing
