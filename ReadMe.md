@@ -71,7 +71,7 @@ Most settings have a tooltip with more details when you hover over them.
 
 - The `Looks` tab has ready-made looks for the whole compass: frame, letters, fonts, colors and pointer textures, each with a picture. A look never changes the compass size, position or what it shows.
   - `Try` shows a look on the compass right away; then `Keep` it or `Revert` to the look you had, in the same row.
-  - Looks: `Clean`, `Fade`, `Line`, `Night`, `Classic gold`, `Gilded`, `Forever`, `Forever, no frame`, `ElvUI` and `EllesmereUI` (shown when that addon is loaded, with its font and colors), and `Original` (CompassHUD's look on a fresh install, also undoes your look changes).
+  - Looks: `Clean`, `Fade`, `Horizon`, `Glass`, `Line`, `Night`, `Classic gold`, `Classic gold, fading`, `Gilded`, `Forever`, `Forever, no frame`, `ElvUI` and `EllesmereUI` (shown when that addon is loaded, with its font and colors), and `Original` (CompassHUD's look on a fresh install, also undoes your look changes).
   - `Your own look`: `Restore` brings back the look you had before you first tried one, even after `Keep`. `Export` shows your current look as text to share or keep; `Import` tries a look someone shared. Only the look is shared.
   - `Preview background` puts a plain background (snow, sand, sky, grass, stone, night, ...) behind the compass, to see how a look reads on different surroundings. It is not saved.
   - Tweak a look further in the other tabs.
