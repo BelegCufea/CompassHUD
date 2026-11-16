@@ -188,7 +188,57 @@ SAME_POINT_YARDS = 10
 -- Set by setSupertrackerPointers on every update; other marker types use it to avoid a second marker there.
 shownGameTarget = nil
 
+local GetCorpseMapPosition = C_DeathInfo and C_DeathInfo.GetCorpseMapPosition
+local GetMapInfo = C_Map.GetMapInfo
+local GetTime = GetTime
+local UnitIsGhost = UnitIsGhost
+
+local CORPSE_MAX_PARENTS = 6
+local CORPSE_RETRY_SECONDS = 1
+local corpseLastTry = 0
+
+-- The corpse's place: uiMapID, x, y on the player's map or the first map above it that has one
+-- (the corpse can lie in the zone next door). Nil without a corpse to find.
+local function corpsePlace()
+    local uiMapID = player.uiMapID or GetBestMapForUnit("player")
+    local depth = 0
+    while uiMapID and uiMapID > 0 and depth < CORPSE_MAX_PARENTS do
+        local position = GetCorpseMapPosition(uiMapID)
+        if position then
+            local x, y = position:GetXY()
+            if x and y and (x ~= 0 or y ~= 0) then
+                return uiMapID, x, y
+            end
+        end
+        local info = GetMapInfo(uiMapID)
+        uiMapID = info and info.parentMapID
+        depth = depth + 1
+    end
+end
+
+-- The corpse pointer: while the player is a ghost, the way to the corpse, shown like the game's
+-- own tracked target (held at the edge of the compass when it is out of sight). The place is
+-- kept (world coordinates) until the player is alive again; looked up again once a second while
+-- it is missing (the game has it a moment after the death, or only on some maps).
+function updateCorpseTarget()
+    local target = supertrackTargets[corpse]
+    if not GetCorpseMapPosition or not UnitIsGhost("player") then
+        if target then target.track = false end
+        return
+    end
+    if target and target.track and target.frame then return end
+    local now = GetTime()
+    if now - corpseLastTry < CORPSE_RETRY_SECONDS then return end
+    corpseLastTry = now
+    if not Options.Pointers[questPointerIdent .. corpse].enabled then return end
+    local uiMapID, x, y = corpsePlace()
+    if not uiMapID then return end
+    setSupertrackTarget(corpse, x, y, uiMapID, corpse, CORPSE or "Corpse", false, nil, nil, { exactPlace = true })
+    supertrackTargets[corpse].track = true
+end
+
 function setSupertrackerPointers()
+    updateCorpseTarget()
     local vignetteGUID = GetSuperTrackedVignette()
     local supertrackingType = gameSuperTrackingType()
     local isTrackingUserWaypoint = (supertrackingType == Enum.SuperTrackingType.UserWaypoint)
@@ -264,7 +314,7 @@ function setSupertrackerPointers()
             questHide = true
             ClearAllSuperTracked()
         end
-		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == selectedPin and isTrackingPOI) or (questID == tomTom and quest.track))) then
+		if not questHide and ((not Options.HideFar or (quest.instance == playerInstance)) and ((questID == trackedQuest) or (questID == mapPin and isTrackingUserWaypoint) or (questID == selectedPin and isTrackingPOI) or ((questID == tomTom or questID == corpse) and quest.track))) then
 			local angle = getPlayerFacingAngle(questID)
 			if quest.frame and angle then
                 if Options.Pointers[quest.frame.pointerType].enabled then
@@ -374,7 +424,7 @@ function setSupertrackTarget(questID, x, y, uiMapID, questType, title, completed
     local HBDuiMapID = uiMapID
 
     -- Use map transitions
-    if Options.UseCurrentMap then
+    if Options.UseCurrentMap and not (moreArgs and moreArgs.exactPlace) then
         local playerUiMapId = GetBestMapForUnit("player")
         if playerUiMapId and uiMapID ~= playerUiMapId then
             local mx, my, waypointDescription = GetNextWaypointForMapTracker(playerUiMapId)

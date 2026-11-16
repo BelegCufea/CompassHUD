@@ -1,3 +1,9 @@
+# v2.1.0 (not released)
+
+## New
+
+- **Corpse pointer:** while you are a ghost, a pointer shows the way to your corpse, like the one for a tracked quest: it stays on the compass at the edge when the corpse is out of sight, with its distance and the time to get there, and is read out with the supertracked target. It is a pointer type of its own (`Options → Supertracker → Pointers → Corpse`), so its look, size and texts can be set or the pointer turned off. (Requested in #26.)
+
 # v2.0.1 (15.11.2026)
 
 ## New

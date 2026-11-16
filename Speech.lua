@@ -66,8 +66,11 @@ function updateSpeech()
     local game = Options.SpeechSupertracked and shownGameTarget
     local arrow = Options.SpeechTomTomArrow and supertrackTargets[tomTom]
     arrow = arrow and arrow.track and arrow.frame and arrow.frame:IsShown() and arrow
-    if game or arrow then
-        for _, target in ipairs({ game or false, arrow or false }) do
+    -- the corpse pointer while the player is a ghost
+    local body = Options.SpeechSupertracked and supertrackTargets[corpse]
+    body = body and body.track and body.frame and body.frame:IsShown() and body
+    if game or arrow or body then
+        for _, target in ipairs({ game or false, arrow or false, body or false }) do
             if target and target.text and target.x and target.y
                 and nameShown(target.frame, target.frame and target.frame.QuestText) then
                 local angle = relativeAngle(target.instance, target.x, target.y)

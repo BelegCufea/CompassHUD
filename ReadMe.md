@@ -19,6 +19,7 @@ While influenced by their ideas, I wrote my own code from scratch—avoiding too
 - Support for predefined or custom compass textures, or a strip built from configurable letters and degree marks.
 - Plethora of markers to be displayed on the compass:
   - the quest, map pin, POI or vignette you are tracking (supertracking), each quest type with its own look,
+  - your corpse while you are a ghost,
   - TomTom's crazy arrow target and all your TomTom waypoints,
   - minimap icons (flight points, area POIs, delves, events, dungeon entrances, vignettes, world quests, quests from your quest log, ...),
   - party and raid members,
@@ -102,7 +103,7 @@ Under the `Supertracker` submenu, you can configure visibility and behavior for 
 *Choosing from pointer texture presets:*</br>
 ![PointerPresets](https://i.imgur.com/V1mzqaP.png)
 
-There is a pointer type for each kind of target: user map pin, POI map pin, quest classifications (Quest, Campaign, Important, Legendary, Questline, Meta, Calling, Bonus, Threat, World Quest), daily, weekly and scheduled quests, and an "unknown" fallback. The pointer for TomTom's crazy arrow has the same settings, on the TomTom page under `Minimap tracking` (see Addon integrations).
+There is a pointer type for each kind of target: your corpse (while you are a ghost), user map pin, POI map pin, quest classifications (Quest, Campaign, Important, Legendary, Questline, Meta, Calling, Bonus, Threat, World Quest), daily, weekly and scheduled quests, and an "unknown" fallback. The pointer for TomTom's crazy arrow has the same settings, on the TomTom page under `Minimap tracking` (see Addon integrations).
 
 *For each pointer type, you can also customize:*</br>
 *- Visibility, position, size, and textures (separately for a quest in progress and ready to turn in)*</br>

@@ -63,6 +63,7 @@ adjCoord, currentFacing = nil, nil
 
 questUnknown = -999
 tomTom = -200
+corpse = -300
 mapPin = -100
 selectedPin = -110
 
@@ -185,6 +186,7 @@ pointerTextures = {
 -- "Quest" Classifications
 questPointers = {
 	[tomTom] =  "TomTom",
+	[corpse] = "Corpse",
 	[questUnknown] = "Unknown pointer",
     [mapPin] = "User map pin",
     [selectedPin] = "POI map pin",
@@ -219,6 +221,11 @@ texturePresets = {
             atlasNameAvailable = "Arrow Green small",
             textureScaleAvailable = 1.35,
             textureRotateAvailable = true,
+        },
+        [corpse] = {
+            atlasIDavailable = "DungeonSkull",
+            atlasNameAvailable = "Skull",
+            textureScaleAvailable = 1.1,
         },
         [questUnknown] = {
             atlasIDavailable = "128-Store-Main",
