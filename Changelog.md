@@ -2,17 +2,17 @@
 
 ## New
 
-- **Glow in quest areas (new, on by default):** the compass now glows while you are inside the area of a quest, the highlighted area on the map that shows where a quest's objectives are. You see you have arrived without opening the map. The glow fades in when you enter the area and fades out when you leave. After 5 seconds inside it eases down to a weaker glow (not off), so you still know you are in the area without it staying distracting. This is a new feature that is on in every profile, including existing ones; to turn it off, untick `Options → Glow → Glow inside quest areas`.
+- **Glow in quest areas** (new, on by default; #27, suggested by [senrik](https://github.com/senrik)): the compass now glows while you are inside the area of a quest, the highlighted area on the map that shows where a quest's objectives are. You see you have arrived without opening the map. The glow fades in when you enter the area and fades out when you leave. After 5 seconds inside it eases down to a weaker glow (not off), so you still know you are in the area without it staying distracting. This is a new feature that is on in every profile, including existing ones; to turn it off, untick `Options → Glow → Glow inside quest areas`.
   - It glows for the supertracked quest (gold) and for your other watched quests (cyan). The game only tells whether you are inside the area of a watched (tracked) quest, so quests you do not track cannot glow. You can turn the other watched quests off, or let them use the supertracked quest's look with `Same as Supertracked`.
   - Each of the two has its own color, size, intensity and pulsing. `Ease off after` and `Ease down to` set when and how far the glow eases down (0 seconds keeps it at full strength). The glow follows `Fade toward the edges` for the background and border.
-  - The look of the glow is part of the looks (`Options → Looks`): each ready-made look has glow colors that fit its style, and shared looks carry them. Whether the glow is on, which quests it covers and the easing stay as you set them. (#27, suggested by [senrik](https://github.com/senrik))
-- **Corpse pointer:** while you are a ghost, a pointer shows the way to your corpse, like the one for a tracked quest: it stays on the compass at the edge when the corpse is out of sight, with its distance and the time to get there, and is read out with the supertracked target. It is a pointer type of its own (`Options → Supertracker → Pointers → Corpse`), so its look, size and texts can be set or the pointer turned off. (#26, suggested by [senrik](https://github.com/senrik))
+  - The look of the glow is part of the looks (`Options → Looks`): each ready-made look has glow colors that fit its style, and shared looks carry them. Whether the glow is on, which quests it covers and the easing stay as you set them.
+- **Corpse pointer** (#26, suggested by [senrik](https://github.com/senrik)): while you are a ghost, a pointer shows the way to your corpse, like the one for a tracked quest: it stays on the compass at the edge when the corpse is out of sight, with its distance and the time to get there, and is read out with the supertracked target. It is a pointer type of its own (`Options → Supertracker → Pointers → Corpse`), so its look, size and texts can be set or the pointer turned off.
 
 # v2.0.1 (15.11.2026)
 
 ## New
 
-- **Fade toward the edges** (`Options → Appearance`): the compass and everything on it fades out toward the left and right edge, on its own or with the `CompassHUD gradient` background. Set where the fading starts, the opacity before fading and at the edge, and how it fades (even, slow then faster, fast then slower, slow at both ends). Choose what fades: the background and border, the compass (texture, or the custom compass' letters, degrees and ticks), the edge lines, minimap tracking, the supertracker and party/raid. `Also markers held at the edge` fades the supertracker and party/raid markers that stay at the edge while their target is outside the field of view; turn it off to keep them at full opacity.
+- **Fade toward the edges** (`Options → Appearance`; suggested by [EmptyMiraclesAndDeadGods](https://www.curseforge.com/members/emptymiraclesanddeadgods) on CurseForge): the compass and everything on it fades out toward the left and right edge, on its own or with the `CompassHUD gradient` background. Set where the fading starts, the opacity before fading and at the edge, and how it fades (even, slow then faster, fast then slower, slow at both ends). Choose what fades: the background and border, the compass (texture, or the custom compass' letters, degrees and ticks), the edge lines, minimap tracking, the supertracker and party/raid. `Also markers held at the edge` fades the supertracker and party/raid markers that stay at the edge while their target is outside the field of view; turn it off to keep them at full opacity.
 - **New looks** with the fading on (`Options → Looks`): `Horizon` (no frame, letters between two thin lines on a faint dark band, all fading away to the sides), `Glass` (a dark band with a thin border, the whole compass fading out) and `Classic gold, fading`.
 
 ## Fix
@@ -89,7 +89,7 @@
 
 ## New
 
-- **Questie** (#23): the icons Questie places on the minimap can be shown on the compass, in `Minimap tracking → Questie` (shown when Questie is loaded, off by default). [Suggested by [senrik](https://github.com/senrik)]
+- **Questie** (#23, suggested by [senrik](https://github.com/senrik)): the icons Questie places on the minimap can be shown on the compass, in `Minimap tracking → Questie` (shown when Questie is loaded, off by default).
   - Which icons appear (available quests, turn-ins, objectives, townsfolk such as innkeepers, trainers or mailboxes) is decided by Questie's own settings and menus.
   - Uses the `Minimap icons` settings by default (scanning radius, update throttle, position, scale, opacity, texts); turn `Use minimap icons settings` off to give Questie its own.
   - `Show the type after the name`, e.g. "Innkeeper Farley (Innkeeper)".
@@ -105,8 +105,8 @@
 - **Edit Mode** support (#25): while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged, even when `Lock compass` is on. Clicking it opens the CompassHUD options.
 
   ![EditMode](https://i.imgur.com/pf4eOgR.png)
-- **Compass size in pixels** (#24): `General → Size by: Pixels` shows `Width (pixels)` and `Height (pixels)` (border included, before the overall `Scale`), starting from the current size. `Field of View` then keeps the width and changes how many degrees fit in it. [Suggested by [senrik](https://github.com/senrik)]
-- **Marker scale** (#24, `General`): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass `Height`; existing profiles keep their current marker size.
+- **Compass size in pixels** (#24, suggested by [senrik](https://github.com/senrik)): `General → Size by: Pixels` shows `Width (pixels)` and `Height (pixels)` (border included, before the overall `Scale`), starting from the current size. `Field of View` then keeps the width and changes how many degrees fit in it.
+- **Marker scale** (#24, suggested by [senrik](https://github.com/senrik); `General`): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass `Height`; existing profiles keep their current marker size.
 - **Quests from your quest log** (#20): a new minimap icon type in `Minimap icons → Filter → Quests` (off by default) for quests that have a place on the current map.
   - `Progress`: all, in progress, or ready to turn in. `Only this zone`. `Icon`: like the supertracker, or the game's quest marks.
   - World quests and bonus objectives keep their own type; the supertrack keybind tracks the quest you face.
