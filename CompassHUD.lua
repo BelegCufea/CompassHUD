@@ -67,6 +67,7 @@ function updateHUD(force)
     -- after all marker modules: texts only on the closest faced marker of all of them
     showFacedMarkerTexts()
     updateSpeech()
+    updateGlow()
 end
 
 function onUpdate(_, elapsed)
@@ -574,6 +575,7 @@ function Addon:UpdateHUDSettings()
         end
     end
     updateHUD(true)
+    refreshGlow()
     updatePointerTextures()
     updateGroupTexts()
     restyleAllMarkerSources()

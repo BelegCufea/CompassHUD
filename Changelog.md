@@ -2,6 +2,10 @@
 
 ## New
 
+- **Glow in quest areas (new, on by default):** the compass now glows while you are inside the area of a quest, the highlighted area on the map that shows where a quest's objectives are. You see you have arrived without opening the map. The glow fades in when you enter the area and fades out when you leave. After 5 seconds inside it eases down to a weaker glow (not off), so you still know you are in the area without it staying distracting. This is a new feature that is on in every profile, including existing ones; to turn it off, untick `Options → Glow → Glow inside quest areas`.
+  - It glows for the supertracked quest (gold) and for your other watched quests (cyan). The game only tells whether you are inside the area of a watched (tracked) quest, so quests you do not track cannot glow. You can turn the other watched quests off, or let them use the supertracked quest's look with `Same as Supertracked`.
+  - Each of the two has its own color, size, intensity and pulsing. `Ease off after` and `Ease down to` set when and how far the glow eases down (0 seconds keeps it at full strength). The glow follows `Fade toward the edges` for the background and border.
+  - The look of the glow is part of the looks (`Options → Looks`): each ready-made look has glow colors that fit its style, and shared looks carry them. Whether the glow is on, which quests it covers and the easing stay as you set them. (Requested in #27.)
 - **Corpse pointer:** while you are a ghost, a pointer shows the way to your corpse, like the one for a tracked quest: it stays on the compass at the edge when the corpse is out of sight, with its distance and the time to get there, and is read out with the supertracked target. It is a pointer type of its own (`Options → Supertracker → Pointers → Corpse`), so its look, size and texts can be set or the pointer turned off. (Requested in #26.)
 
 # v2.0.1 (15.11.2026)

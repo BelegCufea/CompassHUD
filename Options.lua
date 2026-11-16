@@ -1195,6 +1195,159 @@ Addon.Options = {
                         },
                     },
                 },
+                Glow = {
+                    type = "group",
+                    order = 55,
+                    name = "Glow",
+                    args = {
+                        GlowDesc = {
+                            type = "description",
+                            order = 1,
+                            name = "|cnACCOUNT_WIDE_FONT_COLOR:Makes the compass glow while you are inside the area of a quest (the highlighted area on the map).|r\n",
+                            fontSize = "medium",
+                            width = "full",
+                        },
+                        GlowEnabled = {
+                            type = "toggle",
+                            order = 10,
+                            name = "Glow inside quest areas",
+                            width = "full",
+                            disabled = function() return not glowAvailable() end,
+                        },
+                        GlowEaseAfter = {
+                            type = "range",
+                            order = 25,
+                            name = "Ease off after (seconds)",
+                            desc = "This many seconds after you entered a quest area the glow eases down to a weaker one, so you still see that you are inside. It is full again when you enter an area again. 0 keeps it at full strength while you are inside.",
+                            width = 1.6,
+                            min = 0,
+                            max = 60,
+                            step = 1,
+                            disabled = function() return not Options.GlowEnabled end,
+                        },
+                        GlowEaseTo = {
+                            type = "range",
+                            order = 26,
+                            name = "Ease down to (%)",
+                            desc = "How strong the glow stays after easing off, in percent of its intensity.",
+                            width = 1.6,
+                            min = 0,
+                            max = 100,
+                            step = 5,
+                            disabled = function() return not Options.GlowEnabled or Options.GlowEaseAfter == 0 end,
+                        },
+                        GlowSuper = {
+                            type = "group",
+                            order = 30,
+                            name = "Supertracked quest",
+                            inline = true,
+                            disabled = function() return not Options.GlowEnabled end,
+                            args = {
+                                GlowSuperColor = {
+                                    type = "color",
+                                    order = 10,
+                                    name = "Color",
+                                    hasAlpha = true,
+                                    get = function(info)
+                                        local c = Options[info[#info]]
+                                        return c.r, c.g, c.b, c.a
+                                    end,
+                                    set = function(info, r, g, b, a)
+                                        local c = Options[info[#info]]
+                                        c.r, c.g, c.b, c.a = r, g, b, a
+                                        Addon:UpdateHUDSettings()
+                                    end,
+                                },
+                                GlowSuperSize = {
+                                    type = "range",
+                                    order = 20,
+                                    name = "Size",
+                                    desc = "How far the glow reaches out from the compass, in pixels.",
+                                    min = 2,
+                                    max = 64,
+                                    step = 1,
+                                },
+                                GlowSuperIntensity = {
+                                    type = "range",
+                                    order = 25,
+                                    name = "Intensity (%)",
+                                    min = 5,
+                                    max = 100,
+                                    step = 5,
+                                },
+                                GlowSuperPulse = {
+                                    type = "toggle",
+                                    order = 30,
+                                    name = "Pulse",
+                                },
+                            },
+                        },
+                        GlowOther = {
+                            type = "group",
+                            order = 40,
+                            name = "Other watched quests",
+                            inline = true,
+                            disabled = function() return not Options.GlowEnabled end,
+                            args = {
+                                GlowWatched = {
+                                    type = "toggle",
+                                    order = 1,
+                                    name = "Also glow in the area of other watched quests",
+                                    desc = "The game only tells whether you are inside the area of a quest you watch (track), so quests that are not watched cannot be included.",
+                                    width = "full",
+                                },
+                                GlowOtherSame = {
+                                    type = "toggle",
+                                    order = 5,
+                                    name = "Same as Supertracked",
+                                    width = "full",
+                                    disabled = function() return not Options.GlowWatched end,
+                                },
+                                GlowOtherColor = {
+                                    type = "color",
+                                    order = 10,
+                                    name = "Color",
+                                    hasAlpha = true,
+                                    disabled = function() return Options.GlowOtherSame or not Options.GlowWatched end,
+                                    get = function(info)
+                                        local c = Options[info[#info]]
+                                        return c.r, c.g, c.b, c.a
+                                    end,
+                                    set = function(info, r, g, b, a)
+                                        local c = Options[info[#info]]
+                                        c.r, c.g, c.b, c.a = r, g, b, a
+                                        Addon:UpdateHUDSettings()
+                                    end,
+                                },
+                                GlowOtherSize = {
+                                    type = "range",
+                                    order = 20,
+                                    name = "Size",
+                                    desc = "How far the glow reaches out from the compass, in pixels.",
+                                    min = 2,
+                                    max = 64,
+                                    step = 1,
+                                    disabled = function() return Options.GlowOtherSame or not Options.GlowWatched end,
+                                },
+                                GlowOtherIntensity = {
+                                    type = "range",
+                                    order = 25,
+                                    name = "Intensity (%)",
+                                    min = 5,
+                                    max = 100,
+                                    step = 5,
+                                    disabled = function() return Options.GlowOtherSame or not Options.GlowWatched end,
+                                },
+                                GlowOtherPulse = {
+                                    type = "toggle",
+                                    order = 30,
+                                    name = "Pulse",
+                                    disabled = function() return Options.GlowOtherSame or not Options.GlowWatched end,
+                                },
+                            },
+                        },
+                    },
+                },
             },
         },
     },

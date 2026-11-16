@@ -107,6 +107,20 @@ Addon.Defaults = {
         SpeechVoice            = -1, -- -1: the voice of the game's text to speech settings
         SpeechRate             = 0,
         SpeechVolume           = 100,
+        -- glow in quest areas (Glow.lua); the look (GlowSuper*, GlowOther*) is part of the looks
+        GlowEnabled            = true,
+        GlowWatched            = true, -- also the other watched quests, not only the supertracked one
+        GlowEaseAfter          = 5,    -- seconds inside a quest area until the glow eases down; 0: stays
+        GlowEaseTo             = 25,   -- percent of the intensity it eases down to
+        GlowSuperColor         = {r = 255/255, g = 215/255, b = 0/255, a = 0.8},
+        GlowSuperSize          = 10,
+        GlowSuperIntensity     = 80,   -- percent
+        GlowSuperPulse         = false,
+        GlowOtherSame          = false, -- the other watched quests use the supertracked look
+        GlowOtherColor         = {r = 0, g = 1, b = 1, a = 0.8},
+        GlowOtherSize          = 10,
+        GlowOtherIntensity     = 80,
+        GlowOtherPulse         = false,
         UseCustomCompass             = true,
         CompassTextureTexture           = [[Interface\Addons\]] .. ADDON_NAME .. [[\Media\CompassHUD]],
         CompassCustomMainVisible        = true,

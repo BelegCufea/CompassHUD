@@ -41,6 +41,7 @@ Markers\POI.lua
 Markers\Questie.lua
 Markers\TomTom.lua
 Markers\HandyNotes.lua
+Glow.lua
 CompassHUD.lua
 EditMode.lua
 Speech.lua

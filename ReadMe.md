@@ -89,6 +89,8 @@ Most settings have a tooltip with more details when you hover over them.
 
 ![Speech](https://i.imgur.com/GxYMsDN.png)
 
+- The `Glow` tab makes the compass glow while you are inside the area of a quest (the highlighted area on the map), so you see you have arrived without opening the map. It is on by default. The supertracked quest and your other watched quests each have their own color, size, intensity and pulsing (the others can use the supertracked quest's look). After a number of seconds inside, the glow eases down to a weaker one, so you still know you are in the area. The game only tells whether you are inside the area of a watched (tracked) quest. The look of the glow is part of the looks.
+
 ### Supertracker
 
 Under the `Supertracker` submenu, you can configure visibility and behavior for the pointers to what you are tracking.
