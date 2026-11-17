@@ -2,18 +2,18 @@
 
 ## New
 
-- **Glow with Questie** (`Options → Glow → Keep the game's quest areas on with Questie`, only shown while Questie is loaded, off by default; #28): Questie's icon themes `Questie` and `pfQuest` switch the game's own quest areas off, so there was no area for the glow to react to (only the `Blizzard` theme left them on). With this option the game's quest areas stay on, so the glow works with Questie's icons. The game's own quest markers then also appear on the map and minimap next to Questie's icons. The setting is only written when you switch the option, at login and after you change Questie's icon theme; switching the option off puts back what Questie's theme wants. Nothing is touched without Questie.
+- **Glow with Questie** (`Options → Glow → Keep the game's quest areas on with Questie`, only shown while Questie is loaded, off by default; suggested by [senrik](https://github.com/senrik)): Questie's icon themes `Questie` and `pfQuest` switch the game's own quest areas off, so there was no area for the glow to react to (only the `Blizzard` theme left them on). With this option the game's quest areas stay on, so the glow works with Questie's icons. The game's own quest markers then also appear on the map and minimap next to Questie's icons. The setting is only written when you switch the option, at login and after you change Questie's icon theme; switching the option off puts back what Questie's theme wants. Nothing is touched without Questie.
 - **Glow inset** (`Options → Glow`, for both looks, default 0): how far the glow also reaches inward. The glow stays strongest at the compass's edge and fades out on both sides, outward by `Size` and inward by `Inset`, which looks softer on a compass with a thin line or border along the edge. With 0 it only reaches outward, as before.
 
 # v2.1.0 (16.11.2026)
 
 ## New
 
-- **Glow in quest areas** (new, on by default; #27, suggested by [senrik](https://github.com/senrik)): the compass now glows while you are inside the area of a quest, the highlighted area on the map that shows where a quest's objectives are. You see you have arrived without opening the map. The glow fades in when you enter the area and fades out when you leave. After 5 seconds inside it eases down to a weaker glow (not off), so you still know you are in the area without it staying distracting. This is a new feature that is on in every profile, including existing ones; to turn it off, untick `Options → Glow → Glow inside quest areas`.
+- **Glow in quest areas** (new, on by default; suggested by [senrik](https://github.com/senrik)): the compass now glows while you are inside the area of a quest, the highlighted area on the map that shows where a quest's objectives are. You see you have arrived without opening the map. The glow fades in when you enter the area and fades out when you leave. After 5 seconds inside it eases down to a weaker glow (not off), so you still know you are in the area without it staying distracting. This is a new feature that is on in every profile, including existing ones; to turn it off, untick `Options → Glow → Glow inside quest areas`.
   - It glows for the supertracked quest (gold) and for your other watched quests (cyan). The game only tells whether you are inside the area of a watched (tracked) quest, so quests you do not track cannot glow. You can turn the other watched quests off, or let them use the supertracked quest's look with `Same as Supertracked`.
   - Each of the two has its own color, size, intensity and pulsing. `Ease off after` and `Ease down to` set when and how far the glow eases down (0 seconds keeps it at full strength). The glow follows `Fade toward the edges` for the background and border.
   - The look of the glow is part of the looks (`Options → Looks`): each ready-made look has glow colors that fit its style, and shared looks carry them. Whether the glow is on, which quests it covers and the easing stay as you set them.
-- **Corpse pointer** (#26, suggested by [senrik](https://github.com/senrik)): while you are a ghost, a pointer shows the way to your corpse, like the one for a tracked quest: it stays on the compass at the edge when the corpse is out of sight, with its distance and the time to get there, and is read out with the supertracked target. It is a pointer type of its own (`Options → Supertracker → Pointers → Corpse`), so its look, size and texts can be set or the pointer turned off.
+- **Corpse pointer** (suggested by [senrik](https://github.com/senrik)): while you are a ghost, a pointer shows the way to your corpse, like the one for a tracked quest: it stays on the compass at the edge when the corpse is out of sight, with its distance and the time to get there, and is read out with the supertracked target. It is a pointer type of its own (`Options → Supertracker → Pointers → Corpse`), so its look, size and texts can be set or the pointer turned off.
 
 # v2.0.1 (15.11.2026)
 
@@ -96,25 +96,25 @@
 
 ## New
 
-- **Questie** (#23, suggested by [senrik](https://github.com/senrik)): the icons Questie places on the minimap can be shown on the compass, in `Minimap tracking → Questie` (shown when Questie is loaded, off by default).
+- **Questie** (suggested by [senrik](https://github.com/senrik)): the icons Questie places on the minimap can be shown on the compass, in `Minimap tracking → Questie` (shown when Questie is loaded, off by default).
   - Which icons appear (available quests, turn-ins, objectives, townsfolk such as innkeepers, trainers or mailboxes) is decided by Questie's own settings and menus.
   - Uses the `Minimap icons` settings by default (scanning radius, update throttle, position, scale, opacity, texts); turn `Use minimap icons settings` off to give Questie its own.
   - `Show the type after the name`, e.g. "Innkeeper Farley (Innkeeper)".
   - `Use supertracker keybinding` (on by default): the minimap icons' supertrack keybind also tracks the Questie icon you face. `Use text to speech` reads it out.
 
   ![QuestieInAction](https://i.imgur.com/hJeXf5u.png)
-- **Speech** tab (#21, accessibility, off by default): reads out the name of what is in front of you on the compass, with the game's text to speech. Each one is read once, when you turn to face it.
+- **Speech** tab (accessibility, off by default): reads out the name of what is in front of you on the compass, with the game's text to speech. Each one is read once, when you turn to face it.
   - `What to read out`: the supertracked target, minimap icons, Questie icons and gathering nodes; `Also read out the distance`.
   - `Only read out names shown on the compass` (off by default): read something only while its name is visible, e.g. only the icon showing its texts when a texts visibility angle is set.
   - `Facing angle`, `Delay` (so turning quickly does not read out everything you pass), `Voice` (any voice the game offers), `Rate`, `Volume` and a `Test` button.
 
   ![Speech](https://i.imgur.com/GxYMsDN.png)
-- **Edit Mode** support (#25): while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged, even when `Lock compass` is on. Clicking it opens the CompassHUD options.
+- **Edit Mode** support: while the game's Edit Mode is open, the compass is shown with a highlight (also where it is normally hidden) and can be dragged, even when `Lock compass` is on. Clicking it opens the CompassHUD options.
 
   ![EditMode](https://i.imgur.com/pf4eOgR.png)
-- **Compass size in pixels** (#24, suggested by [senrik](https://github.com/senrik)): `General → Size by: Pixels` shows `Width (pixels)` and `Height (pixels)` (border included, before the overall `Scale`), starting from the current size. `Field of View` then keeps the width and changes how many degrees fit in it.
-- **Marker scale** (#24, suggested by [senrik](https://github.com/senrik); `General`): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass `Height`; existing profiles keep their current marker size.
-- **Quests from your quest log** (#20): a new minimap icon type in `Minimap icons → Filter → Quests` (off by default) for quests that have a place on the current map.
+- **Compass size in pixels** (suggested by [senrik](https://github.com/senrik)): `General → Size by: Pixels` shows `Width (pixels)` and `Height (pixels)` (border included, before the overall `Scale`), starting from the current size. `Field of View` then keeps the width and changes how many degrees fit in it.
+- **Marker scale** (suggested by [senrik](https://github.com/senrik); `General`): the size of all markers on the compass and their texts. Markers no longer grow or shrink with the compass `Height`; existing profiles keep their current marker size.
+- **Quests from your quest log**: a new minimap icon type in `Minimap icons → Filter → Quests` (off by default) for quests that have a place on the current map.
   - `Progress`: all, in progress, or ready to turn in. `Only this zone`. `Icon`: like the supertracker, or the game's quest marks.
   - World quests and bonus objectives keep their own type; the supertrack keybind tracks the quest you face.
 - **`Minimap icons → Filter`** tab redesigned, with sub-tabs so nothing needs scrolling:
@@ -127,15 +127,15 @@
   - New, off by default: `Use supertracker keybinding` (track the node you face as a waypoint with its name and icon) and `Use text to speech` (also `Speech → Gathering nodes`).
   - The section is hidden when neither addon is loaded.
 - **One icon with texts:** with a `Texts visibility angle` set for minimap icons, Questie or gathering nodes, only one icon of them all shows its texts: the one closest to the direction you are facing.
-- **Max title width** (#18, `Appearance → Pointer font`): longer titles of the supertracker, minimap icon and gathering node pointers are cut off with "...", so long quest titles (e.g. with map transition directions) no longer stretch far beyond the compass. 0 (default) = no limit, as before.
+- **Max title width** (`Appearance → Pointer font`): longer titles of the supertracker, minimap icon and gathering node pointers are cut off with "...", so long quest titles (e.g. with map transition directions) no longer stretch far beyond the compass. 0 (default) = no limit, as before.
 - The **General** tab fits without scrolling: related settings sit side by side, with a new `Reset size` button (Scale, Width, Height and Marker scale back to 100%).
 
 ## Fix
 
 - A minimap icon set as a waypoint with the supertrack keybind now gives the supertracker pointer its **name** (it was usually lost: the game stores the waypoint position slightly rounded), and with `Minimap icons → Supertracking → Icon texture` also its icon when that is a texture, e.g. world quest rewards.
 - Retail: Lua error ("attempt to call a nil value") while tracking an available quest ("!" quest giver) with the world map open. The quest name and position are read from the map's pins in a way that works with the current client, and a future change of the world map can no longer cause an error.
-- The HUD is no longer hidden in every instance, only where the game does not give the player facing (dungeons, raids). It should now show in instances that have a facing, e.g. the housing neighborhoods Founder's Point and Razorwing Shore (#19).
-- The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded (#22).
+- The HUD is no longer hidden in every instance, only where the game does not give the player facing (dungeons, raids). It should now show in instances that have a facing, e.g. the housing neighborhoods Founder's Point and Razorwing Shore.
+- The game's supertracker icon is only changed when the tracked target or its settings change, instead of on every HUD update. This may fix Edit Mode freezing or lagging with Plumber loaded.
 - WoW: Forever: characters with the same first name (but a different surname) on one realm shared their profile choice (see *Good to know*).
 
 ## Misc
