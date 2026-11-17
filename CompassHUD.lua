@@ -71,7 +71,10 @@ function updateHUD(force)
 end
 
 function onUpdate(_, elapsed)
-    if player.inInstance then return end
+    if player.inInstance then
+        resetGlow()
+        return
+    end
 
     timer = timer + elapsed
     if timer < (1 / Options.Interval) then return end

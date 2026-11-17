@@ -282,6 +282,13 @@ function updateGlow(force)
     glow.kind = kind -- the frame's OnUpdate fades in or out, and hides itself when faded out
 end
 
+-- The compass is not updated (hidden in an instance): drop the glow so it is not still on when the compass shows again.
+function resetGlow()
+    if not glow.frame or (not glow.kind and glow.alpha == 0) then return end
+    glow.kind, glow.alpha, glow.enteredAt, glow.eased = nil, 0, nil, false
+    glow.frame:Hide()
+end
+
 -- After a settings change: apply the look again at once.
 function refreshGlow()
     glow.styled = nil

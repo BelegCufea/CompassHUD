@@ -4,6 +4,10 @@
 
 - **Glow inset in the looks** (`Options → Looks`): the ready-made looks now set a glow inset, so the glow no longer ends in a hard cut at the compass edge: 10 pixels for the looks without a frame (`Fade`, `Line`, `Horizon`, `Gilded`, `Forever, no frame`), where the cut was most visible, and 6 for the looks with a border. It is applied when you try or keep a look; the glow of your own settings stays as you set it until then.
 
+## Fixed
+
+- **Glow left on after an instance**: when the compass hides in an instance, the glow is cleared too, so it is not still on when the compass shows again.
+
 # v2.1.1 (17.11.2026)
 
 ## New
