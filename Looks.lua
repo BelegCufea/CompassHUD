@@ -199,7 +199,8 @@ end
 
 -- The glow in quest areas: the color for the supertracked quest and for the other watched ones
 -- (the strength is the default's), and how far it reaches into the compass (the inset, default 0:
--- a look with a border or edge lines gets some, so the glow does not stop at the line).
+-- a look with an edge gets some so the glow does not end in a hard cut: 6 with a border and background,
+-- 10 (as deep as it is wide) for the looks without a frame).
 local function glowColors(settings, super, other, inset)
     settings.GlowSuperColor = rgb(super.r, super.g, super.b, 0.8)
     settings.GlowOtherColor = rgb(other.r, other.g, other.b, 0.8)
@@ -229,7 +230,7 @@ local function fadeSettings()
         { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = LIGHT_GREY },
         { font = "Arial Narrow", size = 9, flags = "OUTLINE", color = GREY })
     headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
-    return glowColors(s, WHITE, rgb(0.55, 0.75, 0.95))
+    return glowColors(s, WHITE, rgb(0.55, 0.75, 0.95), 10)
 end
 
 -- Line: no frame and no background, a thin line on top; outlined letters read on any background.
@@ -241,7 +242,7 @@ local function lineOnlySettings()
         { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = LIGHT_GREY },
         false)
     headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
-    return glowColors(s, WHITE, LIGHT_GREY)
+    return glowColors(s, WHITE, LIGHT_GREY, 10)
 end
 
 -- Gilded: no frame, gold lines above and below a faint gradient, gold and parchment letters.
@@ -253,7 +254,7 @@ local function gildedSettings()
         { font = "Friz Quadrata TT", size = 11, flags = "OUTLINE", color = PALE_GOLD },
         { font = "Friz Quadrata TT", size = 8, flags = "OUTLINE", color = rgb(0.78, 0.72, 0.58) })
     headingFont(s, "Friz Quadrata TT", 14, "OUTLINE", GOLD)
-    return glowColors(s, GOLD, PALE_GOLD, 6)
+    return glowColors(s, GOLD, PALE_GOLD, 10)
 end
 
 -- Night: dark glass with a cyan accent line below, cyan main letters.
@@ -300,7 +301,7 @@ local function foreverFadeSettings()
         { font = "Friz Quadrata TT", size = 11, flags = "OUTLINE", color = rgb(0.80, 0.56, 0.36) },
         false)
     headingFont(s, "Morpheus", 15, "OUTLINE", rgb(0.92, 0.74, 0.42))
-    return glowColors(s, rgb(0.92, 0.74, 0.42), rgb(0.85, 0.50, 0.28), 6)
+    return glowColors(s, rgb(0.92, 0.74, 0.42), rgb(0.85, 0.50, 0.28), 10)
 end
 
 -- Fade toward the edges (Compass.lua): where it starts, opacity at the edge, curve, and whether
@@ -321,7 +322,7 @@ local function horizonSettings()
         { font = "Arial Narrow", size = 13, flags = "OUTLINE", color = rgb(0.85, 0.87, 0.90) },
         false)
     headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
-    glowColors(s, WHITE, rgb(0.85, 0.87, 0.90), 6)
+    glowColors(s, WHITE, rgb(0.85, 0.87, 0.90), 10)
     -- markers held at the edge stay fully visible: the edge itself is faint
     return edgeFadeSettings(s, 0.3, 0.1, "SMOOTH", false)
 end
