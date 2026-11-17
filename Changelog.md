@@ -1,3 +1,9 @@
+# Next version
+
+## New
+
+- **Glow inset** (`Options → Glow`, for both looks, default 0): how far the glow also reaches inward. The glow stays strongest at the compass's edge and fades out on both sides, outward by `Size` and inward by `Inset`, which looks softer on a compass with a thin line or border along the edge. With 0 it only reaches outward, as before.
+
 # v2.1.0 (16.11.2026)
 
 ## New

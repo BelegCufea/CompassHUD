@@ -42,12 +42,12 @@ function glowAvailable()
     return IsInsideQuestBlob ~= nil
 end
 
--- The look of 'kind': color, size in pixels, pulsing, intensity (0-1).
+-- The look of 'kind': color, size in pixels, pulsing, intensity (0-1), inset in pixels.
 local function glowStyle(kind)
     if kind == "other" and not Options.GlowOtherSame then
-        return Options.GlowOtherColor, Options.GlowOtherSize, Options.GlowOtherPulse, Options.GlowOtherIntensity / 100
+        return Options.GlowOtherColor, Options.GlowOtherSize, Options.GlowOtherPulse, Options.GlowOtherIntensity / 100, Options.GlowOtherInset
     end
-    return Options.GlowSuperColor, Options.GlowSuperSize, Options.GlowSuperPulse, Options.GlowSuperIntensity / 100
+    return Options.GlowSuperColor, Options.GlowSuperSize, Options.GlowSuperPulse, Options.GlowSuperIntensity / 100, Options.GlowSuperInset
 end
 
 local function createGlow()
@@ -66,6 +66,26 @@ local function createGlow()
     glow.right = frame:CreateTexture(nil, "BACKGROUND")
     glow.left:SetColorTexture(1, 1, 1, 1)
     glow.right:SetColorTexture(1, 1, 1, 1)
+    -- the glow inside the compass (with an inset): the same strongest color at the edge, fading inward
+    glow.innerTop, glow.innerBottom = {}, {}
+    for i = 1, SLICES do
+        glow.innerTop[i] = frame:CreateTexture(nil, "BACKGROUND")
+        glow.innerBottom[i] = frame:CreateTexture(nil, "BACKGROUND")
+        glow.innerTop[i]:SetColorTexture(1, 1, 1, 1)
+        glow.innerBottom[i]:SetColorTexture(1, 1, 1, 1)
+    end
+    glow.innerLeft = frame:CreateTexture(nil, "BACKGROUND")
+    glow.innerRight = frame:CreateTexture(nil, "BACKGROUND")
+    glow.innerLeft:SetColorTexture(1, 1, 1, 1)
+    glow.innerRight:SetColorTexture(1, 1, 1, 1)
+    glow.innerCorners = {}
+    for name, coords in pairs(CORNER_COORDS) do
+        local corner = frame:CreateTexture(nil, "BACKGROUND")
+        corner:SetTexture(CORNER_TEXTURE)
+        -- strongest at the compass's corner, so the opposite corner's coordinates
+        corner:SetTexCoord(unpack(CORNER_COORDS[({ TOPLEFT = "BOTTOMRIGHT", TOPRIGHT = "BOTTOMLEFT", BOTTOMLEFT = "TOPRIGHT", BOTTOMRIGHT = "TOPLEFT" })[name]]))
+        glow.innerCorners[name] = corner
+    end
     glow.corners = {}
     for name, coords in pairs(CORNER_COORDS) do
         local corner = frame:CreateTexture(nil, "BACKGROUND")
@@ -99,11 +119,13 @@ end
 -- outward. With "Fade toward the edges" for the background and border, the glow fades along the
 -- strip like the border does: the top and bottom in slices, the sides and corners at the edge's opacity.
 local function styleGlow(kind)
-    local color, size = glowStyle(kind)
+    local color, size, _, _, inset = glowStyle(kind)
+    -- the glow also reaches 'inset' pixels into the compass
+    inset = math.max(0, math.min(inset or 0, math.floor(HUD:GetHeight() / 2) - 1))
     local fade = Options.EdgeFade and Options.EdgeFadeFrame
-    local key = kind .. size .. color.r .. color.g .. color.b .. color.a
+    local key = kind .. size .. "/" .. inset .. color.r .. color.g .. color.b .. color.a
         .. (fade and (Options.EdgeFadeStart .. Options.EdgeFadeInner .. Options.EdgeFadeOuter .. Options.EdgeFadeCurve) or "")
-        .. HUD:GetWidth()
+        .. HUD:GetWidth() .. "x" .. HUD:GetHeight()
     if glow.styled == key then return end
     glow.styled = key
     local r, g, b, a = color.r, color.g, color.b, color.a
@@ -127,6 +149,50 @@ local function styleGlow(kind)
         bottom:SetPoint("TOPRIGHT", HUD, "BOTTOMLEFT", x1, 0)
         bottom:SetHeight(size)
         bottom:SetGradient("VERTICAL", none, strong)
+    end
+
+    -- inside: strips between the corner squares, fading inward
+    local innerWidth = (width - 2 * inset) / SLICES
+    for i = 1, SLICES do
+        local x0, x1 = inset + (i - 1) * innerWidth, inset + i * innerWidth
+        local f = fade and edgeFadeAt(math.abs((x0 + x1) / 2 - width / 2) / (width / 2)) or 1
+        local strong, none = CreateColor(r, g, b, a * f), CreateColor(r, g, b, 0)
+        local top, bottom = glow.innerTop[i], glow.innerBottom[i]
+        top:ClearAllPoints()
+        top:SetPoint("TOPLEFT", HUD, "TOPLEFT", x0, 0)
+        top:SetPoint("TOPRIGHT", HUD, "TOPLEFT", x1, 0)
+        top:SetHeight(math.max(inset, 1))
+        top:SetGradient("VERTICAL", none, strong)
+        top:SetShown(inset > 0)
+        bottom:ClearAllPoints()
+        bottom:SetPoint("BOTTOMLEFT", HUD, "BOTTOMLEFT", x0, 0)
+        bottom:SetPoint("BOTTOMRIGHT", HUD, "BOTTOMLEFT", x1, 0)
+        bottom:SetHeight(math.max(inset, 1))
+        bottom:SetGradient("VERTICAL", strong, none)
+        bottom:SetShown(inset > 0)
+    end
+    do
+        local strong, none = CreateColor(r, g, b, sideAlpha), CreateColor(r, g, b, 0)
+        glow.innerLeft:ClearAllPoints()
+        glow.innerLeft:SetPoint("TOPLEFT", HUD, "TOPLEFT", 0, -inset)
+        glow.innerLeft:SetPoint("BOTTOMLEFT", HUD, "BOTTOMLEFT", 0, inset)
+        glow.innerLeft:SetWidth(math.max(inset, 1))
+        glow.innerLeft:SetGradient("HORIZONTAL", strong, none)
+        glow.innerLeft:SetShown(inset > 0)
+        glow.innerRight:ClearAllPoints()
+        glow.innerRight:SetPoint("TOPRIGHT", HUD, "TOPRIGHT", 0, -inset)
+        glow.innerRight:SetPoint("BOTTOMRIGHT", HUD, "BOTTOMRIGHT", 0, inset)
+        glow.innerRight:SetWidth(math.max(inset, 1))
+        glow.innerRight:SetGradient("HORIZONTAL", none, strong)
+        glow.innerRight:SetShown(inset > 0)
+        for name, point in pairs({ TOPLEFT = "TOPLEFT", TOPRIGHT = "TOPRIGHT", BOTTOMLEFT = "BOTTOMLEFT", BOTTOMRIGHT = "BOTTOMRIGHT" }) do
+            local corner = glow.innerCorners[name]
+            corner:ClearAllPoints()
+            corner:SetPoint(point, HUD, point, 0, 0)
+            corner:SetSize(math.max(inset, 1), math.max(inset, 1))
+            corner:SetVertexColor(r, g, b, sideAlpha)
+            corner:SetShown(inset > 0)
+        end
     end
 
     local strong, none = CreateColor(r, g, b, sideAlpha), CreateColor(r, g, b, 0)

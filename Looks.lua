@@ -41,8 +41,8 @@ local LOOK_SETTINGS = {
     -- party/raid markers
     "GroupTexture", "GroupZoneTexture",
     -- glow in quest areas: how it looks (not whether it is on, which quests, or the easing)
-    "GlowSuperColor", "GlowSuperSize", "GlowSuperIntensity", "GlowSuperPulse",
-    "GlowOtherSame", "GlowOtherColor", "GlowOtherSize", "GlowOtherIntensity", "GlowOtherPulse",
+    "GlowSuperColor", "GlowSuperSize", "GlowSuperInset", "GlowSuperIntensity", "GlowSuperPulse",
+    "GlowOtherSame", "GlowOtherColor", "GlowOtherSize", "GlowOtherInset", "GlowOtherIntensity", "GlowOtherPulse",
 }
 
 -- A text's own font settings (<text><suffix>)
