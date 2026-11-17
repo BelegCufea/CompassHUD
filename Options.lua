@@ -1214,6 +1214,19 @@ Addon.Options = {
                             width = "full",
                             disabled = function() return not glowAvailable() end,
                         },
+                        GlowQuestieAreas = {
+                            type = "toggle",
+                            order = 15,
+                            name = "Keep the game's quest areas on with Questie",
+                            desc = "Questie's icon themes 'Questie' and 'pfQuest' switch the game's own quest areas off, and then there is no area to glow in. This keeps them on.\n\nThe game's own quest markers then appear on the map and minimap next to Questie's icons. It is set when you switch this, at login and after you change Questie's icon theme; switching it off puts back what Questie's theme wants.",
+                            width = "full",
+                            hidden = function() return not glowQuestieAvailable() end,
+                            disabled = function() return not Options.GlowEnabled end,
+                            set = function(info, value)
+                                Options.GlowQuestieAreas = value
+                                if value then applyQuestieAreas() else applyQuestieAreas(true) end
+                            end,
+                        },
                         GlowEaseAfter = {
                             type = "range",
                             order = 25,

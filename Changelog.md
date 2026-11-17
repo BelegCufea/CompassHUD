@@ -2,6 +2,7 @@
 
 ## New
 
+- **Glow with Questie** (`Options → Glow → Keep the game's quest areas on with Questie`, only shown while Questie is loaded, off by default; #28): Questie's icon themes `Questie` and `pfQuest` switch the game's own quest areas off, so there was no area for the glow to react to (only the `Blizzard` theme left them on). With this option the game's quest areas stay on, so the glow works with Questie's icons. The game's own quest markers then also appear on the map and minimap next to Questie's icons. The setting is only written when you switch the option, at login and after you change Questie's icon theme; switching the option off puts back what Questie's theme wants. Nothing is touched without Questie.
 - **Glow inset** (`Options → Glow`, for both looks, default 0): how far the glow also reaches inward. The glow stays strongest at the compass's edge and fades out on both sides, outward by `Size` and inward by `Inset`, which looks softer on a compass with a thin line or border along the edge. With 0 it only reaches outward, as before.
 
 # v2.1.0 (16.11.2026)

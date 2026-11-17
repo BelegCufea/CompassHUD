@@ -235,6 +235,43 @@ local function enteredQuestArea()
     end
 end
 
+-- Questie's icon themes "Questie" and "pfQuest" switch the game's own quest areas off (the setting
+-- questPOI = 0), and then there is no area to be inside of. With the option GlowQuestieAreas the
+-- setting is kept on while Questie is loaded. It is only written when Questie is loaded, and only
+-- when the option is switched, at login and after Questie's theme is changed (no polling), so
+-- the game's own menu can still switch it off in between. Switching the option off puts back what
+-- Questie itself would have: on for its "Blizzard" theme (objectives off), off otherwise.
+local questieThemeHooked
+
+function glowQuestieAvailable()
+    return C_AddOns.IsAddOnLoaded("Questie") and true or false
+end
+
+function applyQuestieAreas(restore)
+    if not glowQuestieAvailable() then return end
+    local want
+    if restore then
+        local profile = Questie and Questie.db and Questie.db.profile
+        if type(profile) ~= "table" then return end
+        want = profile.enableObjectives == false and "1" or "0"
+    elseif Options.GlowQuestieAreas then
+        want = "1"
+    else
+        return
+    end
+    if GetCVar("questPOI") ~= want then SetCVar("questPOI", want) end
+    -- the theme being changed in Questie's options writes the setting again
+    if not questieThemeHooked and QuestieLoader and QuestieLoader.ImportModule then
+        local ok, utils = pcall(QuestieLoader.ImportModule, QuestieLoader, "QuestieOptionsUtils")
+        if ok and type(utils) == "table" and type(utils.ExecuteTheme) == "function" then
+            questieThemeHooked = true
+            hooksecurefunc(utils, "ExecuteTheme", function()
+                if Options.GlowQuestieAreas then applyQuestieAreas() end
+            end)
+        end
+    end
+end
+
 -- Called from updateHUD; the quest areas are checked a few times a second.
 function updateGlow(force)
     if not IsInsideQuestBlob then return end

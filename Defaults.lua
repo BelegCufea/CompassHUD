@@ -110,6 +110,7 @@ Addon.Defaults = {
         -- glow in quest areas (Glow.lua); the look (GlowSuper*, GlowOther*) is part of the looks
         GlowEnabled            = true,
         GlowWatched            = true, -- also the other watched quests, not only the supertracked one
+        GlowQuestieAreas       = false, -- keep the game's quest areas on while Questie is loaded (its themes switch them off)
         GlowEaseAfter          = 5,    -- seconds inside a quest area until the glow eases down; 0: stays
         GlowEaseTo             = 25,   -- percent of the intensity it eases down to
         GlowSuperColor         = {r = 255/255, g = 215/255, b = 0/255, a = 0.8},

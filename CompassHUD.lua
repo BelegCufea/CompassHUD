@@ -608,6 +608,7 @@ function Addon:OnEnable()
     self:SetVisibility(shouldShowHUD())
 
     registerEditMode()
+    applyQuestieAreas()
     self:RegisterEvent("PLAYER_ENTERING_WORLD", OnZoneChange)
     self:RegisterEvent("PLAYER_MAP_CHANGED", OnZoneChange)
     self:RegisterEvent("ZONE_CHANGED_NEW_AREA", OnZoneChange)
