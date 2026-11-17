@@ -78,14 +78,6 @@ local function createGlow()
     glow.innerRight = frame:CreateTexture(nil, "BACKGROUND")
     glow.innerLeft:SetColorTexture(1, 1, 1, 1)
     glow.innerRight:SetColorTexture(1, 1, 1, 1)
-    glow.innerCorners = {}
-    for name, coords in pairs(CORNER_COORDS) do
-        local corner = frame:CreateTexture(nil, "BACKGROUND")
-        corner:SetTexture(CORNER_TEXTURE)
-        -- strongest at the compass's corner, so the opposite corner's coordinates
-        corner:SetTexCoord(unpack(CORNER_COORDS[({ TOPLEFT = "BOTTOMRIGHT", TOPRIGHT = "BOTTOMLEFT", BOTTOMLEFT = "TOPRIGHT", BOTTOMRIGHT = "TOPLEFT" })[name]]))
-        glow.innerCorners[name] = corner
-    end
     glow.corners = {}
     for name, coords in pairs(CORNER_COORDS) do
         local corner = frame:CreateTexture(nil, "BACKGROUND")
@@ -151,10 +143,11 @@ local function styleGlow(kind)
         bottom:SetGradient("VERTICAL", none, strong)
     end
 
-    -- inside: strips between the corner squares, fading inward
-    local innerWidth = (width - 2 * inset) / SLICES
+    -- inside: the top and bottom strips run the full width (so no square is left in the corners),
+    -- the side strips fit between them
+    local innerWidth = width / SLICES
     for i = 1, SLICES do
-        local x0, x1 = inset + (i - 1) * innerWidth, inset + i * innerWidth
+        local x0, x1 = (i - 1) * innerWidth, i * innerWidth
         local f = fade and edgeFadeAt(math.abs((x0 + x1) / 2 - width / 2) / (width / 2)) or 1
         local strong, none = CreateColor(r, g, b, a * f), CreateColor(r, g, b, 0)
         local top, bottom = glow.innerTop[i], glow.innerBottom[i]
@@ -185,14 +178,6 @@ local function styleGlow(kind)
         glow.innerRight:SetWidth(math.max(inset, 1))
         glow.innerRight:SetGradient("HORIZONTAL", none, strong)
         glow.innerRight:SetShown(inset > 0)
-        for name, point in pairs({ TOPLEFT = "TOPLEFT", TOPRIGHT = "TOPRIGHT", BOTTOMLEFT = "BOTTOMLEFT", BOTTOMRIGHT = "BOTTOMRIGHT" }) do
-            local corner = glow.innerCorners[name]
-            corner:ClearAllPoints()
-            corner:SetPoint(point, HUD, point, 0, 0)
-            corner:SetSize(math.max(inset, 1), math.max(inset, 1))
-            corner:SetVertexColor(r, g, b, sideAlpha)
-            corner:SetShown(inset > 0)
-        end
     end
 
     local strong, none = CreateColor(r, g, b, sideAlpha), CreateColor(r, g, b, 0)
