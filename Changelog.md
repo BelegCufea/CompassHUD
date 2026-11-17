@@ -1,3 +1,9 @@
+# Next version
+
+## New
+
+- **Glow inset in the looks** (`Options → Looks`): the ready-made looks with a border or edge lines (all except `Fade` and `Line`) now set a small glow inset (6 pixels), so the glow does not stop at their line. It is applied when you try or keep a look; the glow of your own settings stays as you set it until then.
+
 # v2.1.1 (17.11.2026)
 
 ## New

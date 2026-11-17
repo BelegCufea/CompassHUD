@@ -198,10 +198,12 @@ local function headingFont(settings, font, size, flags, color)
 end
 
 -- The glow in quest areas: the color for the supertracked quest and for the other watched ones
--- (the strength is the default's).
-local function glowColors(settings, super, other)
+-- (the strength is the default's), and how far it reaches into the compass (the inset, default 0:
+-- a look with a border or edge lines gets some, so the glow does not stop at the line).
+local function glowColors(settings, super, other, inset)
     settings.GlowSuperColor = rgb(super.r, super.g, super.b, 0.8)
     settings.GlowOtherColor = rgb(other.r, other.g, other.b, 0.8)
+    if inset then settings.GlowSuperInset, settings.GlowOtherInset = inset, inset end
     return settings
 end
 
@@ -216,7 +218,7 @@ local function cleanSettings()
         { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = LIGHT_GREY },
         false)
     headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
-    return glowColors(s, WHITE, rgb(0.55, 0.75, 0.95))
+    return glowColors(s, WHITE, rgb(0.55, 0.75, 0.95), 6)
 end
 
 -- Fade: no border, a dark band that fades out to both sides (the gradient), white letters.
@@ -251,7 +253,7 @@ local function gildedSettings()
         { font = "Friz Quadrata TT", size = 11, flags = "OUTLINE", color = PALE_GOLD },
         { font = "Friz Quadrata TT", size = 8, flags = "OUTLINE", color = rgb(0.78, 0.72, 0.58) })
     headingFont(s, "Friz Quadrata TT", 14, "OUTLINE", GOLD)
-    return glowColors(s, GOLD, PALE_GOLD)
+    return glowColors(s, GOLD, PALE_GOLD, 6)
 end
 
 -- Night: dark glass with a cyan accent line below, cyan main letters.
@@ -263,7 +265,7 @@ local function nightSettings()
         { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = rgb(0.75, 0.85, 0.90) },
         { font = "Arial Narrow", size = 9, flags = "", color = rgb(0.40, 0.55, 0.62) })
     headingFont(s, "Arial Narrow", 14, "OUTLINE", rgb(0.35, 0.90, 1))
-    return glowColors(s, rgb(0.25, 0.85, 1), rgb(0.45, 0.60, 1))
+    return glowColors(s, rgb(0.25, 0.85, 1), rgb(0.45, 0.60, 1), 6)
 end
 
 -- Classic gold: the game's dialog style, gold trim and parchment tones, Friz Quadrata.
@@ -274,7 +276,7 @@ local function classicSettings()
         { font = "Friz Quadrata TT", size = 11, flags = "OUTLINE", color = rgb(0.93, 0.85, 0.66) },
         { font = "Friz Quadrata TT", size = 8, flags = "", color = rgb(0.78, 0.72, 0.58) })
     headingFont(s, "Friz Quadrata TT", 14, "OUTLINE", rgb(1, 0.82, 0))
-    return glowColors(s, GOLD, PALE_GOLD)
+    return glowColors(s, GOLD, PALE_GOLD, 6)
 end
 
 -- Forever: WoW: Forever's warm style, dark leather, copper trim and antique gold lettering.
@@ -286,7 +288,7 @@ local function foreverSettings()
         { font = "Friz Quadrata TT", size = 8, flags = "", color = rgb(0.68, 0.58, 0.46) })
     headingFont(s, "Morpheus", 15, "OUTLINE", rgb(0.92, 0.74, 0.42))
     s.Line, s.LineThickness, s.LinePosition, s.LineColor = "BOTTOM", 1, 1, rgb(0.72, 0.45, 0.25, 0.9)
-    return glowColors(s, rgb(0.92, 0.74, 0.42), rgb(0.85, 0.50, 0.28))
+    return glowColors(s, rgb(0.92, 0.74, 0.42), rgb(0.85, 0.50, 0.28), 6)
 end
 
 -- Forever, frameless: copper lines above and below a fading leather-brown band.
@@ -298,7 +300,7 @@ local function foreverFadeSettings()
         { font = "Friz Quadrata TT", size = 11, flags = "OUTLINE", color = rgb(0.80, 0.56, 0.36) },
         false)
     headingFont(s, "Morpheus", 15, "OUTLINE", rgb(0.92, 0.74, 0.42))
-    return glowColors(s, rgb(0.92, 0.74, 0.42), rgb(0.85, 0.50, 0.28))
+    return glowColors(s, rgb(0.92, 0.74, 0.42), rgb(0.85, 0.50, 0.28), 6)
 end
 
 -- Fade toward the edges (Compass.lua): where it starts, opacity at the edge, curve, and whether
@@ -319,7 +321,7 @@ local function horizonSettings()
         { font = "Arial Narrow", size = 13, flags = "OUTLINE", color = rgb(0.85, 0.87, 0.90) },
         false)
     headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
-    glowColors(s, WHITE, rgb(0.85, 0.87, 0.90))
+    glowColors(s, WHITE, rgb(0.85, 0.87, 0.90), 6)
     -- markers held at the edge stay fully visible: the edge itself is faint
     return edgeFadeSettings(s, 0.3, 0.1, "SMOOTH", false)
 end
@@ -332,7 +334,7 @@ local function glassSettings()
         { font = "Arial Narrow", size = 12, flags = "OUTLINE", color = LIGHT_GREY },
         { font = "Arial Narrow", size = 9, flags = "", color = GREY })
     headingFont(s, "Arial Narrow", 14, "OUTLINE", WHITE)
-    glowColors(s, WHITE, rgb(0.70, 0.78, 0.90))
+    glowColors(s, WHITE, rgb(0.70, 0.78, 0.90), 6)
     return edgeFadeSettings(s, 0.4, 0.2, "SMOOTH", true)
 end
 
@@ -383,7 +385,7 @@ local function elvUISettings()
         { font = font, size = 12, flags = flags, color = rgb(0.9, 0.9, 0.9) },
         { font = font, size = 9, flags = flags, color = rgb(0.55, 0.55, 0.55) })
     headingFont(s, font, 14, flags, rgb(1, 1, 1))
-    return glowColors(s, accent, rgb(0.9, 0.9, 0.9))
+    return glowColors(s, accent, rgb(0.9, 0.9, 0.9), 6)
 end
 
 local function elvUIText()
@@ -427,7 +429,7 @@ local function ellesmereSettings()
         { font = font, size = 12, flags = flags, color = rgb(0.9, 0.9, 0.9) },
         { font = font, size = 9, flags = flags, color = rgb(0.55, 0.55, 0.55) })
     headingFont(s, font, 14, flags, rgb(1, 1, 1))
-    return glowColors(s, accent, rgb(0.9, 0.9, 0.9))
+    return glowColors(s, accent, rgb(0.9, 0.9, 0.9), 6)
 end
 
 local function ellesmereText()
