@@ -144,7 +144,7 @@ local function styleGlow(kind)
     end
 
     -- inside: the top and bottom strips run the full width (so no square is left in the corners),
-    -- the side strips fit between them
+    -- the side strips run the full height too; where they overlap in the corners the glow is only a little stronger, and nothing cuts off at the edges
     local innerWidth = width / SLICES
     for i = 1, SLICES do
         local x0, x1 = (i - 1) * innerWidth, i * innerWidth
@@ -167,14 +167,14 @@ local function styleGlow(kind)
     do
         local strong, none = CreateColor(r, g, b, sideAlpha), CreateColor(r, g, b, 0)
         glow.innerLeft:ClearAllPoints()
-        glow.innerLeft:SetPoint("TOPLEFT", HUD, "TOPLEFT", 0, -inset)
-        glow.innerLeft:SetPoint("BOTTOMLEFT", HUD, "BOTTOMLEFT", 0, inset)
+        glow.innerLeft:SetPoint("TOPLEFT", HUD, "TOPLEFT", 0, 0)
+        glow.innerLeft:SetPoint("BOTTOMLEFT", HUD, "BOTTOMLEFT", 0, 0)
         glow.innerLeft:SetWidth(math.max(inset, 1))
         glow.innerLeft:SetGradient("HORIZONTAL", strong, none)
         glow.innerLeft:SetShown(inset > 0)
         glow.innerRight:ClearAllPoints()
-        glow.innerRight:SetPoint("TOPRIGHT", HUD, "TOPRIGHT", 0, -inset)
-        glow.innerRight:SetPoint("BOTTOMRIGHT", HUD, "BOTTOMRIGHT", 0, inset)
+        glow.innerRight:SetPoint("TOPRIGHT", HUD, "TOPRIGHT", 0, 0)
+        glow.innerRight:SetPoint("BOTTOMRIGHT", HUD, "BOTTOMRIGHT", 0, 0)
         glow.innerRight:SetWidth(math.max(inset, 1))
         glow.innerRight:SetGradient("HORIZONTAL", none, strong)
         glow.innerRight:SetShown(inset > 0)
