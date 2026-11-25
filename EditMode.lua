@@ -17,11 +17,6 @@ local function setOverlayColor(color)
     overlay:SetBackdropBorderColor(color.r, color.g, color.b, 1)
 end
 
-local function savePosition()
-    Options.PositionX = HUD:GetLeft()
-    Options.PositionY = HUD:GetBottom()
-end
-
 local function openOptions()
     local name = Addon.CONST.METADATA.NAME
     AceConfigDialog:Open(name)
@@ -62,7 +57,7 @@ local function createOverlay()
     end)
     overlay:SetScript("OnDragStop", function()
         HUD:StopMovingOrSizing()
-        savePosition()
+        saveHUDPosition()
     end)
     overlay:SetScript("OnMouseUp", function(self, button)
         -- a drag also ends with a mouse up: only a plain click opens the options

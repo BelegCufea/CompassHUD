@@ -7,6 +7,7 @@
 ## Fixed
 
 - **Glow left on after an instance**: when the compass hides in an instance, the glow is cleared too, so it is not still on when the compass shows again.
+- **Compass back in the centre after a reload** (reported by [Karge](https://www.curseforge.com/members/karge)): when the game had not placed the compass yet as its settings were applied, an empty position was saved, which put the compass back in the centre on the next login or reload. Such a position is no longer saved, and a compass moved right up to the left or bottom edge of the screen no longer counts as never placed.
 
 # v2.1.1 (17.11.2026)
 

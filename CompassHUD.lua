@@ -458,6 +458,17 @@ function Addon:SetVisibility(visible)
     end
 end
 
+-- Saves where the HUD is now. GetLeft/GetBottom are nil while the frame has no resolved
+-- position yet; saving nil would bring back the default (-1), which centres the HUD on the
+-- next load. A HUD at the left or bottom edge can report a tiny negative value (float noise),
+-- which would also count as "never placed".
+function saveHUDPosition()
+    local left, bottom = HUD:GetLeft(), HUD:GetBottom()
+    if not (left and bottom) then return end
+    Options.PositionX = math.max(left, 0)
+    Options.PositionY = math.max(bottom, 0)
+end
+
 function Addon:ResetPosition(resetX, resetY)
     if resetX then
         Options.PositionX = (UIParent:GetWidth() / Options.Scale - HUD:GetWidth()) / 2
@@ -519,8 +530,7 @@ function Addon:UpdateHUDSettings()
         end)
 		HUD:SetScript('OnDragStop', function ()
             HUD:StopMovingOrSizing()
-            Options.PositionX = HUD:GetLeft()
-            Options.PositionY = HUD:GetBottom()
+            saveHUDPosition()
         end)
 	end
 
@@ -566,8 +576,9 @@ function Addon:UpdateHUDSettings()
     -- fade toward the edges: the background and border (Compass.lua)
     fadeHUDFrame()
 
-    Options.PositionX = HUD:GetLeft()
-    Options.PositionY = HUD:GetBottom()
+    -- the adjustments above keep the centre in place when the scale or width changes;
+    -- store the result (and any clamping to the screen) as the new position
+    saveHUDPosition()
 
     updateCompassHUD()
 
