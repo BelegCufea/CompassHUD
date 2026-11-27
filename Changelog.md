@@ -1,3 +1,9 @@
+# v2.1.2a (unreleased)
+
+## Fixed
+
+- **Quest pointer follows the game to another quest area**: when a tracked quest has several areas on the map, the game points to the nearest one and switches as you move. The compass pointer often stayed on the old area until the next quest update. Now it moves to the new area within about a second.
+
 # v2.1.2 (25.11.2026)
 
 ## New

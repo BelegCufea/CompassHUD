@@ -61,6 +61,7 @@ function updateHUD(force)
     end
     updatePlayerCoords()
     updateHeading()
+    followQuestPlace()
     setSupertrackerPointers()
     setGroupIcons()
     setAllMarkerSources()
@@ -223,25 +224,32 @@ function getQuestOfferInfo(questID, uiMapID)
     end
 end
 
+-- The place of a super-tracked quest: map, x, y (0-1 on that map) and whether it is complete.
+function lookupSuperTrackedQuest(questID)
+    if isTask(questID) then
+        local uiMapID = GetQuestZoneID(questID) or getMapId(questID)
+        if uiMapID then
+            local x, y = GetQuestLocation(questID, uiMapID)
+            return uiMapID, x, y, false
+        end
+        return
+    end
+    return GetQuestPOIInfo(questID)
+end
+
+-- The quest place the pointer shows (as the game gave it, before setSupertrackTarget converts it).
+questPlace = {}
+
 function resolveSuperTrackedTarget(event,...)
     -- (the TomTom pointer follows TomTom's arrow on every update: setSupertrackerPointers)
     local questID = GetSuperTrackedQuestID()
     local completed = false
     if questID and questID > 0 then
-        local x, y, uiMapID
-    	if isTask(questID)  then
-            uiMapID = GetQuestZoneID(questID)
-            if not uiMapID then
-                uiMapID = getMapId(questID)
-            end
-            if uiMapID then
-                x, y = GetQuestLocation(questID, uiMapID)
-            end
-        else
-            uiMapID, x, y, completed = GetQuestPOIInfo(questID)
-        end
+        local uiMapID, x, y
+        uiMapID, x, y, completed = lookupSuperTrackedQuest(questID)
         if x and y and uiMapID then
-            setSupertrackTarget(questID, x, y, uiMapID, 0, nil, completed)
+            questPlace.questID, questPlace.uiMapID, questPlace.x, questPlace.y = questID, uiMapID, x, y
+            setSupertrackTarget(questID, x, y, uiMapID, 0, nil, completed or false)
         end
     else
         local superTrackingType = gameSuperTrackingType()
@@ -371,6 +379,32 @@ burst.events = {
     QUEST_POI_UPDATE = true,
     SUPER_TRACKING_PATH_UPDATED = true,
 }
+
+-- A quest with several areas on the map: the game points to the one nearest the player and switches
+-- to another as the player moves, often without an event this addon listens to (or before the new
+-- place can be read). So about once a second the tracked quest's place is read again, and the
+-- pointer is moved when it changed.
+questPlaceCheck = {
+    interval = 1,
+    nextCheck = 0,
+}
+
+function followQuestPlace()
+    local now = GetTime()
+    if now < questPlaceCheck.nextCheck then return end
+    questPlaceCheck.nextCheck = now + questPlaceCheck.interval
+
+    local questID = GetSuperTrackedQuestID()
+    if not (questID and questID > 0) then return end
+    local uiMapID, x, y = lookupSuperTrackedQuest(questID)
+    if not (uiMapID and x and y) then return end
+    if questPlace.questID == questID and questPlace.uiMapID == uiMapID
+        and math.abs(questPlace.x - x) < 1e-4 and math.abs(questPlace.y - y) < 1e-4 then
+        return
+    end
+    Addon.DEBUG:Print("Quest place changed: " .. questID .. " map " .. uiMapID)
+    resolveSuperTrackedTarget("QUEST_PLACE_CHANGED")
+end
 
 function OnEvent(event, ...)
     if not burst.events[event] then
