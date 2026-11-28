@@ -402,7 +402,6 @@ function followQuestPlace()
         and math.abs(questPlace.x - x) < 1e-4 and math.abs(questPlace.y - y) < 1e-4 then
         return
     end
-    Addon.DEBUG:Print("Quest place changed: " .. questID .. " map " .. uiMapID)
     resolveSuperTrackedTarget("QUEST_PLACE_CHANGED")
 end
 

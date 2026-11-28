@@ -52,7 +52,6 @@ local function getQuestieMap()
         questieL10n = found and l10n or nil
     else
         questieBroken = true
-        Addon.DEBUG:Print("Questie map module not found, Questie markers are off")
     end
     return questieMap
 end

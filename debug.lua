@@ -8,7 +8,8 @@ local Const = Addon.CONST
 local nameColor = "|cnNORMAL_FONT_COLOR:"
 local printColor = "|cnBATTLENET_FONT_COLOR:"
 
-function DEBUG:Print(...)
+-- private: prints without the Debug check, only for Info's output
+local function debugPrint(...)
     if Addon.Print then
         Addon:Print(...)
     else
@@ -49,9 +50,9 @@ function DEBUG:Info(name, ...)
     end
 
     if name then
-        self:Print(nameColor .. name .. ":|r ", str)
+        debugPrint(nameColor .. name .. ":|r ", str)
     else
-        self:Print(str)
+        debugPrint(str)
 
     end
 end
