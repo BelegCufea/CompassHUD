@@ -1,12 +1,9 @@
 # v2.1.2a (unreleased)
 
-## Changed
-
-- **Distance to the game's tracked target from the game**: the pointer for what the game tracks (a quest, a map pin, a rare, a waypoint) now shows the same distance as the game's own arrow in the world, height included, so it is exact even for map pins whose place could only be estimated. The arrival time follows that distance. It may differ a little from before on hills and in towers. When the game reports no distance, and for a target on another map without `Use map transitions`, the distance is measured as before; TomTom's arrow and the minimap icons are not affected.
-
 ## Fixed
 
 - **Quest pointer follows the game to another quest area**: when a tracked quest has several areas on the map, the game points to the nearest one and switches as you move. The compass pointer often stayed on the old area until the next quest update. Now it moves to the new area within about a second.
+- **Distance to the game's tracked target matches the game**: the pointer for what the game tracks (a quest, a map pin, a rare, a waypoint) now shows the same distance as the game's own arrow in the world, height included, so it is exact even for map pins whose place could only be estimated. The arrival time follows that distance. It may differ a little from before on hills and in towers. When the game reports no distance, and for a target on another map without `Use map transitions`, the distance is measured as before; TomTom's arrow and the minimap icons are not affected.
 
 # v2.1.2 (25.11.2026)
 
