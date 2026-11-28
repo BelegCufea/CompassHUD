@@ -15,6 +15,23 @@ local RequestPreloadRewardData = C_TaskQuest.RequestPreloadRewardData
 local GetQuestClassification = C_QuestInfoSystem.GetQuestClassification
 local IsSuperTrackingAnything = C_SuperTrack.IsSuperTrackingAnything
 local GetGlidingInfo = C_PlayerInfo.GetGlidingInfo
+local GetNavigationDistance = C_Navigation.GetDistance
+
+-- The game's own distance to its supertracked target (the number of its in-world arrow, height
+-- included) for the pointer that shows that target, else nil (measured from the coordinates).
+-- Not used when the game leads to a waypoint on the way that the pointer does not aim at.
+-- C_Navigation.GetTargetState is no guide: it can be Invalid while the distance is right (e.g.
+-- with WaypointUI replacing the game's arrow), so only a distance of 0 counts as none.
+local function gameDistance(frame)
+    if not (shownGameTarget and shownGameTarget.frame == frame) or frame.gameRoutesElsewhere then return end
+    local distance = GetNavigationDistance()
+    if not distance or issecretvalue(distance) or distance <= 0 then return end
+    return distance
+end
+
+local function pointerDistance(frame)
+    return gameDistance(frame) or HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
+end
 
 function setTime(frame, distance, speed)
     if speed and speed > 0 then
@@ -32,7 +49,7 @@ function questPointerSetTexts(frame, dt)
     if player.inInstance then return end
     frame.elapsed = frame.elapsed + dt
     if frame.distanceHidden and frame.timeHidden then return end
-    frame.distance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
+    frame.distance = pointerDistance(frame)
     if not frame.distance then
         frame:Hide()
         return
@@ -73,7 +90,7 @@ function questPointerSetTexts(frame, dt)
             -- overwritten by the next check before this one runs)
             local startDistance = frame.distance
             C_Timer.After(1, function()
-                local currentDistance = HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
+                local currentDistance = pointerDistance(frame)
                 local deltaSpeed = 0
                 if currentDistance then
                     -- approach speed: positive when getting closer, else no arrival time

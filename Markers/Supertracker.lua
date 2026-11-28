@@ -423,17 +423,23 @@ function setSupertrackTarget(questID, x, y, uiMapID, questType, title, completed
     title = title or GetTitleForQuestID(questID) or ""
     local HBDuiMapID = uiMapID
 
-    -- Use map transitions
-    if Options.UseCurrentMap and not (moreArgs and moreArgs.exactPlace) then
-        local playerUiMapId = GetBestMapForUnit("player")
-        if playerUiMapId and uiMapID ~= playerUiMapId then
-            local mx, my, waypointDescription = GetNextWaypointForMapTracker(playerUiMapId)
+    -- The game leads to a target on another map through a waypoint (an exit, a portal) and measures
+    -- its own distance to that waypoint. The pointer aims there too with "Use map transitions",
+    -- else at the target itself: then the game's distance does not fit the pointer.
+    local playerUiMapId = GetBestMapForUnit("player")
+    local gameRoutesElsewhere = false
+    if playerUiMapId and uiMapID ~= playerUiMapId then
+        local mx, my, waypointDescription = GetNextWaypointForMapTracker(playerUiMapId)
+        if Options.UseCurrentMap and not (moreArgs and moreArgs.exactPlace) then
+            -- Use map transitions
             if mx and my then
                 x, y, HBDuiMapID = mx, my, playerUiMapId
             end
             if waypointDescription then
                 title = title .. " (" .. waypointDescription .. ")"
             end
+        else
+            gameRoutesElsewhere = mx ~= nil and my ~= nil
         end
     end
 
@@ -479,6 +485,7 @@ function setSupertrackTarget(questID, x, y, uiMapID, questType, title, completed
     supertrackTargets[questID].frame.instance = supertrackTargets[questID].instance
     supertrackTargets[questID].frame.x = supertrackTargets[questID].x
     supertrackTargets[questID].frame.y = supertrackTargets[questID].y
+    supertrackTargets[questID].frame.gameRoutesElsewhere = gameRoutesElsewhere
     applyPointerTexture(supertrackTargets[questID])
     updatePointerFrame(supertrackTargets[questID].frame)
 end
