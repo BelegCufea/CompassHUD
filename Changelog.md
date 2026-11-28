@@ -1,8 +1,9 @@
-# v2.1.2a (unreleased)
+# v2.1.3 (unreleased)
 
 ## Changed
 
 - **Distance to the game's tracked target from the game**: the pointer for what the game tracks (a quest, a map pin, a rare, a waypoint) now shows the same distance as the game's own arrow in the world, height included, so it is exact even for map pins whose place could only be estimated. The arrival time follows that distance. It may differ a little from before on hills and in towers. When the game reports no distance, and for a target on another map without `Use map transitions`, the distance is measured as before; TomTom's arrow and the minimap icons are not affected.
+- **Arrival time counts in detours**: the arrival time was how long it takes going straight at the target at your current speed, which is right when flying but too short on a winding road or around a mountain. Now it compares how much closer you got with how far you moved over the last 45 seconds, so a detour makes the time longer, while flying straight it stays the same. A single turn barely moves it, and standing still keeps the time instead of showing `***`. For a new target it starts as the straight time and settles as you move. The old time is still there: `Options → General → Arrival time for a straight path` (off by default).
 
 ## Fixed
 

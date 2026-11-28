@@ -122,6 +122,13 @@ Addon.Options = {
                             width = 1.5,
                             order = 28.5,
                         },
+                        StraightArrivalTime = {
+                            type = "toggle",
+                            name = "Arrival time for a straight path",
+                            desc = "If enabled, the arrival time is how long it takes to get there going straight at the target at your current speed (the old way; accurate when flying, too short on winding roads).\n\nIf disabled, the arrival time counts in detours: it compares how much closer you got with how far you moved over the last 45 seconds.",
+                            width = 1.5,
+                            order = 28.6,
+                        },
                         BlankInterval = { type = "description", order = 29, fontSize = "small",name = "",width = "full", },
                         Interval = {
                             type = "range",

@@ -72,6 +72,7 @@ Addon.Defaults = {
         UseCurrentMap   = true,
         UseMeters       = false,
         RoundDistance   = false,
+        StraightArrivalTime = false,
         HeadingEnabled         = false,
         HeadingDecimals        = 0,
         HeadingTrueNorth       = true,

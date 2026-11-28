@@ -33,16 +33,59 @@ local function pointerDistance(frame)
     return gameDistance(frame) or HBD:GetWorldDistance(frame.instance, player.x, player.y, frame.x, frame.y)
 end
 
+local function formatTime(distance, speed)
+    if not (distance and speed and speed > 0) then return "***" end
+    local eta = math.abs(distance / speed)
+    return string.format("%d:%02.f", math.floor(eta / 60), math.floor(eta % 60))
+end
+
+-- legacy arrival time (Options.StraightArrivalTime): as if going straight at the target
 function setTime(frame, distance, speed)
-    if speed and speed > 0 then
-        local eta = math.abs(distance / speed)
-        local minutes = math.floor(eta / 60)
-        local seconds = math.floor(eta % 60)
-        local tta = string.format("%d:%02.f", minutes, seconds)
-        frame.TimeText:SetText(tta)
-    else
-        frame.TimeText:SetText("***")
+    frame.TimeText:SetText(formatTime(distance, speed))
+end
+
+-- Arrival time that counts in detours. Over the last DIRECT_WINDOW seconds, directness =
+-- distance closed / distance moved (1 = straight at the target); the time is the distance divided
+-- by speed * directness. While standing still the last moving speed is used.
+local DIRECT_WINDOW = 45     -- seconds of path looked back over
+local DIRECT_MIN_MOVED = 20  -- yards moved in the window before the directness is measured
+local DIRECT_MIN = 0.3       -- lowest directness (moving away would make it 0 or less)
+
+local function updateDirectTime(frame, speed)
+    local now = GetTime()
+    local history = frame.ttaHistory
+    if not history then
+        history = {}
+        frame.ttaHistory = history
+        frame.ttaMoved, frame.ttaDirectness, frame.ttaMovingSpeed = 0, nil, nil
     end
+    local last = history[#history]
+    if last then
+        if speed then
+            frame.ttaMoved = frame.ttaMoved + speed * (now - last.time)
+        elseif player.x and frame.ttaX then
+            -- speed hidden by the game: how far the player moved on the map
+            frame.ttaMoved = frame.ttaMoved + (HBD:GetWorldDistance(player.instance, frame.ttaX, frame.ttaY, player.x, player.y) or 0)
+        end
+    end
+    frame.ttaX, frame.ttaY = player.x, player.y
+    history[#history + 1] = { time = now, distance = frame.distance, moved = frame.ttaMoved }
+    while history[2] and history[2].time <= now - DIRECT_WINDOW do
+        table.remove(history, 1)
+    end
+    local oldest = history[1]
+    local moved = frame.ttaMoved - oldest.moved
+    if moved >= DIRECT_MIN_MOVED then
+        local directness = (oldest.distance - frame.distance) / moved
+        frame.ttaDirectness = math.min(math.max(directness, DIRECT_MIN), 1)
+    end
+    if speed and speed > 0.5 then
+        frame.ttaMovingSpeed = speed
+    elseif not speed and moved > 0 and now > oldest.time then
+        frame.ttaMovingSpeed = moved / (now - oldest.time)
+    end
+    local movingSpeed = frame.ttaMovingSpeed
+    frame.TimeText:SetText(formatTime(frame.distance, movingSpeed and movingSpeed * (frame.ttaDirectness or 1)))
 end
 
 function questPointerSetTexts(frame, dt)
@@ -67,14 +110,8 @@ function questPointerSetTexts(frame, dt)
     if frame.timeHidden then return end
     if frame.elapsed >= 1 then
         frame.elapsed = 0
-        -- Moving away from the target (distance grew since the last check): no arrival time,
-        -- shown like standing still instead of a time that is never reached
         local lastDistance = frame.ttaLastDistance
         frame.ttaLastDistance = frame.distance
-        if lastDistance and frame.distance > lastDistance + 0.5 then
-            setTime(frame, frame.distance, 0)
-            return
-        end
         -- GetUnitSpeed returns 0 (truthy) when standing still, so "player or vehicle" never reached the vehicle
         local speed = GetUnitSpeed(UnitInVehicle("player") and "vehicle" or "player")
         -- GetUnitSpeed does not report skyriding speed; the gliding info does
@@ -82,7 +119,20 @@ function questPointerSetTexts(frame, dt)
         if isGliding and forwardSpeed and not issecretvalue(forwardSpeed) and forwardSpeed > 0 then
             speed = forwardSpeed
         end
-        
+        if not Options.StraightArrivalTime then
+            -- a new target (lastDistance reset) starts a new history
+            if not lastDistance then frame.ttaHistory = nil end
+            updateDirectTime(frame, (speed and not issecretvalue(speed)) and (tonumber(speed) or 0) or nil)
+            return
+        end
+        frame.ttaHistory = nil -- switching back to the detour time starts fresh
+        -- Moving away from the target (distance grew since the last check): no arrival time,
+        -- shown like standing still instead of a time that is never reached
+        if lastDistance and frame.distance > lastDistance + 0.5 then
+            setTime(frame, frame.distance, 0)
+            return
+        end
+
         -- NEW: Detect if speed is a secret value using 12.0 API
         if not speed or issecretvalue(speed) then
             -- Fallback: calculate speed from distance change (original delta method)
